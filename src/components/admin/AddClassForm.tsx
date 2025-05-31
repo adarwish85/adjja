@@ -11,231 +11,244 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { Class } from "@/hooks/useClasses";
+import { useCoaches } from "@/hooks/useCoaches";
 
 interface AddClassFormProps {
+  classItem?: Class;
+  onSubmit: (classData: Class | Omit<Class, "id" | "created_at" | "updated_at">) => void;
   onClose: () => void;
+  isEditing?: boolean;
 }
 
-const mockInstructors = [
-  { id: 1, name: "Professor Silva" },
-  { id: 2, name: "Coach Martinez" },
-  { id: 3, name: "Coach Anderson" },
-  { id: 4, name: "Coach Johnson" },
-];
+const levels = ["Beginner", "Intermediate", "Advanced", "Kids", "All Levels"];
+const statusOptions = ["Active", "Inactive", "Cancelled"];
+const locations = ["Mat 1", "Mat 2", "Both Mats", "Outdoor Area"];
 
-const daysOfWeek = [
-  { id: "monday", label: "Monday" },
-  { id: "tuesday", label: "Tuesday" },
-  { id: "wednesday", label: "Wednesday" },
-  { id: "thursday", label: "Thursday" },
-  { id: "friday", label: "Friday" },
-  { id: "saturday", label: "Saturday" },
-  { id: "sunday", label: "Sunday" },
-];
-
-export const AddClassForm = ({ onClose }: AddClassFormProps) => {
+export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }: AddClassFormProps) => {
+  const { coaches, loading: coachesLoading } = useCoaches();
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    instructor: "",
-    level: "",
-    capacity: "",
-    duration: "",
-    location: "",
-    startTime: "",
-    selectedDays: [] as string[],
+    name: classItem?.name || "",
+    instructor: classItem?.instructor || "",
+    schedule: classItem?.schedule || "",
+    duration: classItem?.duration || 60,
+    capacity: classItem?.capacity || 20,
+    enrolled: classItem?.enrolled || 0,
+    level: classItem?.level || "Beginner" as const,
+    location: classItem?.location || "",
+    status: classItem?.status || "Active" as const,
+    description: classItem?.description || "",
   });
 
-  const handleDayToggle = (dayId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedDays: prev.selectedDays.includes(dayId)
-        ? prev.selectedDays.filter(id => id !== dayId)
-        : [...prev.selectedDays, dayId]
-    }));
-  };
-
-  const removeDayFromSelection = (dayId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedDays: prev.selectedDays.filter(id => id !== dayId)
-    }));
-  };
+  // Get active coaches for the dropdown
+  const activeCoaches = coaches.filter(coach => coach.status === "active");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    // Handle form submission here
+    
+    console.log("Form submission data:", formData);
+    
+    if (isEditing && classItem) {
+      onSubmit({
+        ...classItem,
+        ...formData,
+      });
+    } else {
+      const newClass: Omit<Class, "id" | "created_at" | "updated_at"> = {
+        name: formData.name,
+        instructor: formData.instructor,
+        schedule: formData.schedule,
+        duration: formData.duration,
+        capacity: formData.capacity,
+        enrolled: formData.enrolled,
+        level: formData.level,
+        location: formData.location,
+        status: formData.status,
+        description: formData.description || undefined,
+      };
+      
+      console.log("Submitting new class:", newClass);
+      onSubmit(newClass);
+    }
     onClose();
   };
 
-  const getDayLabel = (dayId: string) => {
-    return daysOfWeek.find(day => day.id === dayId)?.label || dayId;
+  const handleChange = (field: string, value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="name">Class Name *</Label>
+          <Label htmlFor="name">Class Name</Label>
           <Input
             id="name"
             value={formData.name}
-            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            placeholder="e.g., Morning Fundamentals"
+            onChange={(e) => handleChange("name", e.target.value)}
+            placeholder="Enter class name"
             required
           />
         </div>
-
+        
         <div className="space-y-2">
-          <Label htmlFor="instructor">Instructor *</Label>
-          <Select value={formData.instructor} onValueChange={(value) => setFormData(prev => ({ ...prev, instructor: value }))}>
+          <Label htmlFor="instructor">Instructor</Label>
+          <Select
+            value={formData.instructor}
+            onValueChange={(value) => handleChange("instructor", value)}
+            required
+            disabled={coachesLoading}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Select instructor" />
+              <SelectValue placeholder={coachesLoading ? "Loading instructors..." : "Select instructor"} />
             </SelectTrigger>
             <SelectContent>
-              {mockInstructors.map((instructor) => (
-                <SelectItem key={instructor.id} value={instructor.name}>
-                  {instructor.name}
+              {activeCoaches.map((coach) => (
+                <SelectItem key={coach.id} value={coach.name}>
+                  {coach.name}
+                </SelectItem>
+              ))}
+              <SelectItem value="Various">Various</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="schedule">Schedule</Label>
+          <Input
+            id="schedule"
+            value={formData.schedule}
+            onChange={(e) => handleChange("schedule", e.target.value)}
+            placeholder="e.g., Mon, Wed, Fri - 6:00 AM"
+            required
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="duration">Duration (minutes)</Label>
+          <Input
+            id="duration"
+            type="number"
+            min="15"
+            max="180"
+            value={formData.duration}
+            onChange={(e) => handleChange("duration", parseInt(e.target.value) || 60)}
+            required
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="capacity">Capacity</Label>
+          <Input
+            id="capacity"
+            type="number"
+            min="1"
+            max="50"
+            value={formData.capacity}
+            onChange={(e) => handleChange("capacity", parseInt(e.target.value) || 20)}
+            required
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="enrolled">Enrolled</Label>
+          <Input
+            id="enrolled"
+            type="number"
+            min="0"
+            value={formData.enrolled}
+            onChange={(e) => handleChange("enrolled", parseInt(e.target.value) || 0)}
+            required
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="level">Level</Label>
+          <Select
+            value={formData.level}
+            onValueChange={(value) => handleChange("level", value)}
+            required
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select level" />
+            </SelectTrigger>
+            <SelectContent>
+              {levels.map((level) => (
+                <SelectItem key={level} value={level}>
+                  {level}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+      </div>
 
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="level">Level *</Label>
-          <Select value={formData.level} onValueChange={(value) => setFormData(prev => ({ ...prev, level: value }))}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select level" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="beginner">Beginner</SelectItem>
-              <SelectItem value="intermediate">Intermediate</SelectItem>
-              <SelectItem value="advanced">Advanced</SelectItem>
-              <SelectItem value="kids">Kids</SelectItem>
-              <SelectItem value="all-levels">All Levels</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="capacity">Capacity *</Label>
-          <Input
-            id="capacity"
-            type="number"
-            value={formData.capacity}
-            onChange={(e) => setFormData(prev => ({ ...prev, capacity: e.target.value }))}
-            placeholder="20"
-            min="1"
+          <Label htmlFor="location">Location</Label>
+          <Select
+            value={formData.location}
+            onValueChange={(value) => handleChange("location", value)}
             required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="duration">Duration (minutes) *</Label>
-          <Input
-            id="duration"
-            type="number"
-            value={formData.duration}
-            onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
-            placeholder="60"
-            min="15"
-            step="15"
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="location">Location *</Label>
-          <Select value={formData.location} onValueChange={(value) => setFormData(prev => ({ ...prev, location: value }))}>
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select location" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="mat-1">Mat 1</SelectItem>
-              <SelectItem value="mat-2">Mat 2</SelectItem>
-              <SelectItem value="both-mats">Both Mats</SelectItem>
-              <SelectItem value="main-area">Main Area</SelectItem>
+              {locations.map((location) => (
+                <SelectItem key={location} value={location}>
+                  {location}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
-
+        
         <div className="space-y-2">
-          <Label htmlFor="startTime">Start Time *</Label>
-          <Input
-            id="startTime"
-            type="time"
-            value={formData.startTime}
-            onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
+          <Label htmlFor="status">Status</Label>
+          <Select
+            value={formData.status}
+            onValueChange={(value) => handleChange("status", value)}
             required
-          />
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label>Description</Label>
+        <Label htmlFor="description">Description</Label>
         <Textarea
+          id="description"
           value={formData.description}
-          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-          placeholder="Brief description of the class..."
+          onChange={(e) => handleChange("description", e.target.value)}
+          placeholder="Enter class description (optional)"
           rows={3}
         />
       </div>
 
-      <div className="space-y-4">
-        <Label>Schedule Days *</Label>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {daysOfWeek.map((day) => (
-                <div key={day.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={day.id}
-                    checked={formData.selectedDays.includes(day.id)}
-                    onCheckedChange={() => handleDayToggle(day.id)}
-                  />
-                  <Label htmlFor={day.id} className="text-sm font-normal">
-                    {day.label}
-                  </Label>
-                </div>
-              ))}
-            </div>
-            
-            {formData.selectedDays.length > 0 && (
-              <div className="mt-4 pt-4 border-t">
-                <Label className="text-sm text-bjj-gray mb-2 block">Selected Days:</Label>
-                <div className="flex flex-wrap gap-2">
-                  {formData.selectedDays.map((dayId) => (
-                    <Badge key={dayId} variant="secondary" className="flex items-center gap-1">
-                      {getDayLabel(dayId)}
-                      <X
-                        className="h-3 w-3 cursor-pointer hover:text-red-600"
-                        onClick={() => removeDayFromSelection(dayId)}
-                      />
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex justify-end space-x-3 pt-4">
+      <div className="flex justify-end space-x-2 pt-4">
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button 
-          type="submit" 
-          className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
-          disabled={!formData.name || !formData.instructor || !formData.level || !formData.capacity || !formData.duration || !formData.location || !formData.startTime || formData.selectedDays.length === 0}
-        >
-          Create Class
+        <Button type="submit" className="bg-bjj-gold hover:bg-bjj-gold-dark text-white">
+          {isEditing ? "Update Class" : "Add Class"}
         </Button>
       </div>
     </form>

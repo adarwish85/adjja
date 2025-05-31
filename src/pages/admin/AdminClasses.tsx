@@ -19,6 +19,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { AddClassForm } from "@/components/admin/AddClassForm";
 import { 
   Calendar, 
@@ -29,87 +40,30 @@ import {
   Search, 
   Edit2, 
   Trash2,
-  MapPin 
+  MapPin,
+  Loader2 
 } from "lucide-react";
 import { useState } from "react";
-
-const mockClasses = [
-  {
-    id: 1,
-    name: "Morning Fundamentals",
-    instructor: "Professor Silva",
-    schedule: "Mon, Wed, Fri - 6:00 AM",
-    duration: "60 min",
-    capacity: 20,
-    enrolled: 15,
-    level: "Beginner",
-    location: "Mat 1",
-    status: "Active"
-  },
-  {
-    id: 2,
-    name: "Competition Team",
-    instructor: "Coach Martinez",
-    schedule: "Tue, Thu - 7:00 PM",
-    duration: "90 min",
-    capacity: 15,
-    enrolled: 12,
-    level: "Advanced",
-    location: "Mat 2",
-    status: "Active"
-  },
-  {
-    id: 3,
-    name: "Kids BJJ",
-    instructor: "Coach Anderson",
-    schedule: "Mon, Wed, Fri - 4:00 PM",
-    duration: "45 min",
-    capacity: 12,
-    enrolled: 8,
-    level: "Kids",
-    location: "Mat 1",
-    status: "Active"
-  },
-  {
-    id: 4,
-    name: "Open Mat",
-    instructor: "Various",
-    schedule: "Saturday - 10:00 AM",
-    duration: "120 min",
-    capacity: 25,
-    enrolled: 18,
-    level: "All Levels",
-    location: "Both Mats",
-    status: "Active"
-  },
-  {
-    id: 5,
-    name: "Women's Only",
-    instructor: "Coach Johnson",
-    schedule: "Thursday - 6:00 PM",
-    duration: "60 min",
-    capacity: 15,
-    enrolled: 9,
-    level: "All Levels",
-    location: "Mat 2",
-    status: "Active"
-  }
-];
+import { useClasses, Class } from "@/hooks/useClasses";
 
 const AdminClasses = () => {
+  const { classes, loading, addClass, updateClass, deleteClass } = useClasses();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingClass, setEditingClass] = useState<Class | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const filteredClasses = mockClasses.filter(cls =>
+  const filteredClasses = classes.filter(cls =>
     cls.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cls.instructor.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cls.level.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalClasses = mockClasses.length;
-  const totalEnrolled = mockClasses.reduce((sum, cls) => sum + cls.enrolled, 0);
-  const avgCapacity = Math.round((totalEnrolled / mockClasses.reduce((sum, cls) => sum + cls.capacity, 0)) * 100);
-  const activeClasses = mockClasses.filter(cls => cls.status === "Active").length;
+  const totalClasses = classes.length;
+  const totalEnrolled = classes.reduce((sum, cls) => sum + cls.enrolled, 0);
+  const totalCapacity = classes.reduce((sum, cls) => sum + cls.capacity, 0);
+  const avgCapacity = totalCapacity > 0 ? Math.round((totalEnrolled / totalCapacity) * 100) : 0;
+  const activeClasses = classes.filter(cls => cls.status === "Active").length;
 
   const getLevelBadgeVariant = (level: string) => {
     switch (level) {
@@ -119,6 +73,51 @@ const AdminClasses = () => {
       default: return "default";
     }
   };
+
+  const handleAddClass = async (classData: Omit<Class, "id" | "created_at" | "updated_at">) => {
+    try {
+      await addClass(classData);
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to add class:", error);
+    }
+  };
+
+  const handleEditClass = async (classData: Class) => {
+    if (!editingClass) return;
+    
+    try {
+      const { id, created_at, updated_at, ...updates } = classData;
+      await updateClass(editingClass.id, updates);
+      setIsEditDialogOpen(false);
+      setEditingClass(null);
+    } catch (error) {
+      console.error("Failed to update class:", error);
+    }
+  };
+
+  const handleDeleteClass = async (id: string) => {
+    try {
+      await deleteClass(id);
+    } catch (error) {
+      console.error("Failed to delete class:", error);
+    }
+  };
+
+  const openEditDialog = (classItem: Class) => {
+    setEditingClass(classItem);
+    setIsEditDialogOpen(true);
+  };
+
+  if (loading) {
+    return (
+      <SuperAdminLayout>
+        <div className="p-6 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-bjj-gold" />
+        </div>
+      </SuperAdminLayout>
+    );
+  }
 
   return (
     <SuperAdminLayout>
@@ -139,7 +138,10 @@ const AdminClasses = () => {
               <DialogHeader>
                 <DialogTitle>Add New Class</DialogTitle>
               </DialogHeader>
-              <AddClassForm onClose={() => setIsAddDialogOpen(false)} />
+              <AddClassForm 
+                onSubmit={handleAddClass} 
+                onClose={() => setIsAddDialogOpen(false)} 
+              />
             </DialogContent>
           </Dialog>
         </div>
@@ -233,7 +235,7 @@ const AdminClasses = () => {
                     <TableCell>
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-1 text-bjj-gray" />
-                        {cls.duration}
+                        {cls.duration} min
                       </div>
                     </TableCell>
                     <TableCell>
@@ -260,20 +262,70 @@ const AdminClasses = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => openEditDialog(cls)}
+                        >
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Class</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{cls.name}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteClass(cls.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            {filteredClasses.length === 0 && (
+              <div className="text-center py-8 text-bjj-gray">
+                {searchTerm ? "No classes found matching your search." : "No classes found."}
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Class</DialogTitle>
+            </DialogHeader>
+            {editingClass && (
+              <AddClassForm 
+                classItem={editingClass}
+                onSubmit={handleEditClass} 
+                onClose={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingClass(null);
+                }}
+                isEditing={true}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </SuperAdminLayout>
   );
