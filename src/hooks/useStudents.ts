@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -127,9 +126,34 @@ export const useStudents = () => {
     try {
       console.log("Updating student with id:", id, "data:", updates);
       
+      // If account creation is requested during update, create the user account first
+      if (updates.createAccount && updates.username && updates.password) {
+        console.log("Creating student account during update...");
+        
+        // Call the database function to create the student account
+        const { data: accountData, error: accountError } = await supabase.rpc('create_student_account', {
+          p_email: updates.email || "",
+          p_password: updates.password,
+          p_username: updates.username,
+          p_name: updates.name || "",
+          p_phone: updates.phone
+        });
+
+        if (accountError) {
+          console.error("Account creation error:", accountError);
+          throw new Error(`Failed to create student account: ${accountError.message}`);
+        }
+
+        console.log("Student account created successfully during update:", accountData);
+        toast.success("Student account created successfully");
+      }
+
+      // Remove account-specific fields before updating the student record
+      const { username, password, createAccount, ...studentUpdates } = updates;
+      
       const { data, error } = await supabase
         .from("students")
-        .update(updates)
+        .update(studentUpdates)
         .eq("id", id)
         .select()
         .single();
