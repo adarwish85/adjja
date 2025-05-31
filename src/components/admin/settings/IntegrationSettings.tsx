@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +17,12 @@ import {
   Key,
   ExternalLink
 } from "lucide-react";
+import { useSettings, IntegrationSettings as IntegrationSettingsType } from "@/hooks/useSettings";
 
 export const IntegrationSettings = () => {
+  const { defaultIntegrationSettings, saveIntegrationSettings, isLoading } = useSettings();
+  const [settings, setSettings] = useState<IntegrationSettingsType>(defaultIntegrationSettings);
+
   const integrations = [
     {
       name: "Stripe",
@@ -29,7 +34,7 @@ export const IntegrationSettings = () => {
     },
     {
       name: "Zoom",
-      category: "Video Conferencing",
+      category: "Video Conferencing", 
       status: "connected",
       description: "Online classes and meetings",
       icon: Calendar,
@@ -66,6 +71,14 @@ export const IntegrationSettings = () => {
     { name: "Payment Completed", url: "https://api.adjja.com/webhooks/payment-completed", status: "active" },
     { name: "Class Scheduled", url: "https://api.adjja.com/webhooks/class-scheduled", status: "inactive" }
   ];
+
+  const handleSave = async () => {
+    await saveIntegrationSettings(settings);
+  };
+
+  const handleReset = () => {
+    setSettings(defaultIntegrationSettings);
+  };
 
   return (
     <div className="space-y-6">
@@ -126,25 +139,40 @@ export const IntegrationSettings = () => {
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="api-base-url">API Base URL</Label>
-            <Input id="api-base-url" defaultValue="https://api.adjja.com/v1" />
+            <Input 
+              id="api-base-url" 
+              value={settings.apiBaseURL}
+              onChange={(e) => setSettings(prev => ({ ...prev, apiBaseURL: e.target.value }))}
+            />
           </div>
           <div>
             <Label htmlFor="api-version">API Version</Label>
-            <Input id="api-version" defaultValue="v1" className="max-w-sm" />
+            <Input 
+              id="api-version" 
+              value={settings.apiVersion}
+              onChange={(e) => setSettings(prev => ({ ...prev, apiVersion: e.target.value }))}
+              className="max-w-sm" 
+            />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium">Enable API Documentation</h4>
               <p className="text-sm text-bjj-gray">Make API documentation publicly accessible</p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={settings.enableAPIDocumentation}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enableAPIDocumentation: checked }))}
+            />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium">Enable CORS</h4>
               <p className="text-sm text-bjj-gray">Allow cross-origin requests</p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={settings.enableCORS}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enableCORS: checked }))}
+            />
           </div>
           <Button variant="outline">
             <ExternalLink className="h-4 w-4 mr-2" />
@@ -199,26 +227,24 @@ export const IntegrationSettings = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="stripe-public-key">Stripe Public Key</Label>
-              <Input id="stripe-public-key" placeholder="pk_test_..." />
-            </div>
-            <div>
-              <Label htmlFor="stripe-secret-key">Stripe Secret Key</Label>
-              <Input id="stripe-secret-key" type="password" placeholder="sk_test_..." />
-            </div>
+          <div>
+            <Label htmlFor="stripe-public-key">Stripe Public Key</Label>
+            <Input 
+              id="stripe-public-key" 
+              placeholder="pk_test_..."
+              value={settings.stripePublicKey}
+              onChange={(e) => setSettings(prev => ({ ...prev, stripePublicKey: e.target.value }))}
+            />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium">Test Mode</h4>
               <p className="text-sm text-bjj-gray">Use Stripe test environment</p>
             </div>
-            <Switch defaultChecked />
-          </div>
-          <div>
-            <Label htmlFor="webhook-secret">Webhook Signing Secret</Label>
-            <Input id="webhook-secret" type="password" placeholder="whsec_..." />
+            <Switch 
+              checked={settings.enableStripeTestMode}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enableStripeTestMode: checked }))}
+            />
           </div>
           <Button variant="outline">
             <CreditCard className="h-4 w-4 mr-2" />
@@ -239,11 +265,22 @@ export const IntegrationSettings = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="mailchimp-api-key">Mailchimp API Key</Label>
-              <Input id="mailchimp-api-key" type="password" placeholder="Enter API key..." />
+              <Input 
+                id="mailchimp-api-key" 
+                type="password" 
+                placeholder="Enter API key..."
+                value={settings.mailchimpAPIKey}
+                onChange={(e) => setSettings(prev => ({ ...prev, mailchimpAPIKey: e.target.value }))}
+              />
             </div>
             <div>
               <Label htmlFor="mailchimp-list-id">Default List ID</Label>
-              <Input id="mailchimp-list-id" placeholder="List ID..." />
+              <Input 
+                id="mailchimp-list-id" 
+                placeholder="List ID..."
+                value={settings.mailchimpListId}
+                onChange={(e) => setSettings(prev => ({ ...prev, mailchimpListId: e.target.value }))}
+              />
             </div>
           </div>
           <div className="flex items-center justify-between">
@@ -251,7 +288,10 @@ export const IntegrationSettings = () => {
               <h4 className="font-medium">Auto-subscribe New Students</h4>
               <p className="text-sm text-bjj-gray">Automatically add new students to mailing list</p>
             </div>
-            <Switch />
+            <Switch 
+              checked={settings.autoSubscribeNewStudents}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, autoSubscribeNewStudents: checked }))}
+            />
           </div>
           <Button variant="outline">
             <Mail className="h-4 w-4 mr-2" />
@@ -262,9 +302,15 @@ export const IntegrationSettings = () => {
 
       {/* Save Settings */}
       <div className="flex justify-end space-x-4">
-        <Button variant="outline">Reset to Defaults</Button>
-        <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy">
-          Save Integration Settings
+        <Button variant="outline" onClick={handleReset} disabled={isLoading}>
+          Reset to Defaults
+        </Button>
+        <Button 
+          className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy"
+          onClick={handleSave}
+          disabled={isLoading}
+        >
+          {isLoading ? "Saving..." : "Save Integration Settings"}
         </Button>
       </div>
     </div>

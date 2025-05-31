@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,56 +10,48 @@ import {
   Bell, 
   Mail, 
   MessageSquare, 
-  Smartphone,
-  Clock,
-  Users,
-  DollarSign,
-  Calendar
+  Smartphone
 } from "lucide-react";
+import { useSettings, NotificationSettings as NotificationSettingsType } from "@/hooks/useSettings";
 
 export const NotificationSettings = () => {
-  const notificationTypes = [
-    {
-      category: "User Management",
-      icon: Users,
-      settings: [
-        { name: "New Student Registration", email: true, sms: false, push: true },
-        { name: "Coach Assignment", email: true, sms: false, push: false },
-        { name: "User Account Deactivation", email: true, sms: false, push: false },
-        { name: "Password Reset Requests", email: true, sms: true, push: false }
-      ]
-    },
-    {
-      category: "Classes & Scheduling",
-      icon: Calendar,
-      settings: [
-        { name: "Class Cancellation", email: true, sms: true, push: true },
-        { name: "Schedule Changes", email: true, sms: false, push: true },
-        { name: "Low Attendance Alert", email: true, sms: false, push: false },
-        { name: "Class Capacity Reached", email: false, sms: false, push: true }
-      ]
-    },
-    {
-      category: "Payments & Billing",
-      icon: DollarSign,
-      settings: [
-        { name: "Payment Success", email: true, sms: false, push: false },
-        { name: "Payment Failed", email: true, sms: true, push: true },
-        { name: "Subscription Expiring", email: true, sms: true, push: true },
-        { name: "Refund Processed", email: true, sms: false, push: false }
-      ]
-    },
-    {
-      category: "System Alerts",
-      icon: Bell,
-      settings: [
-        { name: "System Maintenance", email: true, sms: false, push: true },
-        { name: "Security Alerts", email: true, sms: true, push: true },
-        { name: "Backup Completed", email: false, sms: false, push: false },
-        { name: "API Rate Limit Exceeded", email: true, sms: false, push: false }
-      ]
-    }
-  ];
+  const { 
+    defaultNotificationSettings, 
+    saveNotificationSettings, 
+    testEmailConfiguration, 
+    testSMSConfiguration, 
+    isLoading 
+  } = useSettings();
+  const [settings, setSettings] = useState<NotificationSettingsType>(defaultNotificationSettings);
+
+  const handleSave = async () => {
+    await saveNotificationSettings(settings);
+  };
+
+  const handleReset = () => {
+    setSettings(defaultNotificationSettings);
+  };
+
+  const handleTestEmail = async () => {
+    await testEmailConfiguration();
+  };
+
+  const handleTestSMS = async () => {
+    await testSMSConfiguration();
+  };
+
+  const updateNotificationType = (type: string, channel: 'email' | 'sms' | 'push', value: boolean) => {
+    setSettings(prev => ({
+      ...prev,
+      notificationTypes: {
+        ...prev.notificationTypes,
+        [type]: {
+          ...prev.notificationTypes[type],
+          [channel]: value
+        }
+      }
+    }));
+  };
 
   return (
     <div className="space-y-6">
@@ -76,24 +69,47 @@ export const NotificationSettings = () => {
               <h4 className="font-medium">Enable All Notifications</h4>
               <p className="text-sm text-bjj-gray">Master switch for all notification types</p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={settings.enableAllNotifications}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enableAllNotifications: checked }))}
+            />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="notification-from">Notification From Name</Label>
-              <Input id="notification-from" defaultValue="ADJJA Academy" />
+              <Input 
+                id="notification-from" 
+                value={settings.notificationFromName}
+                onChange={(e) => setSettings(prev => ({ ...prev, notificationFromName: e.target.value }))}
+              />
             </div>
             <div>
               <Label htmlFor="notification-email">Notification From Email</Label>
-              <Input id="notification-email" defaultValue="notifications@adjja.com" />
+              <Input 
+                id="notification-email" 
+                value={settings.notificationFromEmail}
+                onChange={(e) => setSettings(prev => ({ ...prev, notificationFromEmail: e.target.value }))}
+              />
             </div>
           </div>
           <div>
             <Label htmlFor="quiet-hours-start">Quiet Hours</Label>
             <div className="flex items-center space-x-2 mt-1">
-              <Input id="quiet-hours-start" type="time" defaultValue="22:00" className="w-32" />
+              <Input 
+                id="quiet-hours-start" 
+                type="time" 
+                value={settings.quietHoursStart}
+                onChange={(e) => setSettings(prev => ({ ...prev, quietHoursStart: e.target.value }))}
+                className="w-32" 
+              />
               <span>to</span>
-              <Input id="quiet-hours-end" type="time" defaultValue="08:00" className="w-32" />
+              <Input 
+                id="quiet-hours-end" 
+                type="time" 
+                value={settings.quietHoursEnd}
+                onChange={(e) => setSettings(prev => ({ ...prev, quietHoursEnd: e.target.value }))}
+                className="w-32" 
+              />
             </div>
             <p className="text-xs text-bjj-gray mt-1">No notifications will be sent during these hours</p>
           </div>
@@ -109,34 +125,19 @@ export const NotificationSettings = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="smtp-host">SMTP Host</Label>
-              <Input id="smtp-host" defaultValue="smtp.gmail.com" />
-            </div>
-            <div>
-              <Label htmlFor="smtp-port">SMTP Port</Label>
-              <Input id="smtp-port" type="number" defaultValue="587" />
-            </div>
-            <div>
-              <Label htmlFor="smtp-username">SMTP Username</Label>
-              <Input id="smtp-username" defaultValue="notifications@adjja.com" />
-            </div>
-            <div>
-              <Label htmlFor="smtp-password">SMTP Password</Label>
-              <Input id="smtp-password" type="password" />
-            </div>
-          </div>
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium">Enable HTML Emails</h4>
               <p className="text-sm text-bjj-gray">Send rich HTML formatted emails</p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={settings.enableHTMLEmails}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enableHTMLEmails: checked }))}
+            />
           </div>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleTestEmail} disabled={isLoading}>
             <Mail className="h-4 w-4 mr-2" />
-            Send Test Email
+            {isLoading ? "Testing..." : "Send Test Email"}
           </Button>
         </CardContent>
       </Card>
@@ -153,7 +154,10 @@ export const NotificationSettings = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="sms-provider">SMS Provider</Label>
-              <Select defaultValue="twilio">
+              <Select 
+                value={settings.smsProvider} 
+                onValueChange={(value) => setSettings(prev => ({ ...prev, smsProvider: value }))}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -166,62 +170,29 @@ export const NotificationSettings = () => {
             </div>
             <div>
               <Label htmlFor="sms-from">SMS From Number</Label>
-              <Input id="sms-from" defaultValue="+61400123456" />
+              <Input 
+                id="sms-from" 
+                value={settings.smsFromNumber}
+                onChange={(e) => setSettings(prev => ({ ...prev, smsFromNumber: e.target.value }))}
+              />
             </div>
-          </div>
-          <div>
-            <Label htmlFor="twilio-api-key">Twilio API Key</Label>
-            <Input id="twilio-api-key" type="password" />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium">Enable SMS Notifications</h4>
               <p className="text-sm text-bjj-gray">Send SMS notifications to users</p>
             </div>
-            <Switch />
+            <Switch 
+              checked={settings.enableSMSNotifications}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enableSMSNotifications: checked }))}
+            />
           </div>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleTestSMS} disabled={isLoading}>
             <Smartphone className="h-4 w-4 mr-2" />
-            Send Test SMS
+            {isLoading ? "Testing..." : "Send Test SMS"}
           </Button>
         </CardContent>
       </Card>
-
-      {/* Notification Types */}
-      {notificationTypes.map((category) => (
-        <Card key={category.category}>
-          <CardHeader>
-            <CardTitle className="text-bjj-navy flex items-center gap-2">
-              <category.icon className="h-5 w-5" />
-              {category.category}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-4 gap-4 text-sm font-medium text-bjj-gray border-b pb-2">
-                <div>Notification Type</div>
-                <div className="text-center">Email</div>
-                <div className="text-center">SMS</div>
-                <div className="text-center">Push</div>
-              </div>
-              {category.settings.map((setting, index) => (
-                <div key={index} className="grid grid-cols-4 gap-4 items-center py-2">
-                  <div className="font-medium text-bjj-navy">{setting.name}</div>
-                  <div className="flex justify-center">
-                    <Switch defaultChecked={setting.email} />
-                  </div>
-                  <div className="flex justify-center">
-                    <Switch defaultChecked={setting.sms} />
-                  </div>
-                  <div className="flex justify-center">
-                    <Switch defaultChecked={setting.push} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
 
       {/* Push Notification Settings */}
       <Card>
@@ -232,16 +203,15 @@ export const NotificationSettings = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="firebase-key">Firebase Server Key</Label>
-            <Input id="firebase-key" type="password" />
-          </div>
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium">Enable Push Notifications</h4>
               <p className="text-sm text-bjj-gray">Send push notifications to mobile apps</p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={settings.enablePushNotifications}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enablePushNotifications: checked }))}
+            />
           </div>
           <Button variant="outline">
             <MessageSquare className="h-4 w-4 mr-2" />
@@ -250,11 +220,59 @@ export const NotificationSettings = () => {
         </CardContent>
       </Card>
 
+      {/* Notification Types */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-bjj-navy">Notification Types</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-4 gap-4 text-sm font-medium text-bjj-gray border-b pb-2">
+              <div>Notification Type</div>
+              <div className="text-center">Email</div>
+              <div className="text-center">SMS</div>
+              <div className="text-center">Push</div>
+            </div>
+            {Object.entries(settings.notificationTypes).map(([type, channels]) => (
+              <div key={type} className="grid grid-cols-4 gap-4 items-center py-2">
+                <div className="font-medium text-bjj-navy">
+                  {type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </div>
+                <div className="flex justify-center">
+                  <Switch 
+                    checked={channels.email}
+                    onCheckedChange={(checked) => updateNotificationType(type, 'email', checked)}
+                  />
+                </div>
+                <div className="flex justify-center">
+                  <Switch 
+                    checked={channels.sms}
+                    onCheckedChange={(checked) => updateNotificationType(type, 'sms', checked)}
+                  />
+                </div>
+                <div className="flex justify-center">
+                  <Switch 
+                    checked={channels.push}
+                    onCheckedChange={(checked) => updateNotificationType(type, 'push', checked)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Save Settings */}
       <div className="flex justify-end space-x-4">
-        <Button variant="outline">Reset to Defaults</Button>
-        <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy">
-          Save Notification Settings
+        <Button variant="outline" onClick={handleReset} disabled={isLoading}>
+          Reset to Defaults
+        </Button>
+        <Button 
+          className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy"
+          onClick={handleSave}
+          disabled={isLoading}
+        >
+          {isLoading ? "Saving..." : "Save Notification Settings"}
         </Button>
       </div>
     </div>

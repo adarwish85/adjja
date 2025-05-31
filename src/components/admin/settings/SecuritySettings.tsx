@@ -1,10 +1,10 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { 
   Shield, 
@@ -13,17 +13,32 @@ import {
   AlertTriangle,
   Key,
   UserCheck,
-  Globe,
-  Clock
+  Globe
 } from "lucide-react";
+import { useSettings, SecuritySettings as SecuritySettingsType } from "@/hooks/useSettings";
 
 export const SecuritySettings = () => {
+  const { defaultSecuritySettings, saveSecuritySettings, generateAPIKey, isLoading } = useSettings();
+  const [settings, setSettings] = useState<SecuritySettingsType>(defaultSecuritySettings);
+
   const securityLogs = [
     { timestamp: "2024-01-15 10:30", event: "Failed login attempt", user: "unknown@email.com", severity: "medium" },
     { timestamp: "2024-01-15 09:15", event: "Password changed", user: "john@adjja.com", severity: "low" },
     { timestamp: "2024-01-15 08:45", event: "Admin access granted", user: "sarah@adjja.com", severity: "high" },
     { timestamp: "2024-01-15 07:30", event: "Multiple login attempts", user: "192.168.1.100", severity: "high" },
   ];
+
+  const handleSave = async () => {
+    await saveSecuritySettings(settings);
+  };
+
+  const handleReset = () => {
+    setSettings(defaultSecuritySettings);
+  };
+
+  const handleGenerateAPIKey = async () => {
+    await generateAPIKey();
+  };
 
   return (
     <div className="space-y-6">
@@ -41,18 +56,30 @@ export const SecuritySettings = () => {
               <h4 className="font-medium">Require 2FA for Admin Users</h4>
               <p className="text-sm text-bjj-gray">Force all admin users to enable 2FA</p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={settings.require2FAAdmin}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, require2FAAdmin: checked }))}
+            />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium">Require 2FA for Coaches</h4>
               <p className="text-sm text-bjj-gray">Force all coaches to enable 2FA</p>
             </div>
-            <Switch />
+            <Switch 
+              checked={settings.require2FACoaches}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, require2FACoaches: checked }))}
+            />
           </div>
           <div>
             <Label htmlFor="2fa-grace-period">2FA Grace Period (days)</Label>
-            <Input id="2fa-grace-period" type="number" defaultValue="7" className="max-w-sm" />
+            <Input 
+              id="2fa-grace-period" 
+              type="number" 
+              value={settings.twoFAGracePeriod}
+              onChange={(e) => setSettings(prev => ({ ...prev, twoFAGracePeriod: parseInt(e.target.value) }))}
+              className="max-w-sm" 
+            />
             <p className="text-xs text-bjj-gray mt-1">Time users have to enable 2FA before being locked out</p>
           </div>
         </CardContent>
@@ -70,11 +97,21 @@ export const SecuritySettings = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="max-login-attempts">Max Login Attempts</Label>
-              <Input id="max-login-attempts" type="number" defaultValue="5" />
+              <Input 
+                id="max-login-attempts" 
+                type="number" 
+                value={settings.maxLoginAttempts}
+                onChange={(e) => setSettings(prev => ({ ...prev, maxLoginAttempts: parseInt(e.target.value) }))}
+              />
             </div>
             <div>
               <Label htmlFor="lockout-duration">Lockout Duration (minutes)</Label>
-              <Input id="lockout-duration" type="number" defaultValue="30" />
+              <Input 
+                id="lockout-duration" 
+                type="number" 
+                value={settings.lockoutDuration}
+                onChange={(e) => setSettings(prev => ({ ...prev, lockoutDuration: parseInt(e.target.value) }))}
+              />
             </div>
           </div>
           <div className="flex items-center justify-between">
@@ -82,18 +119,30 @@ export const SecuritySettings = () => {
               <h4 className="font-medium">Enable Account Lockout</h4>
               <p className="text-sm text-bjj-gray">Lock accounts after failed login attempts</p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={settings.enableAccountLockout}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enableAccountLockout: checked }))}
+            />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium">Require CAPTCHA</h4>
               <p className="text-sm text-bjj-gray">Show CAPTCHA after failed attempts</p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={settings.requireCaptcha}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, requireCaptcha: checked }))}
+            />
           </div>
           <div>
             <Label htmlFor="session-timeout">Session Timeout (hours)</Label>
-            <Input id="session-timeout" type="number" defaultValue="8" className="max-w-sm" />
+            <Input 
+              id="session-timeout" 
+              type="number" 
+              value={settings.sessionTimeoutHours}
+              onChange={(e) => setSettings(prev => ({ ...prev, sessionTimeoutHours: parseInt(e.target.value) }))}
+              className="max-w-sm" 
+            />
           </div>
         </CardContent>
       </Card>
@@ -112,7 +161,10 @@ export const SecuritySettings = () => {
               <h4 className="font-medium">Enable IP Whitelist</h4>
               <p className="text-sm text-bjj-gray">Only allow access from specific IP addresses</p>
             </div>
-            <Switch />
+            <Switch 
+              checked={settings.enableIPWhitelist}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enableIPWhitelist: checked }))}
+            />
           </div>
           <div>
             <Label htmlFor="allowed-ips">Allowed IP Addresses</Label>
@@ -120,6 +172,8 @@ export const SecuritySettings = () => {
               id="allowed-ips" 
               placeholder="192.168.1.0/24, 10.0.0.1"
               className="font-mono text-sm"
+              value={settings.allowedIPs}
+              onChange={(e) => setSettings(prev => ({ ...prev, allowedIPs: e.target.value }))}
             />
             <p className="text-xs text-bjj-gray mt-1">Comma-separated IP addresses or CIDR blocks</p>
           </div>
@@ -129,6 +183,8 @@ export const SecuritySettings = () => {
               id="blocked-ips" 
               placeholder="192.168.100.50, 10.0.0.100"
               className="font-mono text-sm"
+              value={settings.blockedIPs}
+              onChange={(e) => setSettings(prev => ({ ...prev, blockedIPs: e.target.value }))}
             />
           </div>
           <div className="flex items-center justify-between">
@@ -136,7 +192,10 @@ export const SecuritySettings = () => {
               <h4 className="font-medium">Enable Geo-blocking</h4>
               <p className="text-sm text-bjj-gray">Block access from specific countries</p>
             </div>
-            <Switch />
+            <Switch 
+              checked={settings.enableGeoBlocking}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enableGeoBlocking: checked }))}
+            />
           </div>
         </CardContent>
       </Card>
@@ -153,11 +212,21 @@ export const SecuritySettings = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="api-rate-limit">Rate Limit (requests/minute)</Label>
-              <Input id="api-rate-limit" type="number" defaultValue="100" />
+              <Input 
+                id="api-rate-limit" 
+                type="number" 
+                value={settings.apiRateLimit}
+                onChange={(e) => setSettings(prev => ({ ...prev, apiRateLimit: parseInt(e.target.value) }))}
+              />
             </div>
             <div>
               <Label htmlFor="api-key-expiry">API Key Expiry (days)</Label>
-              <Input id="api-key-expiry" type="number" defaultValue="365" />
+              <Input 
+                id="api-key-expiry" 
+                type="number" 
+                value={settings.apiKeyExpiry}
+                onChange={(e) => setSettings(prev => ({ ...prev, apiKeyExpiry: parseInt(e.target.value) }))}
+              />
             </div>
           </div>
           <div className="flex items-center justify-between">
@@ -165,18 +234,24 @@ export const SecuritySettings = () => {
               <h4 className="font-medium">Require API Key Authentication</h4>
               <p className="text-sm text-bjj-gray">All API requests must include valid API key</p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={settings.requireAPIKey}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, requireAPIKey: checked }))}
+            />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium">Enable CORS Protection</h4>
               <p className="text-sm text-bjj-gray">Restrict cross-origin requests</p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={settings.enableCORSProtection}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enableCORSProtection: checked }))}
+            />
           </div>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleGenerateAPIKey} disabled={isLoading}>
             <Key className="h-4 w-4 mr-2" />
-            Generate New API Key
+            {isLoading ? "Generating..." : "Generate New API Key"}
           </Button>
         </CardContent>
       </Card>
@@ -195,18 +270,29 @@ export const SecuritySettings = () => {
               <h4 className="font-medium">Enable Security Logging</h4>
               <p className="text-sm text-bjj-gray">Log all security-related events</p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={settings.enableSecurityLogging}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enableSecurityLogging: checked }))}
+            />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium">Real-time Alerts</h4>
               <p className="text-sm text-bjj-gray">Send immediate alerts for security threats</p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={settings.realTimeAlerts}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, realTimeAlerts: checked }))}
+            />
           </div>
           <div>
             <Label htmlFor="alert-email">Security Alert Email</Label>
-            <Input id="alert-email" type="email" defaultValue="security@adjja.com" />
+            <Input 
+              id="alert-email" 
+              type="email" 
+              value={settings.securityAlertEmail}
+              onChange={(e) => setSettings(prev => ({ ...prev, securityAlertEmail: e.target.value }))}
+            />
           </div>
         </CardContent>
       </Card>
@@ -253,9 +339,15 @@ export const SecuritySettings = () => {
 
       {/* Save Settings */}
       <div className="flex justify-end space-x-4">
-        <Button variant="outline">Reset to Defaults</Button>
-        <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy">
-          Save Security Settings
+        <Button variant="outline" onClick={handleReset} disabled={isLoading}>
+          Reset to Defaults
+        </Button>
+        <Button 
+          className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy"
+          onClick={handleSave}
+          disabled={isLoading}
+        >
+          {isLoading ? "Saving..." : "Save Security Settings"}
         </Button>
       </div>
     </div>
