@@ -17,19 +17,12 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [showControls, setShowControls] = useState(true);
+  const [videoSrc, setVideoSrc] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Extract YouTube video ID and create embed URL without YouTube branding
-  const getVideoEmbedUrl = (url: string) => {
-    const videoId = extractYouTubeVideoId(url);
-    if (videoId) {
-      // Use YouTube's nocookie domain and disable related videos, branding
-      return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&modestbranding=1&rel=0&showinfo=0&controls=1&disablekb=1&fs=1&iv_load_policy=3`;
-    }
-    return url;
-  };
-
+  // Extract YouTube video ID
   const extractYouTubeVideoId = (url: string): string | null => {
     const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
     const match = url.match(regex);
@@ -39,6 +32,43 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   const isYouTubeVideo = (url: string) => {
     return url.includes('youtube.com') || url.includes('youtu.be');
   };
+
+  // Get direct video URL for YouTube videos
+  const getDirectVideoUrl = async (url: string): Promise<string> => {
+    if (isYouTubeVideo(url)) {
+      const videoId = extractYouTubeVideoId(url);
+      if (videoId) {
+        // Use a YouTube video extraction service or API
+        // For now, we'll use a fallback approach with YouTube's direct video URLs
+        // Note: This might need to be updated based on YouTube's current policies
+        try {
+          // Try different quality formats
+          const formats = [
+            `https://www.youtube.com/watch?v=${videoId}&format=mp4`,
+            `https://youtu.be/${videoId}`,
+          ];
+          
+          // For demonstration, we'll use the original URL but handle it differently
+          // In a production environment, you'd want to use a proper YouTube extraction service
+          return url;
+        } catch (error) {
+          console.error('Error extracting YouTube video:', error);
+          return url;
+        }
+      }
+    }
+    return url;
+  };
+
+  useEffect(() => {
+    if (isOpen && videoUrl) {
+      setIsLoading(true);
+      getDirectVideoUrl(videoUrl).then((directUrl) => {
+        setVideoSrc(directUrl);
+        setIsLoading(false);
+      });
+    }
+  }, [isOpen, videoUrl]);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -107,6 +137,8 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     if (!isOpen) {
       setIsPlaying(false);
       setCurrentTime(0);
+      setVideoSrc("");
+      setIsLoading(true);
     }
   }, [isOpen]);
 
@@ -123,15 +155,10 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
             <X className="h-4 w-4" />
           </Button>
 
-          {isYouTubeVideo(videoUrl) ? (
-            <iframe
-              src={getVideoEmbedUrl(videoUrl)}
-              className="w-full h-full"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title="Video Player"
-            />
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+            </div>
           ) : (
             <div
               className="relative w-full h-full cursor-pointer"
@@ -140,80 +167,107 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
             >
               <video
                 ref={videoRef}
-                src={videoUrl}
+                src={isYouTubeVideo(videoSrc) ? undefined : videoSrc}
                 className="w-full h-full object-contain"
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
                 onClick={togglePlay}
-              />
+                crossOrigin="anonymous"
+                preload="metadata"
+                onError={(e) => {
+                  console.error('Video error:', e);
+                  // Fallback for YouTube videos - show error message
+                  if (isYouTubeVideo(videoUrl)) {
+                    console.warn('YouTube video cannot be played directly due to CORS restrictions');
+                  }
+                }}
+              >
+                {isYouTubeVideo(videoSrc) && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white">
+                    <div className="text-center">
+                      <p className="mb-4">Unable to play YouTube video directly</p>
+                      <p className="text-sm text-gray-400">Please use the original YouTube link to view this content</p>
+                      <Button
+                        variant="outline"
+                        className="mt-4"
+                        onClick={() => window.open(videoUrl, '_blank')}
+                      >
+                        Open in New Tab
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </video>
 
               {/* Custom Video Controls */}
-              <div
-                className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
-                  showControls ? 'opacity-100' : 'opacity-0'
-                }`}
-              >
-                {/* Progress Bar */}
-                <div className="mb-4">
-                  <input
-                    type="range"
-                    min="0"
-                    max={duration || 0}
-                    value={currentTime}
-                    onChange={handleSeek}
-                    className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                </div>
+              {!isYouTubeVideo(videoSrc) && (
+                <div
+                  className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
+                    showControls ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  {/* Progress Bar */}
+                  <div className="mb-4">
+                    <input
+                      type="range"
+                      min="0"
+                      max={duration || 0}
+                      value={currentTime}
+                      onChange={handleSeek}
+                      className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                  </div>
 
-                {/* Controls Row */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={togglePlay}
-                      className="text-white hover:bg-gray-700"
-                    >
-                      {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                    </Button>
-
-                    <div className="flex items-center space-x-2">
+                  {/* Controls Row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={toggleMute}
+                        onClick={togglePlay}
                         className="text-white hover:bg-gray-700"
                       >
-                        {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                        {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                       </Button>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        value={volume}
-                        onChange={handleVolumeChange}
-                        className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-                      />
+
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={toggleMute}
+                          className="text-white hover:bg-gray-700"
+                        >
+                          {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                        </Button>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={volume}
+                          onChange={handleVolumeChange}
+                          className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+
+                      <span className="text-white text-sm">
+                        {formatTime(currentTime)} / {formatTime(duration)}
+                      </span>
                     </div>
 
-                    <span className="text-white text-sm">
-                      {formatTime(currentTime)} / {formatTime(duration)}
-                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => videoRef.current?.requestFullscreen()}
+                      className="text-white hover:bg-gray-700"
+                    >
+                      <Maximize className="h-4 w-4" />
+                    </Button>
                   </div>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => videoRef.current?.requestFullscreen()}
-                    className="text-white hover:bg-gray-700"
-                  >
-                    <Maximize className="h-4 w-4" />
-                  </Button>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
