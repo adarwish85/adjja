@@ -35,6 +35,8 @@ export const useStudents = () => {
 
       if (error) throw error;
 
+      console.log("Fetched students data:", data);
+
       // Type the data properly by ensuring fields are correctly typed
       const typedStudents: Student[] = (data || []).map(student => ({
         ...student,
@@ -57,20 +59,20 @@ export const useStudents = () => {
 
   const addStudent = async (studentData: Omit<Student, "id" | "created_at" | "updated_at">) => {
     try {
+      console.log("Adding student with data:", studentData);
+      
       const { data, error } = await supabase
         .from("students")
-        .insert([{
-          ...studentData,
-          // Convert camelCase to snake_case for database
-          membership_type: studentData.membership_type,
-          attendance_rate: studentData.attendance_rate,
-          joined_date: studentData.joined_date,
-          last_attended: studentData.last_attended
-        }])
+        .insert([studentData])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+
+      console.log("Successfully added student:", data);
 
       const typedStudent: Student = {
         ...data,
@@ -94,21 +96,19 @@ export const useStudents = () => {
 
   const updateStudent = async (id: string, updates: Partial<Omit<Student, "id" | "created_at" | "updated_at">>) => {
     try {
+      console.log("Updating student with id:", id, "data:", updates);
+      
       const { data, error } = await supabase
         .from("students")
-        .update({
-          ...updates,
-          // Convert camelCase to snake_case for database
-          membership_type: updates.membership_type,
-          attendance_rate: updates.attendance_rate,
-          joined_date: updates.joined_date,
-          last_attended: updates.last_attended
-        })
+        .update(updates)
         .eq("id", id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
 
       const typedStudent: Student = {
         ...data,

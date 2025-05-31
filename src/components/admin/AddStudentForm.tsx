@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Student } from "@/hooks/useStudents";
+import { useCoaches } from "@/hooks/useCoaches";
 
 interface AddStudentFormProps {
   student?: Student;
@@ -20,11 +21,11 @@ interface AddStudentFormProps {
 
 const branches = ["Downtown", "Westside", "North Valley", "South Side"];
 const belts = ["White Belt", "Blue Belt", "Purple Belt", "Brown Belt", "Black Belt"];
-const coaches = ["Marcus Silva", "Ana Rodriguez", "David Chen", "Sarah Johnson"];
 const membershipTypes = ["monthly", "yearly", "unlimited"];
 const statusOptions = ["active", "inactive", "on-hold"];
 
 export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStudentFormProps) => {
+  const { coaches, loading: coachesLoading } = useCoaches();
   const [formData, setFormData] = useState({
     name: student?.name || "",
     email: student?.email || "",
@@ -33,15 +34,20 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
     belt: student?.belt || "",
     stripes: student?.stripes || 0,
     coach: student?.coach || "",
-    status: student?.status || "active",
-    membership_type: student?.membership_type || "monthly",
+    status: student?.status || "active" as const,
+    membership_type: student?.membership_type || "monthly" as const,
     attendance_rate: student?.attendance_rate || 0,
     joined_date: student?.joined_date || new Date().toISOString().split('T')[0],
     last_attended: student?.last_attended || new Date().toISOString().split('T')[0],
   });
 
+  // Get active coaches for the dropdown
+  const activeCoaches = coaches.filter(coach => coach.status === "active");
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log("Form submission data:", formData);
     
     if (isEditing && student) {
       onSubmit({
@@ -49,12 +55,24 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
         ...formData,
       });
     } else {
-      onSubmit({
-        ...formData,
-        id: "",
-        created_at: "",
-        updated_at: "",
-      });
+      // Create the student object with proper typing
+      const newStudent: Omit<Student, "id" | "created_at" | "updated_at"> = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || null,
+        branch: formData.branch,
+        belt: formData.belt,
+        stripes: formData.stripes,
+        coach: formData.coach,
+        status: formData.status,
+        membership_type: formData.membership_type,
+        attendance_rate: formData.attendance_rate,
+        joined_date: formData.joined_date,
+        last_attended: formData.last_attended || null,
+      };
+      
+      console.log("Submitting new student:", newStudent);
+      onSubmit(newStudent);
     }
   };
 
@@ -170,14 +188,15 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
             value={formData.coach}
             onValueChange={(value) => handleChange("coach", value)}
             required
+            disabled={coachesLoading}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select coach" />
+              <SelectValue placeholder={coachesLoading ? "Loading coaches..." : "Select coach"} />
             </SelectTrigger>
             <SelectContent>
-              {coaches.map((coach) => (
-                <SelectItem key={coach} value={coach}>
-                  {coach}
+              {activeCoaches.map((coach) => (
+                <SelectItem key={coach.id} value={coach.name}>
+                  {coach.name}
                 </SelectItem>
               ))}
             </SelectContent>
