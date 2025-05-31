@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarContent, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Select,
   SelectContent,
@@ -174,13 +173,7 @@ export const UserPermissions = () => {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
-                      <AvatarContent>
-                        <div className="bg-bjj-gold/20 w-full h-full flex items-center justify-center">
-                          <span className="text-bjj-navy font-medium">
-                            {user.userName.split(' ').map(n => n[0]).join('')}
-                          </span>
-                        </div>
-                      </AvatarContent>
+                      <AvatarImage src="" alt={user.userName} />
                       <AvatarFallback>
                         {user.userName.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
