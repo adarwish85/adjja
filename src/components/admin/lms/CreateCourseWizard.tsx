@@ -106,16 +106,16 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
     price: course?.price || 0,
     tags: [],
     featuredImage: "",
-    introVideo: "",
+    introVideo: course?.intro_video || "",
     topics: [],
-    learningOutcomes: [],
+    learningOutcomes: course?.learning_outcomes || [],
     targetAudience: "",
-    prerequisites: "",
+    prerequisites: course?.requirements || "",
     hasCertificate: false,
     certificateImage: "",
   });
 
-  const { createCourse, updateCourse } = useCourses();
+  const { createCourse, updateCourse, saveCourseContent } = useCourses();
 
   const updateWizardData = (updates: Partial<CourseWizardData>) => {
     setWizardData(prev => ({ ...prev, ...updates }));
@@ -147,17 +147,33 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
       status: "Draft",
       price: wizardData.priceType === "paid" ? wizardData.price : 0,
       duration_hours: Math.round(totalDuration / 60),
+      intro_video: wizardData.introVideo,
+      learning_outcomes: wizardData.learningOutcomes,
+      requirements: wizardData.prerequisites,
     };
 
     try {
       if (isEditMode && course) {
         await updateCourse.mutateAsync({ id: course.id, ...courseData });
+        if (wizardData.topics.length > 0) {
+          await saveCourseContent.mutateAsync({ 
+            courseId: course.id, 
+            topics: wizardData.topics 
+          });
+        }
         toast({
           title: "Draft Saved",
           description: "Your course has been saved as draft.",
         });
       } else {
         const result = await createCourse.mutateAsync(courseData);
+        setCreatedCourseId(result.id);
+        if (wizardData.topics.length > 0) {
+          await saveCourseContent.mutateAsync({ 
+            courseId: result.id, 
+            topics: wizardData.topics 
+          });
+        }
         toast({
           title: "Draft Saved",
           description: "Your course has been saved as draft.",
@@ -187,6 +203,9 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
       status: wizardData.status,
       price: wizardData.priceType === "paid" ? wizardData.price : 0,
       duration_hours: Math.round(totalDuration / 60),
+      intro_video: wizardData.introVideo,
+      learning_outcomes: wizardData.learningOutcomes,
+      requirements: wizardData.prerequisites,
     };
 
     try {
@@ -197,6 +216,14 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
       } else {
         result = await createCourse.mutateAsync(courseData);
         setCreatedCourseId(result.id);
+      }
+      
+      // Save course content if we have topics
+      if (wizardData.topics.length > 0) {
+        await saveCourseContent.mutateAsync({ 
+          courseId: isEditMode ? course.id : result.id, 
+          topics: wizardData.topics 
+        });
       }
       
       setIsSubmitted(true);

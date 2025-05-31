@@ -47,18 +47,24 @@ const CourseLanding = () => {
     },
   });
 
-  const { data: videos } = useQuery({
-    queryKey: ["course-videos", courseId],
+  // Fetch course topics with lessons and quizzes
+  const { data: courseTopics = [] } = useQuery({
+    queryKey: ["course-topics", courseId],
     queryFn: async () => {
       if (!courseId) return [];
-      const { data, error } = await supabase
-        .from("course_videos")
-        .select("*")
+      
+      const { data: topics, error: topicsError } = await supabase
+        .from("course_topics")
+        .select(`
+          *,
+          course_lessons(*),
+          course_quizzes(*)
+        `)
         .eq("course_id", courseId)
         .order("order_index");
 
-      if (error) throw error;
-      return data;
+      if (topicsError) throw topicsError;
+      return topics;
     },
     enabled: !!courseId,
   });
@@ -100,25 +106,18 @@ const CourseLanding = () => {
     );
   }
 
-  const totalVideos = videos?.length || 0;
-  const totalDuration = videos?.reduce((sum, video) => sum + (video.duration_minutes || 0), 0) || 0;
+  // Calculate totals from course topics
+  const allLessons = courseTopics.flatMap(topic => topic.course_lessons || []);
+  const totalLessons = allLessons.length;
+  const totalDuration = allLessons.reduce((sum, lesson) => sum + (lesson.duration_minutes || 10), 0);
   const totalHours = Math.floor(totalDuration / 60);
   const totalMinutes = totalDuration % 60;
   const studentCount = enrollmentCount || course.total_students || 0;
 
-  // Use first video as fallback for featured image and intro video
-  const firstVideo = videos?.[0];
-  const featuredImage = course.thumbnail_url || (firstVideo?.video_url ? getYoutubeThumbnail(firstVideo.video_url) : null);
-  const introVideo = course.intro_video || firstVideo?.video_url;
-
-  // Group videos by sections (for now, we'll create basic sections based on video titles)
-  const sections = videos ? [
-    {
-      title: "Course Lessons",
-      videos: videos,
-      duration: totalDuration
-    }
-  ] : [];
+  // Use first lesson video as fallback for featured image and intro video
+  const firstLesson = allLessons.find(lesson => lesson.video_url);
+  const featuredImage = course.thumbnail_url || (firstLesson?.video_url ? getYoutubeThumbnail(firstLesson.video_url) : null);
+  const introVideo = course.intro_video || firstLesson?.video_url;
 
   const learningOutcomes = course.learning_outcomes || [
     "Master fundamental BJJ techniques and positions",
@@ -129,7 +128,7 @@ const CourseLanding = () => {
     "Improve physical conditioning and flexibility"
   ];
 
-  const requirements = course.requirements || [
+  const requirements = course.requirements ? [course.requirements] : [
     "No prior martial arts experience required",
     "A gi (Brazilian Jiu-Jitsu uniform) is recommended but not required for video lessons",
     "Willingness to learn and practice regularly",
@@ -262,7 +261,7 @@ const CourseLanding = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <Play className="h-4 w-4" />
-                          <span>{totalVideos} lectures</span>
+                          <span>{totalLessons} lectures</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Download className="h-4 w-4" />
@@ -310,47 +309,52 @@ const CourseLanding = () => {
               <CardContent className="p-6">
                 <h2 className="text-2xl font-bold text-bjj-navy mb-4">Course content</h2>
                 <div className="space-y-2 text-sm text-gray-600 mb-4">
-                  <span>{sections.length} sections • {totalVideos} lectures • {totalHours}h {totalMinutes}m total length</span>
+                  <span>{courseTopics.length} sections • {totalLessons} lectures • {totalHours}h {totalMinutes}m total length</span>
                 </div>
                 
-                {totalVideos > 0 ? (
+                {courseTopics.length > 0 ? (
                   <Accordion type="single" collapsible className="w-full">
-                    {sections.map((section, sectionIndex) => (
-                      <AccordionItem key={sectionIndex} value={`section-${sectionIndex}`}>
-                        <AccordionTrigger className="text-left">
-                          <div className="flex justify-between items-center w-full pr-4">
-                            <span className="font-medium">{section.title}</span>
-                            <span className="text-sm text-gray-600">
-                              {section.videos.length} lectures • {Math.floor(section.duration / 60)}h {section.duration % 60}m
-                            </span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-2 ml-4">
-                            {section.videos.map((video) => (
-                              <div key={video.id} className="flex items-center justify-between text-sm border-b pb-2">
-                                <div className="flex items-center gap-2 flex-1">
-                                  <Play className="h-3 w-3 text-gray-400" />
-                                  <span className="flex-1">{video.title}</span>
-                                  {video.is_preview && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleVideoPreview(video.video_url)}
-                                      className="text-bjj-gold hover:text-bjj-gold-dark h-6 px-2"
-                                    >
-                                      <Eye className="h-3 w-3 mr-1" />
-                                      Preview
-                                    </Button>
-                                  )}
+                    {courseTopics.map((topic, topicIndex) => {
+                      const topicLessons = topic.course_lessons || [];
+                      const topicDuration = topicLessons.reduce((sum, lesson) => sum + (lesson.duration_minutes || 10), 0);
+                      
+                      return (
+                        <AccordionItem key={topic.id} value={`topic-${topicIndex}`}>
+                          <AccordionTrigger className="text-left">
+                            <div className="flex justify-between items-center w-full pr-4">
+                              <span className="font-medium">{topic.title}</span>
+                              <span className="text-sm text-gray-600">
+                                {topicLessons.length} lectures • {Math.floor(topicDuration / 60)}h {topicDuration % 60}m
+                              </span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-2 ml-4">
+                              {topicLessons.map((lesson) => (
+                                <div key={lesson.id} className="flex items-center justify-between text-sm border-b pb-2">
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <Play className="h-3 w-3 text-gray-400" />
+                                    <span className="flex-1">{lesson.title}</span>
+                                    {lesson.is_preview && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleVideoPreview(lesson.video_url || "")}
+                                        className="text-bjj-gold hover:text-bjj-gold-dark h-6 px-2"
+                                      >
+                                        <Eye className="h-3 w-3 mr-1" />
+                                        Preview
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <span className="text-gray-500 ml-2">{lesson.duration_minutes || 10} min</span>
                                 </div>
-                                <span className="text-gray-500 ml-2">{video.duration_minutes || 0} min</span>
-                              </div>
-                            ))}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
+                              ))}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
                   </Accordion>
                 ) : (
                   <div className="border rounded-lg p-4 text-center text-gray-500">

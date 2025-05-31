@@ -132,6 +132,113 @@ export const useCourses = () => {
     },
   });
 
+  const saveCourseContent = useMutation({
+    mutationFn: async ({ courseId, topics }: { courseId: string; topics: any[] }) => {
+      console.log("Saving course content for course:", courseId, topics);
+      
+      // First, delete existing topics for this course
+      await supabase
+        .from("course_topics")
+        .delete()
+        .eq("course_id", courseId);
+
+      // Save each topic
+      for (let topicIndex = 0; topicIndex < topics.length; topicIndex++) {
+        const topic = topics[topicIndex];
+        
+        // Insert topic
+        const { data: topicData, error: topicError } = await supabase
+          .from("course_topics")
+          .insert({
+            course_id: courseId,
+            title: topic.title,
+            description: topic.description,
+            order_index: topicIndex,
+          })
+          .select()
+          .single();
+
+        if (topicError) throw topicError;
+
+        // Save topic items (lessons and quizzes)
+        for (let itemIndex = 0; itemIndex < topic.items.length; itemIndex++) {
+          const item = topic.items[itemIndex];
+          
+          if (item.type === "lesson") {
+            const { error: lessonError } = await supabase
+              .from("course_lessons")
+              .insert({
+                topic_id: topicData.id,
+                title: item.name,
+                content: item.content,
+                video_url: item.videoUrl,
+                featured_image: item.featuredImage,
+                attachments: item.attachments || [],
+                is_preview: item.isPreview,
+                order_index: itemIndex,
+              });
+
+            if (lessonError) throw lessonError;
+          } else if (item.type === "quiz") {
+            const { data: quizData, error: quizError } = await supabase
+              .from("course_quizzes")
+              .insert({
+                topic_id: topicData.id,
+                title: item.title,
+                description: item.description,
+                time_limit: item.timeLimit,
+                show_timer: item.showTimer,
+                feedback_mode: item.feedbackMode,
+                attempts_allowed: item.attemptsAllowed,
+                passing_grade: item.passingGrade,
+                order_index: itemIndex,
+              })
+              .select()
+              .single();
+
+            if (quizError) throw quizError;
+
+            // Save quiz questions
+            for (let questionIndex = 0; questionIndex < item.questions.length; questionIndex++) {
+              const question = item.questions[questionIndex];
+              
+              const { error: questionError } = await supabase
+                .from("quiz_questions")
+                .insert({
+                  quiz_id: quizData.id,
+                  question_type: question.type,
+                  question: question.question,
+                  options: question.options || [],
+                  correct_answer: Array.isArray(question.correctAnswer) 
+                    ? question.correctAnswer.join(",") 
+                    : question.correctAnswer,
+                  points: question.points,
+                  order_index: questionIndex,
+                });
+
+              if (questionError) throw questionError;
+            }
+          }
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["course-topics"] });
+      toast({
+        title: "Success",
+        description: "Course content saved successfully",
+      });
+    },
+    onError: (error) => {
+      console.error("Save course content error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save course content",
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     courses,
     isLoading,
@@ -139,5 +246,6 @@ export const useCourses = () => {
     createCourse,
     updateCourse,
     deleteCourse,
+    saveCourseContent,
   };
 };

@@ -290,6 +290,147 @@ export type Database = {
           },
         ]
       }
+      course_lessons: {
+        Row: {
+          attachments: string[] | null
+          content: string | null
+          created_at: string
+          featured_image: string | null
+          id: string
+          is_preview: boolean | null
+          order_index: number
+          title: string
+          topic_id: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          attachments?: string[] | null
+          content?: string | null
+          created_at?: string
+          featured_image?: string | null
+          id?: string
+          is_preview?: boolean | null
+          order_index?: number
+          title: string
+          topic_id: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          attachments?: string[] | null
+          content?: string | null
+          created_at?: string
+          featured_image?: string | null
+          id?: string
+          is_preview?: boolean | null
+          order_index?: number
+          title?: string
+          topic_id?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_lessons_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "course_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_quizzes: {
+        Row: {
+          attempts_allowed: number | null
+          created_at: string
+          description: string | null
+          feedback_mode: string | null
+          id: string
+          order_index: number
+          passing_grade: number | null
+          show_timer: boolean | null
+          time_limit: number | null
+          title: string
+          topic_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempts_allowed?: number | null
+          created_at?: string
+          description?: string | null
+          feedback_mode?: string | null
+          id?: string
+          order_index?: number
+          passing_grade?: number | null
+          show_timer?: boolean | null
+          time_limit?: number | null
+          title: string
+          topic_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempts_allowed?: number | null
+          created_at?: string
+          description?: string | null
+          feedback_mode?: string | null
+          id?: string
+          order_index?: number
+          passing_grade?: number | null
+          show_timer?: boolean | null
+          time_limit?: number | null
+          title?: string
+          topic_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_quizzes_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "course_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_topics: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          id: string
+          order_index: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_index?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_index?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_topics_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_videos: {
         Row: {
           course_id: string
@@ -297,6 +438,7 @@ export type Database = {
           description: string | null
           duration_minutes: number | null
           id: string
+          is_preview: boolean | null
           order_index: number
           status: string | null
           title: string
@@ -309,6 +451,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           id?: string
+          is_preview?: boolean | null
           order_index: number
           status?: string | null
           title: string
@@ -321,6 +464,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           id?: string
+          is_preview?: boolean | null
           order_index?: number
           status?: string | null
           title?: string
@@ -345,9 +489,12 @@ export type Database = {
           duration_hours: number | null
           id: string
           instructor: string
+          intro_video: string | null
+          learning_outcomes: string[] | null
           level: string
           price: number | null
           rating: number | null
+          requirements: string | null
           status: string | null
           thumbnail_url: string | null
           title: string
@@ -362,9 +509,12 @@ export type Database = {
           duration_hours?: number | null
           id?: string
           instructor: string
+          intro_video?: string | null
+          learning_outcomes?: string[] | null
           level?: string
           price?: number | null
           rating?: number | null
+          requirements?: string | null
           status?: string | null
           thumbnail_url?: string | null
           title: string
@@ -379,9 +529,12 @@ export type Database = {
           duration_hours?: number | null
           id?: string
           instructor?: string
+          intro_video?: string | null
+          learning_outcomes?: string[] | null
           level?: string
           price?: number | null
           rating?: number | null
+          requirements?: string | null
           status?: string | null
           thumbnail_url?: string | null
           title?: string
@@ -431,6 +584,50 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          correct_answer: string | null
+          created_at: string
+          id: string
+          options: string[] | null
+          order_index: number
+          points: number | null
+          question: string
+          question_type: string
+          quiz_id: string
+        }
+        Insert: {
+          correct_answer?: string | null
+          created_at?: string
+          id?: string
+          options?: string[] | null
+          order_index?: number
+          points?: number | null
+          question: string
+          question_type: string
+          quiz_id: string
+        }
+        Update: {
+          correct_answer?: string | null
+          created_at?: string
+          id?: string
+          options?: string[] | null
+          order_index?: number
+          points?: number | null
+          question?: string
+          question_type?: string
+          quiz_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "course_quizzes"
             referencedColumns: ["id"]
           },
         ]
