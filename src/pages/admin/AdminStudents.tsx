@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Button } from "@/components/ui/button";
@@ -33,7 +32,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Trash2, Mail, Phone, Calendar } from "lucide-react";
-import { AddStudentForm } from "@/components/admin/AddStudentForm";
+import { MultiStepStudentForm } from "@/components/admin/student/MultiStepStudentForm";
 import { useStudents, Student } from "@/hooks/useStudents";
 
 const AdminStudents = () => {
@@ -132,14 +131,14 @@ const AdminStudents = () => {
                 Add Student
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Student</DialogTitle>
                 <DialogDescription>
-                  Enter the student's information to add them to the system.
+                  Enter the student's information using the multi-step wizard.
                 </DialogDescription>
               </DialogHeader>
-              <AddStudentForm onSubmit={handleAddStudent} />
+              <MultiStepStudentForm onSubmit={handleAddStudent} />
             </DialogContent>
           </Dialog>
         </div>
@@ -329,15 +328,15 @@ const AdminStudents = () => {
 
         {/* Edit Student Dialog */}
         <Dialog open={!!editingStudent} onOpenChange={(open) => !open && setEditingStudent(null)}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Student</DialogTitle>
               <DialogDescription>
-                Update the student's information.
+                Update the student's information using the multi-step wizard.
               </DialogDescription>
             </DialogHeader>
             {editingStudent && (
-              <AddStudentForm 
+              <MultiStepStudentForm 
                 student={editingStudent} 
                 onSubmit={handleEditStudent}
                 isEditing={true}

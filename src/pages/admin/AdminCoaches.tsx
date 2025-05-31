@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Trash2, Mail, Phone, Loader2 } from "lucide-react";
-import { AddCoachForm } from "@/components/admin/AddCoachForm";
+import { MultiStepCoachForm } from "@/components/admin/coach/MultiStepCoachForm";
 import { useCoaches, type Coach } from "@/hooks/useCoaches";
 import {
   AlertDialog,
@@ -129,14 +128,14 @@ const AdminCoaches = () => {
                 Add Coach
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Coach</DialogTitle>
                 <DialogDescription>
-                  Enter the coach's information to add them to the system.
+                  Enter the coach's information using the multi-step wizard.
                 </DialogDescription>
               </DialogHeader>
-              <AddCoachForm onSubmit={handleAddCoach} />
+              <MultiStepCoachForm onSubmit={handleAddCoach} />
             </DialogContent>
           </Dialog>
         </div>
@@ -290,15 +289,15 @@ const AdminCoaches = () => {
 
         {/* Edit Coach Dialog */}
         <Dialog open={!!editingCoach} onOpenChange={(open) => !open && setEditingCoach(null)}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Coach</DialogTitle>
               <DialogDescription>
-                Update the coach's information.
+                Update the coach's information using the multi-step wizard.
               </DialogDescription>
             </DialogHeader>
             {editingCoach && (
-              <AddCoachForm 
+              <MultiStepCoachForm 
                 coach={editingCoach} 
                 onSubmit={handleEditCoach}
                 isEditing={true}
