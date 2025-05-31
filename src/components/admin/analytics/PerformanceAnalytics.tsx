@@ -23,18 +23,23 @@ import {
   Users, 
   Clock,
   Star,
-  Target,
-  TrendingUp,
   Download,
   Filter
 } from "lucide-react";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 export const PerformanceAnalytics = () => {
+  const { students, classes, isLoading } = useAnalytics();
+
+  if (isLoading) {
+    return <div className="p-6 text-center">Loading performance analytics...</div>;
+  }
+
   const performanceMetrics = [
-    { title: "Class Utilization", value: "87.3%", change: "+2.1%", icon: Activity, color: "text-blue-600", bgColor: "bg-blue-100" },
-    { title: "Instructor Rating", value: "4.8/5", change: "+0.2", icon: Star, color: "text-yellow-600", bgColor: "bg-yellow-100" },
-    { title: "Avg. Class Size", value: "18.5", change: "+1.2", icon: Users, color: "text-green-600", bgColor: "bg-green-100" },
-    { title: "On-time Rate", value: "94.2%", change: "+3.1%", icon: Clock, color: "text-purple-600", bgColor: "bg-purple-100" },
+    { title: "Class Utilization", value: `${classes?.utilization?.toFixed(1) || '0.0'}%`, change: "+2.1%", icon: Activity, color: "text-blue-600", bgColor: "bg-blue-100" },
+    { title: "Student Satisfaction", value: "4.8/5", change: "+0.2", icon: Star, color: "text-yellow-600", bgColor: "bg-yellow-100" },
+    { title: "Avg. Class Size", value: classes?.averageSize?.toFixed(1) || "0.0", change: "+1.2", icon: Users, color: "text-green-600", bgColor: "bg-green-100" },
+    { title: "Attendance Rate", value: `${Math.round(students?.averageAttendance || 0)}%`, change: "+3.1%", icon: Clock, color: "text-purple-600", bgColor: "bg-purple-100" },
   ];
 
   const classPerformance = [
@@ -56,18 +61,18 @@ export const PerformanceAnalytics = () => {
 
   const overallPerformance = [
     { metric: 'Student Satisfaction', value: 85, fullMark: 100 },
-    { metric: 'Class Attendance', value: 87, fullMark: 100 },
+    { metric: 'Class Attendance', value: Math.round(students?.averageAttendance || 0), fullMark: 100 },
     { metric: 'Retention Rate', value: 92, fullMark: 100 },
     { metric: 'Payment Success', value: 96, fullMark: 100 },
     { metric: 'Instructor Quality', value: 88, fullMark: 100 },
-    { metric: 'Facility Usage', value: 82, fullMark: 100 },
+    { metric: 'Facility Usage', value: Math.round(classes?.utilization || 0), fullMark: 100 },
   ];
 
   const weeklyTrends = [
     { week: 'Week 1', attendance: 85, satisfaction: 4.6 },
     { week: 'Week 2', attendance: 87, satisfaction: 4.7 },
     { week: 'Week 3', attendance: 89, satisfaction: 4.8 },
-    { week: 'Week 4', attendance: 91, satisfaction: 4.9 },
+    { week: 'Week 4', attendance: Math.round(students?.averageAttendance || 0), satisfaction: 4.9 },
   ];
 
   return (
@@ -156,9 +161,7 @@ export const PerformanceAnalytics = () => {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
         {/* Weekly Trends */}
         <Card>
           <CardHeader>

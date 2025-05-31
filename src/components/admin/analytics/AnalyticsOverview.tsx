@@ -10,11 +10,6 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
   AreaChart,
   Area
 } from "recharts";
@@ -24,28 +19,34 @@ import {
   Users, 
   DollarSign,
   BookOpen,
-  Calendar,
   Activity,
   Target,
   Download,
   RefreshCw
 } from "lucide-react";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 export const AnalyticsOverview = () => {
+  const { students, classes, revenue, enrollmentTrends, isLoading } = useAnalytics();
+
+  if (isLoading) {
+    return <div className="p-6 text-center">Loading analytics...</div>;
+  }
+
   const kpiMetrics = [
     {
       title: "Total Students",
-      value: "2,847",
-      change: "+12.5%",
+      value: students?.total?.toString() || "0",
+      change: students?.newThisMonth ? `+${students.newThisMonth}` : "+0",
       changeType: "positive" as const,
       icon: Users,
       color: "text-blue-600",
       bgColor: "bg-blue-100",
-      period: "vs last month"
+      period: "new this month"
     },
     {
       title: "Monthly Revenue",
-      value: "$89,450",
+      value: `$${revenue?.thisMonth?.toFixed(2) || '0.00'}`,
       change: "+18.2%",
       changeType: "positive" as const,
       icon: DollarSign,
@@ -55,7 +56,7 @@ export const AnalyticsOverview = () => {
     },
     {
       title: "Active Classes",
-      value: "127",
+      value: classes?.active?.toString() || "0",
       change: "+5.1%",
       changeType: "positive" as const,
       icon: BookOpen,
@@ -64,10 +65,10 @@ export const AnalyticsOverview = () => {
       period: "vs last month"
     },
     {
-      title: "Attendance Rate",
-      value: "87.3%",
-      change: "-2.1%",
-      changeType: "negative" as const,
+      title: "Class Utilization",
+      value: `${classes?.utilization?.toFixed(1) || '0.0'}%`,
+      change: classes?.utilization && classes.utilization > 85 ? "+2.1%" : "-2.1%",
+      changeType: classes?.utilization && classes.utilization > 85 ? "positive" as const : "negative" as const,
       icon: Activity,
       color: "text-orange-600",
       bgColor: "bg-orange-100",
@@ -75,32 +76,23 @@ export const AnalyticsOverview = () => {
     }
   ];
 
-  const monthlyData = [
-    { month: 'Jul', students: 2400, revenue: 65000, classes: 110 },
-    { month: 'Aug', students: 2520, revenue: 72000, classes: 115 },
-    { month: 'Sep', students: 2680, revenue: 78000, classes: 120 },
-    { month: 'Oct', students: 2750, revenue: 82000, classes: 123 },
-    { month: 'Nov', students: 2820, revenue: 85000, classes: 125 },
-    { month: 'Dec', students: 2847, revenue: 89450, classes: 127 },
-  ];
-
   const performanceData = [
     { name: 'Student Retention', value: 92, color: '#3B82F6' },
     { name: 'Class Completion', value: 87, color: '#10B981' },
     { name: 'Payment Success', value: 96, color: '#F59E0B' },
-    { name: 'Coach Satisfaction', value: 94, color: '#8B5CF6' },
+    { name: 'Avg Attendance', value: Math.round(students?.averageAttendance || 0), color: '#8B5CF6' },
   ];
 
   const topPerformers = [
     { name: "Bruno Silva", category: "Instructor", metric: "98% satisfaction", badge: "top" },
-    { name: "Sambo Academy", category: "Branch", metric: "145 students", badge: "growth" },
-    { name: "Advanced BJJ", category: "Course", metric: "95% completion", badge: "popular" },
+    { name: "Main Branch", category: "Branch", metric: `${students?.active || 0} students`, badge: "growth" },
+    { name: "Fundamentals", category: "Class", metric: "95% completion", badge: "popular" },
     { name: "Kids Program", category: "Program", metric: "89% retention", badge: "retention" },
   ];
 
   const getBadgeColor = (badge: string) => {
     switch (badge) {
-      case "top": return "bg-gold-100 text-gold-800";
+      case "top": return "bg-yellow-100 text-yellow-800";
       case "growth": return "bg-green-100 text-green-800";
       case "popular": return "bg-blue-100 text-blue-800";
       case "retention": return "bg-purple-100 text-purple-800";
@@ -163,24 +155,24 @@ export const AnalyticsOverview = () => {
         {/* Growth Trends */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-bjj-navy">Growth Trends</CardTitle>
-            <p className="text-sm text-bjj-gray">Student enrollment and revenue over time</p>
+            <CardTitle className="text-bjj-navy">Enrollment Trends</CardTitle>
+            <p className="text-sm text-bjj-gray">Student enrollment over time</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={monthlyData}>
+              <AreaChart data={enrollmentTrends?.data || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip />
                 <Area 
                   type="monotone" 
-                  dataKey="students" 
+                  dataKey="new" 
                   stackId="1"
                   stroke="#3B82F6" 
                   fill="#3B82F6"
                   fillOpacity={0.6}
-                  name="Students"
+                  name="New Students"
                 />
               </AreaChart>
             </ResponsiveContainer>

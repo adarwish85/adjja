@@ -24,28 +24,19 @@ import {
   Download,
   Filter
 } from "lucide-react";
+import { usePaymentAnalytics } from "@/hooks/usePaymentAnalytics";
 
 export const PaymentAnalytics = () => {
-  const revenueData = [
-    { month: 'Jan', revenue: 12450, transactions: 234 },
-    { month: 'Feb', revenue: 15670, transactions: 289 },
-    { month: 'Mar', revenue: 18920, transactions: 345 },
-    { month: 'Apr', revenue: 22150, transactions: 412 },
-    { month: 'May', revenue: 25890, transactions: 478 },
-    { month: 'Jun', revenue: 28450, transactions: 523 },
-  ];
+  const { data: paymentData, isLoading } = usePaymentAnalytics();
 
-  const paymentMethodData = [
-    { name: 'Credit Card', value: 65, color: '#3B82F6' },
-    { name: 'PayPal', value: 20, color: '#10B981' },
-    { name: 'PIX', value: 10, color: '#F59E0B' },
-    { name: 'Bank Transfer', value: 5, color: '#6B7280' },
-  ];
+  if (isLoading) {
+    return <div className="p-6 text-center">Loading payment analytics...</div>;
+  }
 
   const metrics = [
     {
       title: "Total Revenue",
-      value: "$123,450",
+      value: `$${paymentData?.totalRevenue?.toFixed(2) || '0.00'}`,
       change: "+15.3%",
       period: "vs last month",
       icon: DollarSign,
@@ -54,7 +45,7 @@ export const PaymentAnalytics = () => {
     },
     {
       title: "Average Order Value",
-      value: "$42.80",
+      value: `$${paymentData?.averageOrderValue?.toFixed(2) || '0.00'}`,
       change: "+8.2%",
       period: "vs last month",
       icon: TrendingUp,
@@ -63,7 +54,7 @@ export const PaymentAnalytics = () => {
     },
     {
       title: "Conversion Rate",
-      value: "3.2%",
+      value: `${paymentData?.conversionRate?.toFixed(1) || '0.0'}%`,
       change: "+0.5%",
       period: "vs last month",
       icon: Users,
@@ -72,7 +63,7 @@ export const PaymentAnalytics = () => {
     },
     {
       title: "Monthly Recurring Revenue",
-      value: "$89,200",
+      value: `$${paymentData?.monthlyRevenue?.toFixed(2) || '0.00'}`,
       change: "+12.8%",
       period: "vs last month",
       icon: Calendar,
@@ -133,7 +124,7 @@ export const PaymentAnalytics = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={revenueData}>
+              <LineChart data={paymentData?.revenueByMonth || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -160,14 +151,14 @@ export const PaymentAnalytics = () => {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={paymentMethodData}
+                  data={paymentData?.paymentMethods || []}
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
                   dataKey="value"
                   label={({ name, value }) => `${name}: ${value}%`}
                 >
-                  {paymentMethodData.map((entry, index) => (
+                  {(paymentData?.paymentMethods || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -186,7 +177,7 @@ export const PaymentAnalytics = () => {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={revenueData}>
+            <BarChart data={paymentData?.revenueByMonth || []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
