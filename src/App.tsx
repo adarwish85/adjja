@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +16,7 @@ import AdminLMS from "./pages/admin/AdminLMS";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminSettings from "./pages/admin/AdminSettings";
+import CourseLanding from "./pages/CourseLanding";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +40,7 @@ const App = () => (
           <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/coach/dashboard" element={<CoachDashboard />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
+          <Route path="/course/:courseId" element={<CourseLanding />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

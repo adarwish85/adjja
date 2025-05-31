@@ -17,20 +17,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Eye, ExternalLink, Copy } from "lucide-react";
 import { useCourses } from "@/hooks/useCourses";
-import { AddCourseForm } from "./AddCourseForm";
 import { CreateCourseWizard } from "./CreateCourseWizard";
+import { useToast } from "@/hooks/use-toast";
 
 export const CourseManagement = () => {
   const { courses, isLoading, deleteCourse } = useCourses();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const { toast } = useToast();
 
   const filteredCourses = courses.filter(course =>
     course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -46,7 +45,27 @@ export const CourseManagement = () => {
 
   const handleEdit = (course: any) => {
     setSelectedCourse(course);
-    setIsEditDialogOpen(true);
+    setIsEditMode(true);
+    setIsWizardOpen(true);
+  };
+
+  const handleViewCourse = (courseId: string) => {
+    const courseUrl = `${window.location.origin}/course/${courseId}`;
+    window.open(courseUrl, '_blank');
+  };
+
+  const handleCourseNameClick = (courseId: string) => {
+    const courseUrl = `${window.location.origin}/course/${courseId}`;
+    window.open(courseUrl, '_blank');
+  };
+
+  const copyToClipboard = (courseId: string) => {
+    const courseUrl = `${window.location.origin}/course/${courseId}`;
+    navigator.clipboard.writeText(courseUrl);
+    toast({
+      title: "Link Copied!",
+      description: "Course link has been copied to clipboard.",
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -64,30 +83,17 @@ export const CourseManagement = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-bjj-navy">Course Management</CardTitle>
-            <div className="flex space-x-2">
-              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="border-bjj-gold text-bjj-gold hover:bg-bjj-gold hover:text-white">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Quick Add
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Add New Course</DialogTitle>
-                  </DialogHeader>
-                  <AddCourseForm onClose={() => setIsAddDialogOpen(false)} />
-                </DialogContent>
-              </Dialog>
-              
-              <Button 
-                onClick={() => setIsWizardOpen(true)}
-                className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create Course Wizard
-              </Button>
-            </div>
+            <Button 
+              onClick={() => {
+                setSelectedCourse(null);
+                setIsEditMode(false);
+                setIsWizardOpen(true);
+              }}
+              className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create New Course
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -134,9 +140,27 @@ export const CourseManagement = () => {
                       <TableRow key={course.id}>
                         <TableCell>
                           <div>
-                            <div className="font-semibold text-bjj-navy">{course.title}</div>
+                            <div 
+                              className="font-semibold text-bjj-navy cursor-pointer hover:text-bjj-gold transition-colors"
+                              onClick={() => handleCourseNameClick(course.id)}
+                            >
+                              {course.title}
+                            </div>
                             <div className="text-sm text-bjj-gray truncate max-w-xs">
                               {course.description}
+                            </div>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span className="text-xs text-gray-500">
+                                {window.location.origin}/course/{course.id}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(course.id)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
                             </div>
                           </div>
                         </TableCell>
@@ -163,7 +187,16 @@ export const CourseManagement = () => {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => handleViewCourse(course.id)}
+                              title="View Course"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleEdit(course)}
+                              title="Edit Course"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -172,6 +205,7 @@ export const CourseManagement = () => {
                               size="sm"
                               onClick={() => handleDelete(course.id)}
                               className="text-red-600 hover:text-red-800"
+                              title="Delete Course"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -187,27 +221,17 @@ export const CourseManagement = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit Course</DialogTitle>
-          </DialogHeader>
-          {selectedCourse && (
-            <AddCourseForm
-              course={selectedCourse}
-              isEditing
-              onClose={() => {
-                setIsEditDialogOpen(false);
-                setSelectedCourse(null);
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
         <DialogContent className="max-w-full h-[90vh] overflow-auto">
-          <CreateCourseWizard onClose={() => setIsWizardOpen(false)} />
+          <CreateCourseWizard 
+            onClose={() => {
+              setIsWizardOpen(false);
+              setSelectedCourse(null);
+              setIsEditMode(false);
+            }}
+            course={selectedCourse}
+            isEditMode={isEditMode}
+          />
         </DialogContent>
       </Dialog>
     </div>

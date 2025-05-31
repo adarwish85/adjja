@@ -1,8 +1,9 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, Check, ExternalLink } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ExternalLink, Save } from "lucide-react";
 import { CourseDetailsStep } from "./wizard/CourseDetailsStep";
 import { CourseContentStep } from "./wizard/CourseContentStep";
 import { AdditionalInfoStep } from "./wizard/AdditionalInfoStep";
@@ -77,6 +78,8 @@ export interface Question {
 
 interface CreateCourseWizardProps {
   onClose: () => void;
+  course?: any;
+  isEditMode?: boolean;
 }
 
 const steps = [
@@ -86,21 +89,21 @@ const steps = [
   { id: 4, title: "Review", description: "Review and publish" },
 ];
 
-export const CreateCourseWizard = ({ onClose }: CreateCourseWizardProps) => {
+export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: CreateCourseWizardProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [createdCourseId, setCreatedCourseId] = useState<string | null>(null);
   const { toast } = useToast();
   
   const [wizardData, setWizardData] = useState<CourseWizardData>({
-    title: "",
-    description: "",
-    instructor: "",
-    category: "",
-    level: "Beginner",
-    status: "Draft",
-    priceType: "free",
-    price: 0,
+    title: course?.title || "",
+    description: course?.description || "",
+    instructor: course?.instructor || "",
+    category: course?.category || "",
+    level: course?.level || "Beginner",
+    status: course?.status || "Draft",
+    priceType: course?.price > 0 ? "paid" : "free",
+    price: course?.price || 0,
     tags: [],
     featuredImage: "",
     introVideo: "",
@@ -112,7 +115,7 @@ export const CreateCourseWizard = ({ onClose }: CreateCourseWizardProps) => {
     certificateImage: "",
   });
 
-  const { createCourse } = useCourses();
+  const { createCourse, updateCourse } = useCourses();
 
   const updateWizardData = (updates: Partial<CourseWizardData>) => {
     setWizardData(prev => ({ ...prev, ...updates }));
@@ -130,10 +133,49 @@ export const CreateCourseWizard = ({ onClose }: CreateCourseWizardProps) => {
     }
   };
 
-  const handleSubmit = async () => {
-    // Calculate total duration from all video lessons
+  const handleSaveAsDraft = async () => {
     const totalDuration = wizardData.topics.reduce((total, topic) => {
-      return total + topic.items.filter(item => item.type === "lesson").length * 30; // Assuming 30 min per lesson
+      return total + topic.items.filter(item => item.type === "lesson").length * 30;
+    }, 0);
+
+    const courseData = {
+      title: wizardData.title || "Untitled Course",
+      description: wizardData.description,
+      instructor: wizardData.instructor,
+      category: wizardData.category,
+      level: wizardData.level,
+      status: "Draft",
+      price: wizardData.priceType === "paid" ? wizardData.price : 0,
+      duration_hours: Math.round(totalDuration / 60),
+    };
+
+    try {
+      if (isEditMode && course) {
+        await updateCourse.mutateAsync({ id: course.id, ...courseData });
+        toast({
+          title: "Draft Saved",
+          description: "Your course has been saved as draft.",
+        });
+      } else {
+        const result = await createCourse.mutateAsync(courseData);
+        toast({
+          title: "Draft Saved",
+          description: "Your course has been saved as draft.",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving draft:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save draft. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSubmit = async () => {
+    const totalDuration = wizardData.topics.reduce((total, topic) => {
+      return total + topic.items.filter(item => item.type === "lesson").length * 30;
     }, 0);
 
     const courseData = {
@@ -148,19 +190,26 @@ export const CreateCourseWizard = ({ onClose }: CreateCourseWizardProps) => {
     };
 
     try {
-      const result = await createCourse.mutateAsync(courseData);
-      setCreatedCourseId(result.id);
+      let result;
+      if (isEditMode && course) {
+        result = await updateCourse.mutateAsync({ id: course.id, ...courseData });
+        setCreatedCourseId(course.id);
+      } else {
+        result = await createCourse.mutateAsync(courseData);
+        setCreatedCourseId(result.id);
+      }
+      
       setIsSubmitted(true);
       
       toast({
-        title: "Course Created Successfully!",
+        title: isEditMode ? "Course Updated Successfully!" : "Course Created Successfully!",
         description: "Your course has been created and is ready to be shared.",
       });
     } catch (error) {
-      console.error("Error creating course:", error);
+      console.error("Error creating/updating course:", error);
       toast({
         title: "Error",
-        description: "Failed to create course. Please try again.",
+        description: isEditMode ? "Failed to update course. Please try again." : "Failed to create course. Please try again.",
         variant: "destructive",
       });
     }
@@ -190,9 +239,11 @@ export const CreateCourseWizard = ({ onClose }: CreateCourseWizardProps) => {
               </div>
               
               <div className="space-y-2">
-                <h2 className="text-2xl font-bold text-bjj-navy">Course Created Successfully!</h2>
+                <h2 className="text-2xl font-bold text-bjj-navy">
+                  {isEditMode ? "Course Updated Successfully!" : "Course Created Successfully!"}
+                </h2>
                 <p className="text-gray-600">
-                  Your course "{wizardData.title}" has been created and is now available.
+                  Your course "{wizardData.title}" has been {isEditMode ? "updated" : "created"} and is now available.
                 </p>
               </div>
 
@@ -224,35 +275,37 @@ export const CreateCourseWizard = ({ onClose }: CreateCourseWizardProps) => {
               </Card>
 
               <div className="flex space-x-3 justify-center">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsSubmitted(false);
-                    setCreatedCourseId(null);
-                    setCurrentStep(1);
-                    setWizardData({
-                      title: "",
-                      description: "",
-                      instructor: "",
-                      category: "",
-                      level: "Beginner",
-                      status: "Draft",
-                      priceType: "free",
-                      price: 0,
-                      tags: [],
-                      featuredImage: "",
-                      introVideo: "",
-                      topics: [],
-                      learningOutcomes: [],
-                      targetAudience: "",
-                      prerequisites: "",
-                      hasCertificate: false,
-                      certificateImage: "",
-                    });
-                  }}
-                >
-                  Create Another Course
-                </Button>
+                {!isEditMode && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsSubmitted(false);
+                      setCreatedCourseId(null);
+                      setCurrentStep(1);
+                      setWizardData({
+                        title: "",
+                        description: "",
+                        instructor: "",
+                        category: "",
+                        level: "Beginner",
+                        status: "Draft",
+                        priceType: "free",
+                        price: 0,
+                        tags: [],
+                        featuredImage: "",
+                        introVideo: "",
+                        topics: [],
+                        learningOutcomes: [],
+                        targetAudience: "",
+                        prerequisites: "",
+                        hasCertificate: false,
+                        certificateImage: "",
+                      });
+                    }}
+                  >
+                    Create Another Course
+                  </Button>
+                )}
                 <Button
                   onClick={onClose}
                   className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
@@ -306,7 +359,9 @@ export const CreateCourseWizard = ({ onClose }: CreateCourseWizardProps) => {
     <div className="max-w-6xl mx-auto p-6">
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-bjj-navy">Create New Course</CardTitle>
+          <CardTitle className="text-bjj-navy">
+            {isEditMode ? "Edit Course" : "Create New Course"}
+          </CardTitle>
           <div className="space-y-4">
             <Progress value={progress} className="w-full" />
             <div className="flex justify-between">
@@ -363,14 +418,30 @@ export const CreateCourseWizard = ({ onClose }: CreateCourseWizardProps) => {
           {currentStep === 1 ? "Cancel" : "Previous"}
         </Button>
 
-        <Button
-          onClick={currentStep === steps.length ? handleSubmit : handleNext}
-          className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
-          disabled={createCourse.isPending}
-        >
-          {createCourse.isPending ? "Creating..." : currentStep === steps.length ? "Create Course" : "Next"}
-          {currentStep < steps.length && <ArrowRight className="h-4 w-4 ml-2" />}
-        </Button>
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            onClick={handleSaveAsDraft}
+            disabled={createCourse.isPending || updateCourse.isPending}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Save as Draft
+          </Button>
+          
+          <Button
+            onClick={currentStep === steps.length ? handleSubmit : handleNext}
+            className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+            disabled={createCourse.isPending || updateCourse.isPending}
+          >
+            {createCourse.isPending || updateCourse.isPending 
+              ? (isEditMode ? "Updating..." : "Creating...") 
+              : currentStep === steps.length 
+                ? (isEditMode ? "Update Course" : "Create Course") 
+                : "Next"
+            }
+            {currentStep < steps.length && <ArrowRight className="h-4 w-4 ml-2" />}
+          </Button>
+        </div>
       </div>
     </div>
   );
