@@ -29,8 +29,7 @@ import {
   Plus, 
   Search, 
   Edit2, 
-  Trash2,
-  Clock 
+  Trash2 
 } from "lucide-react";
 import { useState } from "react";
 
@@ -40,14 +39,9 @@ const mockBranches = [
     name: "Downtown Academy",
     address: "123 Main St, Downtown",
     city: "Los Angeles",
-    state: "CA",
-    zipCode: "90210",
     phone: "(555) 123-4567",
-    email: "downtown@adjja.com",
-    manager: "John Smith",
     totalStudents: 150,
     activeClasses: 12,
-    openingHours: "6:00 AM - 10:00 PM",
     status: "Active"
   },
   {
@@ -55,14 +49,9 @@ const mockBranches = [
     name: "Westside Branch",
     address: "456 Ocean Ave, Westside",
     city: "Los Angeles",
-    state: "CA",
-    zipCode: "90405",
     phone: "(555) 987-6543",
-    email: "westside@adjja.com",
-    manager: "Sarah Johnson",
     totalStudents: 85,
     activeClasses: 8,
-    openingHours: "7:00 AM - 9:00 PM",
     status: "Active"
   },
   {
@@ -70,14 +59,9 @@ const mockBranches = [
     name: "Valley Training Center",
     address: "789 Valley Blvd, Valley",
     city: "Los Angeles", 
-    state: "CA",
-    zipCode: "91401",
     phone: "(555) 456-7890",
-    email: "valley@adjja.com",
-    manager: "Mike Rodriguez",
     totalStudents: 120,
     activeClasses: 10,
-    openingHours: "6:30 AM - 9:30 PM",
     status: "Active"
   },
   {
@@ -85,14 +69,9 @@ const mockBranches = [
     name: "Eastside Dojo",
     address: "321 East St, Eastside",
     city: "Los Angeles",
-    state: "CA", 
-    zipCode: "90033",
     phone: "(555) 234-5678",
-    email: "eastside@adjja.com",
-    manager: "Lisa Chen",
     totalStudents: 95,
     activeClasses: 7,
-    openingHours: "7:00 AM - 10:00 PM",
     status: "Maintenance"
   }
 ];
@@ -103,7 +82,6 @@ const AdminBranches = () => {
 
   const filteredBranches = mockBranches.filter(branch =>
     branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    branch.manager.toLowerCase().includes(searchTerm.toLowerCase()) ||
     branch.city.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -183,7 +161,7 @@ const AdminBranches = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-bjj-gray">Active Branches</CardTitle>
-              <Clock className="h-4 w-4 text-bjj-gold" />
+              <Building className="h-4 w-4 text-bjj-gold" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-bjj-navy">{activeBranches}</div>
@@ -216,11 +194,9 @@ const AdminBranches = () => {
                 <TableRow>
                   <TableHead>Branch Name</TableHead>
                   <TableHead>Location</TableHead>
-                  <TableHead>Manager</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Students</TableHead>
                   <TableHead>Classes</TableHead>
-                  <TableHead>Hours</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -234,18 +210,16 @@ const AdminBranches = () => {
                         <MapPin className="h-4 w-4 mr-1 text-bjj-gray" />
                         <div>
                           <div className="text-sm">{branch.address}</div>
-                          <div className="text-xs text-bjj-gray">{branch.city}, {branch.state} {branch.zipCode}</div>
+                          <div className="text-xs text-bjj-gray">{branch.city}</div>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{branch.manager}</TableCell>
                     <TableCell>
                       <div className="text-sm">
                         <div className="flex items-center">
                           <Phone className="h-3 w-3 mr-1 text-bjj-gray" />
                           {branch.phone}
                         </div>
-                        <div className="text-xs text-bjj-gray">{branch.email}</div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -258,12 +232,6 @@ const AdminBranches = () => {
                       <div className="flex items-center">
                         <Building className="h-4 w-4 mr-1 text-bjj-gray" />
                         {branch.activeClasses}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1 text-bjj-gray" />
-                        <div className="text-xs">{branch.openingHours}</div>
                       </div>
                     </TableCell>
                     <TableCell>
