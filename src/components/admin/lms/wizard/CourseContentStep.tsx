@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -343,28 +342,20 @@ export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) =>
   );
 };
 
-// Enhanced Lesson Editor Component with YouTube integration
+// Enhanced Lesson Editor Component with fixed YouTube integration
 const LessonEditor = ({ lesson, onUpdate, onDelete }: {
   lesson: Lesson;
   onUpdate: (updates: Partial<Lesson>) => void;
   onDelete: () => void;
 }) => {
   const [isLoadingVideoInfo, setIsLoadingVideoInfo] = useState(false);
-  
-  // Initialize local state with existing video URL
-  const [localVideoUrl, setLocalVideoUrl] = useState(lesson.videoUrl || "");
-
-  // Update local state when lesson changes (for edit mode)
-  useEffect(() => {
-    setLocalVideoUrl(lesson.videoUrl || "");
-  }, [lesson.videoUrl]);
 
   const handleVideoUrlChange = async (url: string) => {
-    setLocalVideoUrl(url);
+    // Immediately update the lesson with the new URL
     onUpdate({ videoUrl: url });
     
-    // Only fetch video info for new URLs, not existing ones
-    if (url && url !== lesson.videoUrl && url.includes('youtube')) {
+    // Only fetch video info for new URLs with YouTube content
+    if (url && url.includes('youtube')) {
       const videoId = extractYouTubeVideoId(url);
       if (videoId) {
         setIsLoadingVideoInfo(true);
@@ -436,15 +427,15 @@ const LessonEditor = ({ lesson, onUpdate, onDelete }: {
       <div className="space-y-2">
         <Label>Video URL (YouTube)</Label>
         <Input
-          value={localVideoUrl}
+          value={lesson.videoUrl || ""}
           onChange={(e) => handleVideoUrlChange(e.target.value)}
           placeholder="https://www.youtube.com/watch?v=..."
         />
       </div>
 
       {/* YouTube Video Preview */}
-      {localVideoUrl && (
-        <YouTubePreview url={localVideoUrl} />
+      {lesson.videoUrl && (
+        <YouTubePreview url={lesson.videoUrl} />
       )}
 
       <div className="space-y-2">
