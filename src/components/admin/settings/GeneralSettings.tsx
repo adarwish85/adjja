@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building, Globe, Clock, Palette } from "lucide-react";
 import { useSettings, GeneralSettings as GeneralSettingsType } from "@/hooks/useSettings";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export const GeneralSettings = () => {
   const { 
@@ -19,6 +20,7 @@ export const GeneralSettings = () => {
     worldCurrencies 
   } = useSettings();
   
+  const { theme, colorScheme, setTheme, setColorScheme } = useTheme();
   const [settings, setSettings] = useState<GeneralSettingsType>(defaultGeneralSettings);
 
   // Load saved settings on component mount
@@ -46,6 +48,16 @@ export const GeneralSettings = () => {
         }
       }
     }));
+  };
+
+  const handleThemeChange = (newTheme: string) => {
+    setSettings(prev => ({ ...prev, theme: newTheme }));
+    setTheme(newTheme as 'light' | 'dark' | 'auto');
+  };
+
+  const handleColorSchemeChange = (newColorScheme: string) => {
+    setSettings(prev => ({ ...prev, colorScheme: newColorScheme }));
+    setColorScheme(newColorScheme as 'bjj-gold' | 'blue' | 'green' | 'purple');
   };
 
   return (
@@ -228,7 +240,7 @@ export const GeneralSettings = () => {
               <Label htmlFor="theme">Theme</Label>
               <Select 
                 value={settings.theme} 
-                onValueChange={(value) => setSettings(prev => ({ ...prev, theme: value }))}
+                onValueChange={handleThemeChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select theme" />
@@ -244,7 +256,7 @@ export const GeneralSettings = () => {
               <Label htmlFor="color-scheme">Color Scheme</Label>
               <Select 
                 value={settings.colorScheme} 
-                onValueChange={(value) => setSettings(prev => ({ ...prev, colorScheme: value }))}
+                onValueChange={handleColorSchemeChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select color scheme" />
@@ -256,6 +268,17 @@ export const GeneralSettings = () => {
                   <SelectItem value="purple">Purple</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+          
+          {/* Color Scheme Preview */}
+          <div className="mt-4">
+            <Label>Preview</Label>
+            <div className="flex space-x-2 mt-2">
+              <div className="w-8 h-8 rounded bg-primary border-2 border-border"></div>
+              <div className="w-8 h-8 rounded bg-accent border-2 border-border"></div>
+              <div className="w-8 h-8 rounded bg-secondary border-2 border-border"></div>
+              <div className="w-8 h-8 rounded bg-muted border-2 border-border"></div>
             </div>
           </div>
         </CardContent>

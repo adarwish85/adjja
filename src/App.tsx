@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import Index from "./pages/Index";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import CoachDashboard from "./pages/CoachDashboard";
@@ -23,29 +24,31 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
-          <Route path="/admin/coaches" element={<AdminCoaches />} />
-          <Route path="/admin/students" element={<AdminStudents />} />
-          <Route path="/admin/classes" element={<AdminClasses />} />
-          <Route path="/admin/branches" element={<AdminBranches />} />
-          <Route path="/admin/lms" element={<AdminLMS />} />
-          <Route path="/admin/payments" element={<AdminPayments />} />
-          <Route path="/admin/analytics" element={<AdminAnalytics />} />
-          <Route path="/admin/settings" element={<AdminSettings />} />
-          <Route path="/coach/dashboard" element={<CoachDashboard />} />
-          <Route path="/student/dashboard" element={<StudentDashboard />} />
-          <Route path="/course/:courseId" element={<CourseLanding />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
+            <Route path="/admin/coaches" element={<AdminCoaches />} />
+            <Route path="/admin/students" element={<AdminStudents />} />
+            <Route path="/admin/classes" element={<AdminClasses />} />
+            <Route path="/admin/branches" element={<AdminBranches />} />
+            <Route path="/admin/lms" element={<AdminLMS />} />
+            <Route path="/admin/payments" element={<AdminPayments />} />
+            <Route path="/admin/analytics" element={<AdminAnalytics />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/coach/dashboard" element={<CoachDashboard />} />
+            <Route path="/student/dashboard" element={<StudentDashboard />} />
+            <Route path="/course/:courseId" element={<CourseLanding />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
