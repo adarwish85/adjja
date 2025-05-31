@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -123,7 +122,14 @@ const LandingPage = () => {
                       </li>
                     ))}
                   </ul>
-                  <Button className="w-full mt-6 bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold">
+                  <Button 
+                    className="w-full mt-6 bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold"
+                    onClick={() => {
+                      if (role.title === "Super Admin") {
+                        window.location.href = "/admin/dashboard";
+                      }
+                    }}
+                  >
                     Login as {role.title}
                   </Button>
                 </CardContent>
