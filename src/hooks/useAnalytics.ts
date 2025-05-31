@@ -89,7 +89,7 @@ export const useAnalytics = () => {
   });
 
   // Enrollment Trends (mock data for now, can be enhanced with real data)
-  const { data: enrollmentTrends } = useQuery({
+  const { data: enrollmentTrendsData } = useQuery({
     queryKey: ['analytics-enrollment-trends'],
     queryFn: async () => {
       const months = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -121,7 +121,7 @@ export const useAnalytics = () => {
     students: studentsData,
     classes: classesData,
     revenue: revenueData,
-    enrollmentTrends,
+    enrollmentTrends: enrollmentTrendsData,
     isLoading: !studentsData || !classesData || !revenueData
   };
 };

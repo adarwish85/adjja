@@ -160,7 +160,7 @@ export const AnalyticsOverview = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={enrollmentTrends?.data || []}>
+              <AreaChart data={enrollmentTrends || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
