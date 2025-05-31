@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,12 +21,19 @@ export const useUserRoles = () => {
   const fetchRoles = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching roles...');
+      
       const { data, error } = await supabase
         .from('user_roles')
         .select('*')
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching roles:', error);
+        throw error;
+      }
+      
+      console.log('Roles fetched successfully:', data);
       setRoles(data || []);
     } catch (error) {
       console.error('Error fetching roles:', error);
@@ -47,7 +53,17 @@ export const useUserRoles = () => {
     permissions: string[];
   }) => {
     try {
-      const { error } = await supabase
+      console.log('Creating role with data:', roleData);
+      
+      // Check if user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user:', user);
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabase
         .from('user_roles')
         .insert({
           name: roleData.name,
@@ -55,20 +71,25 @@ export const useUserRoles = () => {
           permissions: roleData.permissions,
           is_system: false,
           user_count: 0
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating role:', error);
+        throw error;
+      }
 
+      console.log('Role created successfully:', data);
       await fetchRoles();
       toast({
         title: "Success",
         description: "Role created successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating role:', error);
       toast({
         title: "Error",
-        description: "Failed to create role",
+        description: error.message || "Failed to create role",
         variant: "destructive",
       });
     }
