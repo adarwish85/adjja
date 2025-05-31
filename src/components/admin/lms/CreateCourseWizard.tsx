@@ -1,14 +1,14 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ExternalLink } from "lucide-react";
 import { CourseDetailsStep } from "./wizard/CourseDetailsStep";
 import { CourseContentStep } from "./wizard/CourseContentStep";
 import { AdditionalInfoStep } from "./wizard/AdditionalInfoStep";
 import { CourseReviewStep } from "./wizard/CourseReviewStep";
 import { useCourses } from "@/hooks/useCourses";
+import { useToast } from "@/hooks/use-toast";
 
 export interface CourseWizardData {
   // Step 1: Course Details
@@ -88,6 +88,10 @@ const steps = [
 
 export const CreateCourseWizard = ({ onClose }: CreateCourseWizardProps) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [createdCourseId, setCreatedCourseId] = useState<string | null>(null);
+  const { toast } = useToast();
+  
   const [wizardData, setWizardData] = useState<CourseWizardData>({
     title: "",
     description: "",
@@ -143,11 +147,125 @@ export const CreateCourseWizard = ({ onClose }: CreateCourseWizardProps) => {
       duration_hours: Math.round(totalDuration / 60),
     };
 
-    createCourse.mutate(courseData);
-    onClose();
+    try {
+      const result = await createCourse.mutateAsync(courseData);
+      setCreatedCourseId(result.id);
+      setIsSubmitted(true);
+      
+      toast({
+        title: "Course Created Successfully!",
+        description: "Your course has been created and is ready to be shared.",
+      });
+    } catch (error) {
+      console.error("Error creating course:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create course. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Link Copied!",
+      description: "Course link has been copied to clipboard.",
+    });
   };
 
   const progress = (currentStep / steps.length) * 100;
+
+  // Success Screen
+  if (isSubmitted && createdCourseId) {
+    const courseLink = `${window.location.origin}/course/${createdCourseId}`;
+    
+    return (
+      <div className="max-w-2xl mx-auto p-6 text-center">
+        <Card>
+          <CardContent className="p-8">
+            <div className="space-y-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <Check className="h-8 w-8 text-green-600" />
+              </div>
+              
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-bjj-navy">Course Created Successfully!</h2>
+                <p className="text-gray-600">
+                  Your course "{wizardData.title}" has been created and is now available.
+                </p>
+              </div>
+
+              <Card className="border-2 border-bjj-gold">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-bjj-navy">Course Direct Link:</h3>
+                    <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded border">
+                      <code className="text-sm flex-1 text-left">{courseLink}</code>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(courseLink)}
+                      >
+                        Copy Link
+                      </Button>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(courseLink, '_blank')}
+                      className="w-full"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View Course
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="flex space-x-3 justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsSubmitted(false);
+                    setCreatedCourseId(null);
+                    setCurrentStep(1);
+                    setWizardData({
+                      title: "",
+                      description: "",
+                      instructor: "",
+                      category: "",
+                      level: "Beginner",
+                      status: "Draft",
+                      priceType: "free",
+                      price: 0,
+                      tags: [],
+                      featuredImage: "",
+                      introVideo: "",
+                      topics: [],
+                      learningOutcomes: [],
+                      targetAudience: "",
+                      prerequisites: "",
+                      hasCertificate: false,
+                      certificateImage: "",
+                    });
+                  }}
+                >
+                  Create Another Course
+                </Button>
+                <Button
+                  onClick={onClose}
+                  className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -248,8 +366,9 @@ export const CreateCourseWizard = ({ onClose }: CreateCourseWizardProps) => {
         <Button
           onClick={currentStep === steps.length ? handleSubmit : handleNext}
           className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+          disabled={createCourse.isPending}
         >
-          {currentStep === steps.length ? "Create Course" : "Next"}
+          {createCourse.isPending ? "Creating..." : currentStep === steps.length ? "Create Course" : "Next"}
           {currentStep < steps.length && <ArrowRight className="h-4 w-4 ml-2" />}
         </Button>
       </div>

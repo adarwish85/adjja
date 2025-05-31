@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +20,43 @@ interface CourseContentStepProps {
   data: CourseWizardData;
   onUpdate: (updates: Partial<CourseWizardData>) => void;
 }
+
+// Helper function to extract YouTube video ID from URL
+const getYouTubeVideoId = (url: string): string | null => {
+  const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+};
+
+// YouTube Video Preview Component
+const YouTubePreview = ({ url }: { url: string }) => {
+  const videoId = getYouTubeVideoId(url);
+  
+  if (!videoId) {
+    return (
+      <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+        Invalid YouTube URL. Please enter a valid YouTube video link.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2">
+      <div className="aspect-video bg-gray-100 rounded overflow-hidden">
+        <iframe
+          width="100%"
+          height="100%"
+          src={`https://www.youtube.com/embed/${videoId}`}
+          title="YouTube video preview"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+      <p className="text-sm text-gray-500 mt-1">Video ID: {videoId}</p>
+    </div>
+  );
+};
 
 export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) => {
   const [openTopics, setOpenTopics] = useState<string[]>([]);
@@ -268,7 +304,7 @@ export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) =>
   );
 };
 
-// Lesson Editor Component
+// Lesson Editor Component with YouTube Preview
 const LessonEditor = ({ lesson, onUpdate, onDelete }: {
   lesson: Lesson;
   onUpdate: (updates: Partial<Lesson>) => void;
@@ -309,6 +345,11 @@ const LessonEditor = ({ lesson, onUpdate, onDelete }: {
           />
         </div>
       </div>
+
+      {/* YouTube Video Preview */}
+      {lesson.videoUrl && (
+        <YouTubePreview url={lesson.videoUrl} />
+      )}
 
       <div className="space-y-2">
         <Label>Lesson Content</Label>
