@@ -327,6 +327,7 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
           <CourseDetailsStep
             data={wizardData}
             onUpdate={updateWizardData}
+            courseId={isEditMode ? course?.id : createdCourseId}
           />
         );
       case 2:

@@ -18,10 +18,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Search, Edit, Trash2, Eye, ExternalLink, Copy } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
 import { useCourses } from "@/hooks/useCourses";
 import { CreateCourseWizard } from "./CreateCourseWizard";
-import { useToast } from "@/hooks/use-toast";
 
 export const CourseManagement = () => {
   const { courses, isLoading, deleteCourse } = useCourses();
@@ -29,7 +28,6 @@ export const CourseManagement = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const { toast } = useToast();
 
   const filteredCourses = courses.filter(course =>
     course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -57,15 +55,6 @@ export const CourseManagement = () => {
   const handleCourseNameClick = (courseId: string) => {
     const courseUrl = `${window.location.origin}/course/${courseId}`;
     window.open(courseUrl, '_blank');
-  };
-
-  const copyToClipboard = (courseId: string) => {
-    const courseUrl = `${window.location.origin}/course/${courseId}`;
-    navigator.clipboard.writeText(courseUrl);
-    toast({
-      title: "Link Copied!",
-      description: "Course link has been copied to clipboard.",
-    });
   };
 
   const getStatusColor = (status: string) => {
@@ -148,19 +137,6 @@ export const CourseManagement = () => {
                             </div>
                             <div className="text-sm text-bjj-gray truncate max-w-xs">
                               {course.description}
-                            </div>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <span className="text-xs text-gray-500">
-                                {window.location.origin}/course/{course.id}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => copyToClipboard(course.id)}
-                                className="h-6 w-6 p-0"
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
                             </div>
                           </div>
                         </TableCell>

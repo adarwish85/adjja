@@ -36,6 +36,37 @@ const CourseLanding = () => {
     },
   });
 
+  const { data: videos } = useQuery({
+    queryKey: ["course-videos", courseId],
+    queryFn: async () => {
+      if (!courseId) return [];
+      const { data, error } = await supabase
+        .from("course_videos")
+        .select("*")
+        .eq("course_id", courseId)
+        .order("order_index");
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!courseId,
+  });
+
+  const { data: enrollmentCount } = useQuery({
+    queryKey: ["course-enrollments", courseId],
+    queryFn: async () => {
+      if (!courseId) return 0;
+      const { count, error } = await supabase
+        .from("course_enrollments")
+        .select("*", { count: "exact", head: true })
+        .eq("course_id", courseId);
+
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!courseId,
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -58,10 +89,36 @@ const CourseLanding = () => {
     );
   }
 
-  const getYouTubeEmbedUrl = (url: string) => {
-    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
-    return videoId ? `https://www.youtube.com/embed/${videoId[1]}` : "";
-  };
+  const totalVideos = videos?.length || 0;
+  const totalDuration = videos?.reduce((sum, video) => sum + (video.duration_minutes || 0), 0) || 0;
+  const totalHours = Math.floor(totalDuration / 60);
+  const totalMinutes = totalDuration % 60;
+  const studentCount = enrollmentCount || course.total_students || 0;
+
+  // Group videos by sections (for now, we'll create basic sections based on video titles)
+  const sections = videos ? [
+    {
+      title: "Course Content",
+      videos: videos,
+      duration: totalDuration
+    }
+  ] : [];
+
+  const learningOutcomes = [
+    "Master fundamental BJJ techniques and positions",
+    "Understand basic transitions and movement patterns", 
+    "Learn effective submission holds and escapes",
+    "Develop proper defensive strategies and mindset",
+    "Build confidence and mental toughness on the mat",
+    "Improve physical conditioning and flexibility"
+  ];
+
+  const requirements = [
+    "No prior martial arts experience required",
+    "A gi (Brazilian Jiu-Jitsu uniform) is recommended but not required for video lessons",
+    "Willingness to learn and practice regularly",
+    "Basic physical fitness (modifications provided for all levels)"
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -81,15 +138,15 @@ const CourseLanding = () => {
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                   <span className="font-medium">{course.rating || "4.5"}</span>
-                  <span className="text-gray-400">({course.total_students || 0} students)</span>
+                  <span className="text-gray-400">({studentCount} students)</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
-                  <span>{course.total_students || 0} students</span>
+                  <span>{studentCount} students</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  <span>{course.duration_hours || 0} hours</span>
+                  <span>{totalHours}h {totalMinutes}m</span>
                 </div>
               </div>
 
@@ -119,7 +176,16 @@ const CourseLanding = () => {
                 <CardContent className="p-0">
                   {/* Video Preview */}
                   <div className="relative aspect-video bg-gray-800 rounded-t-lg overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    {course.thumbnail_url ? (
+                      <img 
+                        src={course.thumbnail_url} 
+                        alt={course.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-bjj-navy to-bjj-gold"></div>
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
                       <Button size="lg" className="bg-white text-black hover:bg-gray-100">
                         <Play className="h-6 w-6 mr-2" />
                         Preview Course
@@ -149,7 +215,11 @@ const CourseLanding = () => {
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2">
                           <Monitor className="h-4 w-4" />
-                          <span>{course.duration_hours || 0} hours on-demand video</span>
+                          <span>{totalHours}h {totalMinutes}m on-demand video</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Play className="h-4 w-4" />
+                          <span>{totalVideos} lectures</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Download className="h-4 w-4" />
@@ -182,14 +252,7 @@ const CourseLanding = () => {
               <CardContent className="p-6">
                 <h2 className="text-2xl font-bold text-bjj-navy mb-4">What you'll learn</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[
-                    "Master fundamental BJJ techniques",
-                    "Understand basic positions and transitions", 
-                    "Learn effective submission holds",
-                    "Develop proper defensive strategies",
-                    "Build confidence on the mat",
-                    "Improve physical conditioning"
-                  ].map((item, index) => (
+                  {learningOutcomes.map((item, index) => (
                     <div key={index} className="flex items-start gap-2">
                       <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                       <span className="text-sm">{item}</span>
@@ -204,28 +267,33 @@ const CourseLanding = () => {
               <CardContent className="p-6">
                 <h2 className="text-2xl font-bold text-bjj-navy mb-4">Course content</h2>
                 <div className="space-y-2 text-sm text-gray-600 mb-4">
-                  <span>8 sections • 32 lectures • 5h 30m total length</span>
+                  <span>{sections.length} sections • {totalVideos} lectures • {totalHours}h {totalMinutes}m total length</span>
                 </div>
                 <div className="space-y-2">
-                  {/* Sample course sections */}
-                  <div className="border rounded-lg p-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-medium">Introduction to Brazilian Jiu-Jitsu</h3>
-                      <span className="text-sm text-gray-600">4 lectures • 30min</span>
+                  {sections.map((section, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="font-medium">{section.title}</h3>
+                        <span className="text-sm text-gray-600">{section.videos.length} lectures • {Math.floor(section.duration / 60)}h {section.duration % 60}m</span>
+                      </div>
+                      <div className="space-y-2">
+                        {section.videos.map((video) => (
+                          <div key={video.id} className="flex items-center justify-between text-sm text-gray-600 ml-4">
+                            <div className="flex items-center gap-2">
+                              <Play className="h-3 w-3" />
+                              <span>{video.title}</span>
+                            </div>
+                            <span>{video.duration_minutes || 0} min</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div className="border rounded-lg p-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-medium">Basic Positions</h3>
-                      <span className="text-sm text-gray-600">6 lectures • 45min</span>
+                  ))}
+                  {totalVideos === 0 && (
+                    <div className="border rounded-lg p-4 text-center text-gray-500">
+                      Course content is being prepared. Check back soon!
                     </div>
-                  </div>
-                  <div className="border rounded-lg p-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-medium">Fundamental Submissions</h3>
-                      <span className="text-sm text-gray-600">8 lectures • 1h 15min</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -235,10 +303,9 @@ const CourseLanding = () => {
               <CardContent className="p-6">
                 <h2 className="text-2xl font-bold text-bjj-navy mb-4">Requirements</h2>
                 <ul className="space-y-2 text-sm">
-                  <li>• No prior martial arts experience required</li>
-                  <li>• A gi (Brazilian Jiu-Jitsu uniform) is recommended but not required for video lessons</li>
-                  <li>• Willingness to learn and practice regularly</li>
-                  <li>• Basic physical fitness (modifications provided for all levels)</li>
+                  {requirements.map((requirement, index) => (
+                    <li key={index}>• {requirement}</li>
+                  ))}
                 </ul>
               </CardContent>
             </Card>
@@ -249,9 +316,7 @@ const CourseLanding = () => {
                 <h2 className="text-2xl font-bold text-bjj-navy mb-4">Description</h2>
                 <div className="prose max-w-none">
                   <p className="text-gray-700 mb-4">
-                    This comprehensive Brazilian Jiu-Jitsu course is designed for beginners who want to learn the art and science of BJJ. 
-                    Whether you're completely new to martial arts or looking to add BJJ to your existing skillset, this course will provide 
-                    you with a solid foundation in the fundamental techniques and concepts.
+                    {course.description || "This comprehensive Brazilian Jiu-Jitsu course is designed for students who want to learn the art and science of BJJ. Whether you're completely new to martial arts or looking to add BJJ to your existing skillset, this course will provide you with a solid foundation in the fundamental techniques and concepts."}
                   </p>
                   <p className="text-gray-700 mb-4">
                     Our experienced instructor will guide you through each technique step-by-step, ensuring you understand not just the 
@@ -272,27 +337,22 @@ const CourseLanding = () => {
                   <div className="text-center">
                     <div className="w-20 h-20 bg-gray-300 rounded-full mx-auto mb-3"></div>
                     <h4 className="font-semibold text-lg">{course.instructor}</h4>
-                    <p className="text-sm text-gray-600">BJJ Black Belt & Certified Instructor</p>
+                    <p className="text-sm text-gray-600">BJJ Instructor</p>
                   </div>
                   
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Experience:</span>
-                      <span>15+ years</span>
-                    </div>
-                    <div className="flex justify-between">
                       <span className="text-gray-600">Students:</span>
-                      <span>2,500+</span>
+                      <span>{studentCount}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Courses:</span>
-                      <span>8</span>
+                      <span className="text-gray-600">Rating:</span>
+                      <span>{course.rating || "4.5"}/5</span>
                     </div>
                   </div>
 
                   <p className="text-sm text-gray-700">
-                    With over 15 years of experience in Brazilian Jiu-Jitsu, our instructor has competed at the highest levels 
-                    and is passionate about sharing the art with students of all backgrounds.
+                    Experienced Brazilian Jiu-Jitsu instructor passionate about sharing the art with students of all backgrounds and skill levels.
                   </p>
                 </div>
               </CardContent>

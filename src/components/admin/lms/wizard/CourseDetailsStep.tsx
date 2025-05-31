@@ -13,22 +13,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Upload, X } from "lucide-react";
+import { X, Copy } from "lucide-react";
 import { CourseWizardData } from "../CreateCourseWizard";
 import { useCoaches } from "@/hooks/useCoaches";
+import { useToast } from "@/hooks/use-toast";
 
 interface CourseDetailsStepProps {
   data: CourseWizardData;
   onUpdate: (updates: Partial<CourseWizardData>) => void;
+  courseId?: string;
 }
 
 const categories = ["Fundamentals", "Advanced", "Competition", "Self-Defense", "Kids"];
 const levels = ["Beginner", "Intermediate", "Advanced"];
 const statusOptions = ["Draft", "Published"];
 
-export const CourseDetailsStep = ({ data, onUpdate }: CourseDetailsStepProps) => {
+export const CourseDetailsStep = ({ data, onUpdate, courseId }: CourseDetailsStepProps) => {
   const { coaches } = useCoaches();
   const [newTag, setNewTag] = useState("");
+  const { toast } = useToast();
 
   const activeCoaches = coaches.filter(coach => coach.status === "active");
 
@@ -42,6 +45,16 @@ export const CourseDetailsStep = ({ data, onUpdate }: CourseDetailsStepProps) =>
   const handleRemoveTag = (tagToRemove: string) => {
     onUpdate({ tags: data.tags.filter(tag => tag !== tagToRemove) });
   };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Link Copied!",
+      description: "Course link has been copied to clipboard.",
+    });
+  };
+
+  const courseLink = courseId ? `${window.location.origin}/course/${courseId}` : null;
 
   return (
     <div className="space-y-6">
@@ -57,6 +70,23 @@ export const CourseDetailsStep = ({ data, onUpdate }: CourseDetailsStepProps) =>
             placeholder="Enter course title"
             required
           />
+          {courseLink && (
+            <div className="mt-2">
+              <Label className="text-sm text-gray-600">Course Link:</Label>
+              <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded border mt-1">
+                <code className="text-xs flex-1 text-left text-gray-700">{courseLink}</code>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyToClipboard(courseLink)}
+                  className="h-6 w-6 p-0"
+                  title="Copy course link"
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
