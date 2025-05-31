@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -351,35 +352,44 @@ const LessonEditor = ({ lesson, onUpdate, onDelete }: {
   const [isLoadingVideoInfo, setIsLoadingVideoInfo] = useState(false);
 
   const handleVideoUrlChange = async (url: string) => {
-    // Immediately update the lesson with the new URL
+    console.log('Video URL change:', url);
+    console.log('Current lesson videoUrl:', lesson.videoUrl);
+    
+    // First, immediately update the lesson with the new URL to ensure it persists
     onUpdate({ videoUrl: url });
     
-    // Only fetch video info for new URLs with YouTube content
-    if (url && url.includes('youtube')) {
+    // Only try to fetch video info if it's a valid YouTube URL and we haven't processed this URL before
+    if (url && url.includes('youtube') && url !== lesson.videoUrl) {
       const videoId = extractYouTubeVideoId(url);
       if (videoId) {
         setIsLoadingVideoInfo(true);
         try {
+          console.log('Fetching video info for:', videoId);
           const videoInfo = await fetchYouTubeVideoInfo(videoId);
+          console.log('Fetched video info:', videoInfo);
+          
           if (videoInfo) {
-            const updates: Partial<Lesson> = {};
+            const updates: Partial<Lesson> = { videoUrl: url }; // Always preserve the URL
             
             // Only update duration if it's still the default (10 minutes)
             if (lesson.duration === 10) {
               updates.duration = videoInfo.duration;
+              console.log('Updating duration to:', videoInfo.duration);
             }
             
             // Only update the title if it's currently empty
             if (!lesson.name.trim()) {
               updates.name = videoInfo.title;
+              console.log('Updating name to:', videoInfo.title);
             }
             
-            if (Object.keys(updates).length > 0) {
-              onUpdate(updates);
-            }
+            console.log('Applying updates:', updates);
+            onUpdate(updates);
           }
         } catch (error) {
           console.error('Error fetching video info:', error);
+          // Even if there's an error, make sure the URL is preserved
+          onUpdate({ videoUrl: url });
         } finally {
           setIsLoadingVideoInfo(false);
         }
