@@ -9,6 +9,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const branches = ["Downtown", "Westside", "North Valley", "South Side"];
+
 interface StudentBasicInfoStepProps {
   formData: {
     name: string;
@@ -19,8 +21,6 @@ interface StudentBasicInfoStepProps {
   };
   updateFormData: (updates: any) => void;
 }
-
-const branches = ["Downtown", "Westside", "North Valley", "South Side"];
 
 export const StudentBasicInfoStep = ({ formData, updateFormData }: StudentBasicInfoStepProps) => {
   return (

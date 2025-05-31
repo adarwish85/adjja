@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -130,13 +131,19 @@ export const useStudents = () => {
       if (updates.createAccount && updates.username && updates.password) {
         console.log("Creating student account during update...");
         
+        // Get the current student data for the email
+        const currentStudent = students.find(s => s.id === id);
+        if (!currentStudent) {
+          throw new Error("Student not found");
+        }
+        
         // Call the database function to create the student account
         const { data: accountData, error: accountError } = await supabase.rpc('create_student_account', {
-          p_email: updates.email || "",
+          p_email: updates.email || currentStudent.email,
           p_password: updates.password,
           p_username: updates.username,
-          p_name: updates.name || "",
-          p_phone: updates.phone
+          p_name: updates.name || currentStudent.name,
+          p_phone: updates.phone || currentStudent.phone
         });
 
         if (accountError) {
@@ -151,17 +158,26 @@ export const useStudents = () => {
       // Remove account-specific fields before updating the student record
       const { username, password, createAccount, ...studentUpdates } = updates;
       
+      // Ensure we're not trying to update with undefined values
+      const cleanUpdates = Object.fromEntries(
+        Object.entries(studentUpdates).filter(([_, value]) => value !== undefined)
+      );
+      
+      console.log("Clean updates to send:", cleanUpdates);
+      
       const { data, error } = await supabase
         .from("students")
-        .update(studentUpdates)
+        .update(cleanUpdates)
         .eq("id", id)
         .select()
         .single();
 
       if (error) {
-        console.error("Supabase error:", error);
+        console.error("Supabase update error:", error);
         throw error;
       }
+
+      console.log("Successfully updated student:", data);
 
       const typedStudent: Student = {
         ...data,
@@ -178,7 +194,7 @@ export const useStudents = () => {
       return typedStudent;
     } catch (error) {
       console.error("Error updating student:", error);
-      toast.error("Failed to update student");
+      toast.error(error instanceof Error ? error.message : "Failed to update student");
       throw error;
     }
   };

@@ -16,8 +16,8 @@ interface MultiStepStudentFormProps {
 }
 
 const steps = [
-  { id: 1, title: "Basic Information", description: "Personal details" },
-  { id: 2, title: "Class Information", description: "Belt, coach & membership" },
+  { id: 1, title: "Basic Information", description: "Personal details & branch" },
+  { id: 2, title: "Class Information", description: "Belt, coach & class enrollment" },
   { id: 3, title: "Account Setup", description: "Portal access credentials" },
 ];
 
@@ -36,6 +36,7 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     attendance_rate: student?.attendance_rate || 0,
     joined_date: student?.joined_date || new Date().toISOString().split('T')[0],
     last_attended: student?.last_attended || new Date().toISOString().split('T')[0],
+    class_enrollment: undefined as string | undefined,
     username: "",
     password: "",
     createAccount: !isEditing,
@@ -58,6 +59,8 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
   };
 
   const handleSubmit = () => {
+    console.log("Form submission data:", formData);
+    
     const submissionData = {
       ...formData,
       phone: formData.phone || null,
@@ -66,15 +69,20 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
       password: formData.createAccount ? formData.password : undefined,
       createAccount: formData.createAccount,
     };
-    onSubmit(submissionData);
+    
+    // Remove class_enrollment from the submission data as it's not part of the Student interface
+    const { class_enrollment, ...studentData } = submissionData;
+    
+    console.log("Submitting student data:", studentData);
+    onSubmit(studentData);
   };
 
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return formData.name && formData.email;
+        return formData.name && formData.email && formData.branch;
       case 2:
-        return formData.branch && formData.belt && formData.coach;
+        return formData.belt && formData.coach;
       case 3:
         return !formData.createAccount || (formData.username && formData.password);
       default:

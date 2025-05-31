@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCoaches } from "@/hooks/useCoaches";
+import { useClasses } from "@/hooks/useClasses";
 
 interface StudentClassInfoStepProps {
   formData: {
@@ -19,6 +20,7 @@ interface StudentClassInfoStepProps {
     membership_type: "monthly" | "yearly" | "unlimited";
     attendance_rate: number;
     last_attended: string;
+    class_enrollment?: string;
   };
   updateFormData: (updates: any) => void;
   isEditing: boolean;
@@ -30,7 +32,9 @@ const statusOptions = ["active", "inactive", "on-hold"];
 
 export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: StudentClassInfoStepProps) => {
   const { coaches, loading: coachesLoading } = useCoaches();
+  const { classes, loading: classesLoading } = useClasses();
   const activeCoaches = coaches.filter(coach => coach.status === "active");
+  const activeClasses = classes.filter(cls => cls.status === "Active");
 
   return (
     <div className="space-y-4">
@@ -136,6 +140,27 @@ export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: St
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="class_enrollment">Class Enrollment (Optional)</Label>
+        <Select
+          value={formData.class_enrollment || ""}
+          onValueChange={(value) => updateFormData({ class_enrollment: value || undefined })}
+          disabled={classesLoading}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={classesLoading ? "Loading classes..." : "Select class (optional)"} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">No class selected</SelectItem>
+            {activeClasses.map((cls) => (
+              <SelectItem key={cls.id} value={cls.name}>
+                {cls.name} - {cls.instructor} ({cls.schedule})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {isEditing && (
