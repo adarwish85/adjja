@@ -204,7 +204,8 @@ export const ContentLibrary = () => {
                           </TableCell>
                         </TableRow>
                       );
-                    })}
+                    })
+                  )}
                 </TableBody>
               </Table>
             </div>
