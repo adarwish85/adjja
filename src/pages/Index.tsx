@@ -1,5 +1,5 @@
 
-import { LandingPage } from "@/components/LandingPage";
+import LandingPage from "@/components/LandingPage";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
