@@ -1,4 +1,3 @@
-
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,18 +30,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { AddClassForm } from "@/components/admin/AddClassForm";
-import { 
-  Calendar, 
-  Clock, 
-  Users, 
-  TrendingUp, 
-  Plus, 
-  Search, 
-  Edit2, 
-  Trash2,
-  MapPin,
-  Loader2 
-} from "lucide-react";
+import { MultiStepClassForm } from "@/components/admin/MultiStepClassForm";
+import { Calendar, Clock, Users, TrendingUp, Plus, Search, Edit2, Trash2, MapPin, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useClasses, Class } from "@/hooks/useClasses";
 
@@ -134,11 +123,8 @@ const AdminClasses = () => {
                 Add New Class
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Add New Class</DialogTitle>
-              </DialogHeader>
-              <AddClassForm 
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <MultiStepClassForm 
                 onSubmit={handleAddClass} 
                 onClose={() => setIsAddDialogOpen(false)} 
               />
@@ -309,12 +295,9 @@ const AdminClasses = () => {
 
         {/* Edit Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Edit Class</DialogTitle>
-            </DialogHeader>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             {editingClass && (
-              <AddClassForm 
+              <MultiStepClassForm 
                 classItem={editingClass}
                 onSubmit={handleEditClass} 
                 onClose={() => {
