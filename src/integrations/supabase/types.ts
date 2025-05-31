@@ -54,6 +54,60 @@ export type Database = {
         }
         Relationships: []
       }
+      students: {
+        Row: {
+          attendance_rate: number
+          belt: string
+          branch: string
+          coach: string
+          created_at: string
+          email: string
+          id: string
+          joined_date: string
+          last_attended: string | null
+          membership_type: string
+          name: string
+          phone: string | null
+          status: string
+          stripes: number
+          updated_at: string
+        }
+        Insert: {
+          attendance_rate?: number
+          belt: string
+          branch: string
+          coach: string
+          created_at?: string
+          email: string
+          id?: string
+          joined_date?: string
+          last_attended?: string | null
+          membership_type?: string
+          name: string
+          phone?: string | null
+          status?: string
+          stripes?: number
+          updated_at?: string
+        }
+        Update: {
+          attendance_rate?: number
+          belt?: string
+          branch?: string
+          coach?: string
+          created_at?: string
+          email?: string
+          id?: string
+          joined_date?: string
+          last_attended?: string | null
+          membership_type?: string
+          name?: string
+          phone?: string | null
+          status?: string
+          stripes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

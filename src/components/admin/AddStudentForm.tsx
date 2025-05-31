@@ -10,26 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface Student {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  branch: string;
-  belt: string;
-  stripes: number;
-  coach: string;
-  status: "active" | "inactive" | "on-hold";
-  membershipType: "monthly" | "yearly" | "unlimited";
-  attendanceRate: number;
-  joinedDate: string;
-  lastAttended: string;
-}
+import { Student } from "@/hooks/useStudents";
 
 interface AddStudentFormProps {
   student?: Student;
-  onSubmit: (student: Student | Omit<Student, "id">) => void;
+  onSubmit: (student: Student | Omit<Student, "id" | "created_at" | "updated_at">) => void;
   isEditing?: boolean;
 }
 
@@ -49,10 +34,10 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
     stripes: student?.stripes || 0,
     coach: student?.coach || "",
     status: student?.status || "active",
-    membershipType: student?.membershipType || "monthly",
-    attendanceRate: student?.attendanceRate || 0,
-    joinedDate: student?.joinedDate || new Date().toISOString().split('T')[0],
-    lastAttended: student?.lastAttended || new Date().toISOString().split('T')[0],
+    membership_type: student?.membership_type || "monthly",
+    attendance_rate: student?.attendance_rate || 0,
+    joined_date: student?.joined_date || new Date().toISOString().split('T')[0],
+    last_attended: student?.last_attended || new Date().toISOString().split('T')[0],
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -67,6 +52,8 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
       onSubmit({
         ...formData,
         id: "",
+        created_at: "",
+        updated_at: "",
       });
     }
   };
@@ -113,7 +100,6 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
             value={formData.phone}
             onChange={(e) => handleChange("phone", e.target.value)}
             placeholder="Enter phone number"
-            required
           />
         </div>
         
@@ -201,10 +187,10 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="membershipType">Membership Type</Label>
+          <Label htmlFor="membership_type">Membership Type</Label>
           <Select
-            value={formData.membershipType}
-            onValueChange={(value) => handleChange("membershipType", value)}
+            value={formData.membership_type}
+            onValueChange={(value) => handleChange("membership_type", value)}
             required
           >
             <SelectTrigger>
@@ -244,36 +230,36 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
       {isEditing && (
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="attendanceRate">Attendance Rate (%)</Label>
+            <Label htmlFor="attendance_rate">Attendance Rate (%)</Label>
             <Input
-              id="attendanceRate"
+              id="attendance_rate"
               type="number"
               min="0"
               max="100"
-              value={formData.attendanceRate}
-              onChange={(e) => handleChange("attendanceRate", parseInt(e.target.value) || 0)}
+              value={formData.attendance_rate}
+              onChange={(e) => handleChange("attendance_rate", parseInt(e.target.value) || 0)}
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="lastAttended">Last Attended</Label>
+            <Label htmlFor="last_attended">Last Attended</Label>
             <Input
-              id="lastAttended"
+              id="last_attended"
               type="date"
-              value={formData.lastAttended}
-              onChange={(e) => handleChange("lastAttended", e.target.value)}
+              value={formData.last_attended}
+              onChange={(e) => handleChange("last_attended", e.target.value)}
             />
           </div>
         </div>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="joinedDate">Join Date</Label>
+        <Label htmlFor="joined_date">Join Date</Label>
         <Input
-          id="joinedDate"
+          id="joined_date"
           type="date"
-          value={formData.joinedDate}
-          onChange={(e) => handleChange("joinedDate", e.target.value)}
+          value={formData.joined_date}
+          onChange={(e) => handleChange("joined_date", e.target.value)}
           required
         />
       </div>

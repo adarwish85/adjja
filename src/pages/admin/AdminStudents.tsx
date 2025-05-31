@@ -20,76 +20,24 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Trash2, Mail, Phone, Calendar } from "lucide-react";
 import { AddStudentForm } from "@/components/admin/AddStudentForm";
-
-interface Student {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  branch: string;
-  belt: string;
-  stripes: number;
-  coach: string;
-  status: "active" | "inactive" | "on-hold";
-  membershipType: "monthly" | "yearly" | "unlimited";
-  attendanceRate: number;
-  joinedDate: string;
-  lastAttended: string;
-}
-
-const mockStudents: Student[] = [
-  {
-    id: "1",
-    name: "Alex Thompson",
-    email: "alex@email.com",
-    phone: "+1 (555) 123-4567",
-    branch: "Downtown",
-    belt: "Blue Belt",
-    stripes: 2,
-    coach: "Marcus Silva",
-    status: "active",
-    membershipType: "monthly",
-    attendanceRate: 85,
-    joinedDate: "2023-01-15",
-    lastAttended: "2024-05-30",
-  },
-  {
-    id: "2",
-    name: "Maria Garcia",
-    email: "maria@email.com",
-    phone: "+1 (555) 987-6543",
-    branch: "Westside",
-    belt: "White Belt",
-    stripes: 3,
-    coach: "Ana Rodriguez",
-    status: "active",
-    membershipType: "yearly",
-    attendanceRate: 92,
-    joinedDate: "2024-02-10",
-    lastAttended: "2024-05-31",
-  },
-  {
-    id: "3",
-    name: "James Wilson",
-    email: "james@email.com",
-    phone: "+1 (555) 456-7890",
-    branch: "North Valley",
-    belt: "Purple Belt",
-    stripes: 1,
-    coach: "David Chen",
-    status: "on-hold",
-    membershipType: "monthly",
-    attendanceRate: 45,
-    joinedDate: "2022-08-20",
-    lastAttended: "2024-04-15",
-  },
-];
+import { useStudents, Student } from "@/hooks/useStudents";
 
 const AdminStudents = () => {
-  const [students, setStudents] = useState<Student[]>(mockStudents);
+  const { students, loading, addStudent, updateStudent, deleteStudent } = useStudents();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -102,24 +50,30 @@ const AdminStudents = () => {
       student.coach.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddStudent = (newStudent: Omit<Student, "id">) => {
-    const student: Student = {
-      ...newStudent,
-      id: Date.now().toString(),
-    };
-    setStudents([...students, student]);
-    setIsAddDialogOpen(false);
+  const handleAddStudent = async (newStudent: Omit<Student, "id">) => {
+    try {
+      await addStudent(newStudent);
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      // Error is already handled in the hook
+    }
   };
 
-  const handleEditStudent = (updatedStudent: Student) => {
-    setStudents(students.map(student => 
-      student.id === updatedStudent.id ? updatedStudent : student
-    ));
-    setEditingStudent(null);
+  const handleEditStudent = async (updatedStudent: Student) => {
+    try {
+      await updateStudent(updatedStudent.id, updatedStudent);
+      setEditingStudent(null);
+    } catch (error) {
+      // Error is already handled in the hook
+    }
   };
 
-  const handleDeleteStudent = (studentId: string) => {
-    setStudents(students.filter(student => student.id !== studentId));
+  const handleDeleteStudent = async (studentId: string) => {
+    try {
+      await deleteStudent(studentId);
+    } catch (error) {
+      // Error is already handled in the hook
+    }
   };
 
   const getBeltColor = (belt: string) => {
@@ -151,6 +105,16 @@ const AdminStudents = () => {
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  if (loading) {
+    return (
+      <SuperAdminLayout>
+        <div className="p-6 space-y-6">
+          <div className="text-center">Loading students...</div>
+        </div>
+      </SuperAdminLayout>
+    );
+  }
 
   return (
     <SuperAdminLayout>
@@ -206,7 +170,7 @@ const AdminStudents = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-bjj-navy">
-                {Math.round(students.reduce((sum, student) => sum + student.attendanceRate, 0) / students.length)}%
+                {students.length > 0 ? Math.round(students.reduce((sum, student) => sum + student.attendance_rate, 0) / students.length) : 0}%
               </div>
             </CardContent>
           </Card>
@@ -261,7 +225,7 @@ const AdminStudents = () => {
                       <div>
                         <div className="font-medium text-bjj-navy">{student.name}</div>
                         <div className="text-sm text-bjj-gray">
-                          Joined {new Date(student.joinedDate).toLocaleDateString()}
+                          Joined {new Date(student.joined_date).toLocaleDateString()}
                         </div>
                       </div>
                     </TableCell>
@@ -271,10 +235,12 @@ const AdminStudents = () => {
                           <Mail className="h-3 w-3 mr-1 text-bjj-gray" />
                           {student.email}
                         </div>
-                        <div className="flex items-center text-sm">
-                          <Phone className="h-3 w-3 mr-1 text-bjj-gray" />
-                          {student.phone}
-                        </div>
+                        {student.phone && (
+                          <div className="flex items-center text-sm">
+                            <Phone className="h-3 w-3 mr-1 text-bjj-gray" />
+                            {student.phone}
+                          </div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -295,16 +261,18 @@ const AdminStudents = () => {
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="capitalize">
-                        {student.membershipType}
+                        {student.membership_type}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <div className="font-medium">{student.attendanceRate}%</div>
-                        <div className="flex items-center text-xs text-bjj-gray">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          Last: {new Date(student.lastAttended).toLocaleDateString()}
-                        </div>
+                        <div className="font-medium">{student.attendance_rate}%</div>
+                        {student.last_attended && (
+                          <div className="flex items-center text-xs text-bjj-gray">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            Last: {new Date(student.last_attended).toLocaleDateString()}
+                          </div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -321,14 +289,35 @@ const AdminStudents = () => {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteStudent(student.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the student
+                                "{student.name}" from the system.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteStudent(student.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>
