@@ -295,6 +295,7 @@ export type Database = {
           attachments: string[] | null
           content: string | null
           created_at: string
+          duration_minutes: number | null
           featured_image: string | null
           id: string
           is_preview: boolean | null
@@ -308,6 +309,7 @@ export type Database = {
           attachments?: string[] | null
           content?: string | null
           created_at?: string
+          duration_minutes?: number | null
           featured_image?: string | null
           id?: string
           is_preview?: boolean | null
@@ -321,6 +323,7 @@ export type Database = {
           attachments?: string[] | null
           content?: string | null
           created_at?: string
+          duration_minutes?: number | null
           featured_image?: string | null
           id?: string
           is_preview?: boolean | null

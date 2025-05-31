@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,24 +14,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ChevronDown, Trash2, GripVertical, Video, HelpCircle } from "lucide-react";
+import { Plus, ChevronDown, Trash2, GripVertical, Video, HelpCircle, Loader2 } from "lucide-react";
 import { CourseWizardData, Topic, Lesson, Quiz, Question } from "../CreateCourseWizard";
+import { extractYouTubeVideoId, fetchYouTubeVideoInfo } from "@/utils/youtubeUtils";
 
 interface CourseContentStepProps {
   data: CourseWizardData;
   onUpdate: (updates: Partial<CourseWizardData>) => void;
 }
 
-// Helper function to extract YouTube video ID from URL
-const getYouTubeVideoId = (url: string): string | null => {
-  const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
-  const match = url.match(regex);
-  return match ? match[1] : null;
-};
-
 // YouTube Video Preview Component
 const YouTubePreview = ({ url }: { url: string }) => {
-  const videoId = getYouTubeVideoId(url);
+  const videoId = extractYouTubeVideoId(url);
   
   if (!videoId) {
     return (
@@ -60,6 +55,15 @@ const YouTubePreview = ({ url }: { url: string }) => {
 
 export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) => {
   const [openTopics, setOpenTopics] = useState<string[]>([]);
+
+  // Calculate total course duration
+  const calculateTotalDuration = () => {
+    return data.topics.reduce((total, topic) => {
+      return total + topic.items
+        .filter(item => item.type === "lesson")
+        .reduce((topicTotal, lesson) => topicTotal + (lesson as Lesson).duration, 0);
+    }, 0);
+  };
 
   const addTopic = () => {
     const newTopic: Topic = {
@@ -92,6 +96,7 @@ export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) =>
       videoUrl: "",
       attachments: [],
       isPreview: false,
+      duration: 10, // default duration in minutes
     };
     
     const updatedTopics = data.topics.map(topic =>
@@ -180,10 +185,19 @@ export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) =>
     );
   };
 
+  const totalDuration = calculateTotalDuration();
+  const totalHours = Math.floor(totalDuration / 60);
+  const totalMinutes = totalDuration % 60;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-bjj-navy">Course Content</h3>
+        <div>
+          <h3 className="text-lg font-semibold text-bjj-navy">Course Content</h3>
+          <p className="text-sm text-gray-600">
+            Total Duration: {totalHours}h {totalMinutes}m ({data.topics.length} topics)
+          </p>
+        </div>
         <Button onClick={addTopic} className="bg-bjj-gold hover:bg-bjj-gold-dark text-white">
           <Plus className="h-4 w-4 mr-2" />
           Add Topic
@@ -204,6 +218,9 @@ export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) =>
                       {topic.title || "Untitled Topic"}
                     </CardTitle>
                     <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-500">
+                        {topic.items.length} items
+                      </span>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -304,18 +321,49 @@ export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) =>
   );
 };
 
-// Lesson Editor Component with YouTube Preview
+// Enhanced Lesson Editor Component with YouTube integration
 const LessonEditor = ({ lesson, onUpdate, onDelete }: {
   lesson: Lesson;
   onUpdate: (updates: Partial<Lesson>) => void;
   onDelete: () => void;
 }) => {
+  const [isLoadingVideoInfo, setIsLoadingVideoInfo] = useState(false);
+
+  const handleVideoUrlChange = async (url: string) => {
+    onUpdate({ videoUrl: url });
+    
+    if (url) {
+      const videoId = extractYouTubeVideoId(url);
+      if (videoId) {
+        setIsLoadingVideoInfo(true);
+        try {
+          const videoInfo = await fetchYouTubeVideoInfo(videoId);
+          if (videoInfo) {
+            // Only update the title if it's currently empty
+            const updates: Partial<Lesson> = {
+              duration: videoInfo.duration
+            };
+            if (!lesson.name.trim()) {
+              updates.name = videoInfo.title;
+            }
+            onUpdate(updates);
+          }
+        } catch (error) {
+          console.error('Error fetching video info:', error);
+        } finally {
+          setIsLoadingVideoInfo(false);
+        }
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="font-medium text-bjj-navy flex items-center">
           <Video className="h-4 w-4 mr-2" />
           Lesson: {lesson.name || "Untitled Lesson"}
+          {isLoadingVideoInfo && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
         </h4>
         <Button
           variant="ghost"
@@ -337,13 +385,24 @@ const LessonEditor = ({ lesson, onUpdate, onDelete }: {
           />
         </div>
         <div className="space-y-2">
-          <Label>Video URL (YouTube)</Label>
+          <Label>Duration (minutes)</Label>
           <Input
-            value={lesson.videoUrl}
-            onChange={(e) => onUpdate({ videoUrl: e.target.value })}
-            placeholder="https://www.youtube.com/watch?v=..."
+            type="number"
+            value={lesson.duration}
+            onChange={(e) => onUpdate({ duration: parseInt(e.target.value) || 10 })}
+            min="1"
+            placeholder="10"
           />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Video URL (YouTube)</Label>
+        <Input
+          value={lesson.videoUrl}
+          onChange={(e) => handleVideoUrlChange(e.target.value)}
+          placeholder="https://www.youtube.com/watch?v=..."
+        />
       </div>
 
       {/* YouTube Video Preview */}

@@ -10,6 +10,7 @@ import { AdditionalInfoStep } from "./wizard/AdditionalInfoStep";
 import { CourseReviewStep } from "./wizard/CourseReviewStep";
 import { useCourses } from "@/hooks/useCourses";
 import { useToast } from "@/hooks/use-toast";
+import { generateCourseSlug } from "@/utils/youtubeUtils";
 
 export interface CourseWizardData {
   // Step 1: Course Details
@@ -52,6 +53,7 @@ export interface Lesson {
   videoUrl: string;
   attachments: string[];
   isPreview: boolean;
+  duration: number; // in minutes
 }
 
 export interface Quiz {
@@ -133,10 +135,18 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
     }
   };
 
-  const handleSaveAsDraft = async () => {
-    const totalDuration = wizardData.topics.reduce((total, topic) => {
-      return total + topic.items.filter(item => item.type === "lesson").length * 30;
+  // Calculate total duration from lessons
+  const calculateTotalDuration = (): number => {
+    return wizardData.topics.reduce((total, topic) => {
+      return total + topic.items
+        .filter(item => item.type === "lesson")
+        .reduce((topicTotal, lesson) => topicTotal + (lesson as Lesson).duration, 0);
     }, 0);
+  };
+
+  const handleSaveAsDraft = async () => {
+    const totalDurationMinutes = calculateTotalDuration();
+    const totalHours = Math.round(totalDurationMinutes / 60);
 
     const courseData = {
       title: wizardData.title || "Untitled Course",
@@ -146,7 +156,7 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
       level: wizardData.level,
       status: "Draft",
       price: wizardData.priceType === "paid" ? wizardData.price : 0,
-      duration_hours: Math.round(totalDuration / 60),
+      duration_hours: totalHours,
       intro_video: wizardData.introVideo,
       learning_outcomes: wizardData.learningOutcomes,
       requirements: wizardData.prerequisites,
@@ -190,9 +200,8 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
   };
 
   const handleSubmit = async () => {
-    const totalDuration = wizardData.topics.reduce((total, topic) => {
-      return total + topic.items.filter(item => item.type === "lesson").length * 30;
-    }, 0);
+    const totalDurationMinutes = calculateTotalDuration();
+    const totalHours = Math.round(totalDurationMinutes / 60);
 
     const courseData = {
       title: wizardData.title,
@@ -202,7 +211,7 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
       level: wizardData.level,
       status: wizardData.status,
       price: wizardData.priceType === "paid" ? wizardData.price : 0,
-      duration_hours: Math.round(totalDuration / 60),
+      duration_hours: totalHours,
       intro_video: wizardData.introVideo,
       learning_outcomes: wizardData.learningOutcomes,
       requirements: wizardData.prerequisites,
@@ -254,7 +263,8 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
 
   // Success Screen
   if (isSubmitted && createdCourseId) {
-    const courseLink = `${window.location.origin}/course/${createdCourseId}`;
+    const courseSlug = generateCourseSlug(wizardData.title);
+    const courseLink = `${window.location.origin}/course/${createdCourseId}/${courseSlug}`;
     
     return (
       <div className="max-w-2xl mx-auto p-6 text-center">

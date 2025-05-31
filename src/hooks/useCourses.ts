@@ -175,6 +175,7 @@ export const useCourses = () => {
                 featured_image: item.featuredImage,
                 attachments: item.attachments || [],
                 is_preview: item.isPreview,
+                duration_minutes: item.duration || 10,
                 order_index: itemIndex,
               });
 

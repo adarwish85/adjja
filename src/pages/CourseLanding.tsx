@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { VideoPlayer } from "@/components/VideoPlayer";
+import { extractYouTubeVideoId, getYouTubeThumbnail } from "@/utils/youtubeUtils";
 
 const CourseLanding = () => {
   const { courseId } = useParams();
@@ -116,7 +117,7 @@ const CourseLanding = () => {
 
   // Use first lesson video as fallback for featured image and intro video
   const firstLesson = allLessons.find(lesson => lesson.video_url);
-  const featuredImage = course.thumbnail_url || (firstLesson?.video_url ? getYoutubeThumbnail(firstLesson.video_url) : null);
+  const featuredImage = course.thumbnail_url || (firstLesson?.video_url ? getYouTubeThumbnail(firstLesson.video_url) : null);
   const introVideo = course.intro_video || firstLesson?.video_url;
 
   const learningOutcomes = course.learning_outcomes || [
@@ -145,17 +146,6 @@ const CourseLanding = () => {
       handleVideoPreview(introVideo);
     }
   };
-
-  function getYoutubeThumbnail(url: string): string {
-    const videoId = extractYouTubeVideoId(url);
-    return videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : '';
-  }
-
-  function extractYouTubeVideoId(url: string): string | null {
-    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
-    const match = url.match(regex);
-    return match ? match[1] : null;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
