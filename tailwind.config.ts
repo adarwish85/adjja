@@ -63,13 +63,13 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// BJJ Academy custom colors
+				// BJJ Academy custom colors using CSS variables
 				bjj: {
 					navy: '#1a202c',
 					'navy-light': '#2d3748',
-					gold: '#f6ad24',
-					'gold-light': '#fed7aa',
-					'gold-dark': '#d69e2e',
+					gold: 'var(--bjj-gold)',
+					'gold-light': 'var(--bjj-gold-light)',
+					'gold-dark': 'var(--bjj-gold-dark)',
 					white: '#ffffff',
 					gray: '#4a5568'
 				}
@@ -109,13 +109,27 @@ export default {
 				'slide-in-right': {
 					'0%': { transform: 'translateX(100%)' },
 					'100%': { transform: 'translateX(0)' }
+				},
+				'color-pulse': {
+					'0%, 100%': { 
+						'background-color': 'hsl(var(--primary))',
+						transform: 'scale(1)'
+					},
+					'50%': { 
+						'background-color': 'hsl(var(--accent))',
+						transform: 'scale(1.05)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.6s ease-out',
-				'slide-in-right': 'slide-in-right 0.5s ease-out'
+				'slide-in-right': 'slide-in-right 0.5s ease-out',
+				'color-pulse': 'color-pulse 2s ease-in-out infinite'
+			},
+			transitionProperty: {
+				'colors-transform': 'color, background-color, border-color, text-decoration-color, fill, stroke, transform'
 			}
 		}
 	},
