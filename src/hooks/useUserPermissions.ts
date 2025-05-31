@@ -65,9 +65,10 @@ export const useUserPermissions = () => {
         const userPerms = permissions?.filter(p => p.user_id === user.id) || [];
         const permissionsObj: any = {};
 
-        // Add role-based permissions
-        const rolePermissions = user.user_roles?.permissions || [];
-        rolePermissions.forEach(perm => {
+        // Add role-based permissions - handle both single role and array cases
+        const userRole = Array.isArray(user.user_roles) ? user.user_roles[0] : user.user_roles;
+        const rolePermissions = userRole?.permissions || [];
+        rolePermissions.forEach((perm: string) => {
           permissionsObj[perm] = {
             granted: true,
             grantedBy: "System",
@@ -89,7 +90,7 @@ export const useUserPermissions = () => {
           userId: user.id,
           userName: user.name,
           userEmail: user.email,
-          role: user.user_roles?.name || 'Student',
+          role: userRole?.name || 'Student',
           permissions: permissionsObj
         };
       }) || [];
