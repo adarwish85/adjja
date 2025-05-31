@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -121,15 +120,105 @@ export const useSettings = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Default settings
+  // World timezones including Cairo/Egypt
+  const worldTimezones = [
+    { value: "africa/cairo", label: "Africa/Cairo (Egypt)" },
+    { value: "africa/johannesburg", label: "Africa/Johannesburg" },
+    { value: "africa/lagos", label: "Africa/Lagos" },
+    { value: "america/new_york", label: "America/New_York (EST)" },
+    { value: "america/chicago", label: "America/Chicago (CST)" },
+    { value: "america/denver", label: "America/Denver (MST)" },
+    { value: "america/los_angeles", label: "America/Los_Angeles (PST)" },
+    { value: "america/toronto", label: "America/Toronto" },
+    { value: "america/vancouver", label: "America/Vancouver" },
+    { value: "america/sao_paulo", label: "America/Sao_Paulo" },
+    { value: "america/mexico_city", label: "America/Mexico_City" },
+    { value: "asia/dubai", label: "Asia/Dubai (UAE)" },
+    { value: "asia/riyadh", label: "Asia/Riyadh (Saudi Arabia)" },
+    { value: "asia/kuwait", label: "Asia/Kuwait" },
+    { value: "asia/qatar", label: "Asia/Qatar" },
+    { value: "asia/tokyo", label: "Asia/Tokyo" },
+    { value: "asia/shanghai", label: "Asia/Shanghai" },
+    { value: "asia/hong_kong", label: "Asia/Hong_Kong" },
+    { value: "asia/singapore", label: "Asia/Singapore" },
+    { value: "asia/bangkok", label: "Asia/Bangkok" },
+    { value: "asia/manila", label: "Asia/Manila" },
+    { value: "asia/jakarta", label: "Asia/Jakarta" },
+    { value: "asia/kolkata", label: "Asia/Kolkata (India)" },
+    { value: "asia/karachi", label: "Asia/Karachi (Pakistan)" },
+    { value: "asia/tehran", label: "Asia/Tehran (Iran)" },
+    { value: "asia/istanbul", label: "Asia/Istanbul (Turkey)" },
+    { value: "australia/sydney", label: "Australia/Sydney" },
+    { value: "australia/melbourne", label: "Australia/Melbourne" },
+    { value: "australia/brisbane", label: "Australia/Brisbane" },
+    { value: "australia/perth", label: "Australia/Perth" },
+    { value: "australia/adelaide", label: "Australia/Adelaide" },
+    { value: "europe/london", label: "Europe/London (GMT)" },
+    { value: "europe/paris", label: "Europe/Paris (CET)" },
+    { value: "europe/berlin", label: "Europe/Berlin" },
+    { value: "europe/rome", label: "Europe/Rome" },
+    { value: "europe/madrid", label: "Europe/Madrid" },
+    { value: "europe/amsterdam", label: "Europe/Amsterdam" },
+    { value: "europe/zurich", label: "Europe/Zurich" },
+    { value: "europe/vienna", label: "Europe/Vienna" },
+    { value: "europe/stockholm", label: "Europe/Stockholm" },
+    { value: "europe/oslo", label: "Europe/Oslo" },
+    { value: "europe/copenhagen", label: "Europe/Copenhagen" },
+    { value: "europe/moscow", label: "Europe/Moscow" },
+    { value: "pacific/auckland", label: "Pacific/Auckland (New Zealand)" },
+    { value: "pacific/fiji", label: "Pacific/Fiji" },
+    { value: "pacific/honolulu", label: "Pacific/Honolulu (Hawaii)" }
+  ];
+
+  // World currencies
+  const worldCurrencies = [
+    { value: "aed", label: "AED - UAE Dirham" },
+    { value: "aud", label: "AUD - Australian Dollar" },
+    { value: "bdt", label: "BDT - Bangladeshi Taka" },
+    { value: "brl", label: "BRL - Brazilian Real" },
+    { value: "cad", label: "CAD - Canadian Dollar" },
+    { value: "chf", label: "CHF - Swiss Franc" },
+    { value: "cny", label: "CNY - Chinese Yuan" },
+    { value: "czk", label: "CZK - Czech Koruna" },
+    { value: "dkk", label: "DKK - Danish Krone" },
+    { value: "egp", label: "EGP - Egyptian Pound" },
+    { value: "eur", label: "EUR - Euro" },
+    { value: "gbp", label: "GBP - British Pound" },
+    { value: "hkd", label: "HKD - Hong Kong Dollar" },
+    { value: "idr", label: "IDR - Indonesian Rupiah" },
+    { value: "ils", label: "ILS - Israeli Shekel" },
+    { value: "inr", label: "INR - Indian Rupee" },
+    { value: "jpy", label: "JPY - Japanese Yen" },
+    { value: "krw", label: "KRW - South Korean Won" },
+    { value: "kwd", label: "KWD - Kuwaiti Dinar" },
+    { value: "mxn", label: "MXN - Mexican Peso" },
+    { value: "myr", label: "MYR - Malaysian Ringgit" },
+    { value: "nok", label: "NOK - Norwegian Krone" },
+    { value: "nzd", label: "NZD - New Zealand Dollar" },
+    { value: "php", label: "PHP - Philippine Peso" },
+    { value: "pkr", label: "PKR - Pakistani Rupee" },
+    { value: "pln", label: "PLN - Polish Zloty" },
+    { value: "qar", label: "QAR - Qatari Riyal" },
+    { value: "sar", label: "SAR - Saudi Riyal" },
+    { value: "sek", label: "SEK - Swedish Krona" },
+    { value: "sgd", label: "SGD - Singapore Dollar" },
+    { value: "thb", label: "THB - Thai Baht" },
+    { value: "try", label: "TRY - Turkish Lira" },
+    { value: "twd", label: "TWD - Taiwan Dollar" },
+    { value: "usd", label: "USD - US Dollar" },
+    { value: "vnd", label: "VND - Vietnamese Dong" },
+    { value: "zar", label: "ZAR - South African Rand" }
+  ];
+
+  // Default settings with Cairo timezone and Egyptian Pound
   const defaultGeneralSettings: GeneralSettings = {
     organizationName: "Australian Jiu-Jitsu Academy",
     organizationCode: "ADJJA",
     contactEmail: "admin@adjja.com",
     contactPhone: "+61 400 123 456",
     address: "123 BJJ Street, Sydney, NSW 2000, Australia",
-    timezone: "australia/sydney",
-    currency: "aud",
+    timezone: "africa/cairo",
+    currency: "egp",
     language: "en",
     theme: "light",
     colorScheme: "bjj-gold",
@@ -249,8 +338,10 @@ export const useSettings = () => {
   const saveGeneralSettings = async (settings: GeneralSettings) => {
     setIsLoading(true);
     try {
-      // In a real implementation, you would save to Supabase
       console.log("Saving general settings:", settings);
+      
+      // Save to localStorage for persistence
+      localStorage.setItem('adjja_general_settings', JSON.stringify(settings));
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -271,6 +362,18 @@ export const useSettings = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadGeneralSettings = (): GeneralSettings => {
+    try {
+      const saved = localStorage.getItem('adjja_general_settings');
+      if (saved) {
+        return { ...defaultGeneralSettings, ...JSON.parse(saved) };
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+    return defaultGeneralSettings;
   };
 
   const saveUserManagementSettings = async (settings: UserManagementSettings) => {
@@ -525,7 +628,10 @@ export const useSettings = () => {
 
   return {
     isLoading,
+    worldTimezones,
+    worldCurrencies,
     defaultGeneralSettings,
+    loadGeneralSettings,
     defaultUserManagementSettings,
     defaultSystemSettings,
     defaultSecuritySettings,

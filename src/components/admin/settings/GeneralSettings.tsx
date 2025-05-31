@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,22 @@ import { Building, Globe, Clock, Palette } from "lucide-react";
 import { useSettings, GeneralSettings as GeneralSettingsType } from "@/hooks/useSettings";
 
 export const GeneralSettings = () => {
-  const { defaultGeneralSettings, saveGeneralSettings, isLoading } = useSettings();
+  const { 
+    defaultGeneralSettings, 
+    loadGeneralSettings,
+    saveGeneralSettings, 
+    isLoading,
+    worldTimezones,
+    worldCurrencies 
+  } = useSettings();
+  
   const [settings, setSettings] = useState<GeneralSettingsType>(defaultGeneralSettings);
+
+  // Load saved settings on component mount
+  useEffect(() => {
+    const savedSettings = loadGeneralSettings();
+    setSettings(savedSettings);
+  }, []);
 
   const handleSave = async () => {
     await saveGeneralSettings(settings);
@@ -52,6 +66,7 @@ export const GeneralSettings = () => {
                 id="org-name" 
                 value={settings.organizationName}
                 onChange={(e) => setSettings(prev => ({ ...prev, organizationName: e.target.value }))}
+                placeholder="Enter organization name"
               />
             </div>
             <div>
@@ -60,6 +75,7 @@ export const GeneralSettings = () => {
                 id="org-code" 
                 value={settings.organizationCode}
                 onChange={(e) => setSettings(prev => ({ ...prev, organizationCode: e.target.value }))}
+                placeholder="Enter organization code"
               />
             </div>
             <div>
@@ -69,6 +85,7 @@ export const GeneralSettings = () => {
                 type="email" 
                 value={settings.contactEmail}
                 onChange={(e) => setSettings(prev => ({ ...prev, contactEmail: e.target.value }))}
+                placeholder="Enter contact email"
               />
             </div>
             <div>
@@ -77,6 +94,7 @@ export const GeneralSettings = () => {
                 id="contact-phone" 
                 value={settings.contactPhone}
                 onChange={(e) => setSettings(prev => ({ ...prev, contactPhone: e.target.value }))}
+                placeholder="Enter contact phone"
               />
             </div>
           </div>
@@ -86,6 +104,7 @@ export const GeneralSettings = () => {
               id="address" 
               value={settings.address}
               onChange={(e) => setSettings(prev => ({ ...prev, address: e.target.value }))}
+              placeholder="Enter organization address"
             />
           </div>
         </CardContent>
@@ -108,13 +127,14 @@ export const GeneralSettings = () => {
                 onValueChange={(value) => setSettings(prev => ({ ...prev, timezone: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select timezone" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="australia/sydney">Australia/Sydney</SelectItem>
-                  <SelectItem value="australia/melbourne">Australia/Melbourne</SelectItem>
-                  <SelectItem value="australia/brisbane">Australia/Brisbane</SelectItem>
-                  <SelectItem value="australia/perth">Australia/Perth</SelectItem>
+                <SelectContent className="max-h-60">
+                  {worldTimezones.map((tz) => (
+                    <SelectItem key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -125,12 +145,14 @@ export const GeneralSettings = () => {
                 onValueChange={(value) => setSettings(prev => ({ ...prev, currency: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="aud">AUD - Australian Dollar</SelectItem>
-                  <SelectItem value="usd">USD - US Dollar</SelectItem>
-                  <SelectItem value="eur">EUR - Euro</SelectItem>
+                <SelectContent className="max-h-60">
+                  {worldCurrencies.map((curr) => (
+                    <SelectItem key={curr.value} value={curr.value}>
+                      {curr.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -141,12 +163,10 @@ export const GeneralSettings = () => {
                 onValueChange={(value) => setSettings(prev => ({ ...prev, language: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select language" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="es">Spanish</SelectItem>
-                  <SelectItem value="pt">Portuguese</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -170,7 +190,7 @@ export const GeneralSettings = () => {
                   checked={hours.enabled}
                   onCheckedChange={(checked) => updateBusinessHours(day, 'enabled', checked)}
                 />
-                <span className="font-medium min-w-[80px]">{day}</span>
+                <span className="font-medium min-w-[80px] capitalize">{day}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Input 
@@ -178,13 +198,15 @@ export const GeneralSettings = () => {
                   value={hours.start} 
                   onChange={(e) => updateBusinessHours(day, 'start', e.target.value)}
                   className="w-24" 
+                  disabled={!hours.enabled}
                 />
-                <span>to</span>
+                <span className={hours.enabled ? "" : "text-muted-foreground"}>to</span>
                 <Input 
                   type="time" 
                   value={hours.end} 
                   onChange={(e) => updateBusinessHours(day, 'end', e.target.value)}
                   className="w-24" 
+                  disabled={!hours.enabled}
                 />
               </div>
             </div>
@@ -209,7 +231,7 @@ export const GeneralSettings = () => {
                 onValueChange={(value) => setSettings(prev => ({ ...prev, theme: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select theme" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="light">Light</SelectItem>
@@ -225,7 +247,7 @@ export const GeneralSettings = () => {
                 onValueChange={(value) => setSettings(prev => ({ ...prev, colorScheme: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select color scheme" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="bjj-gold">BJJ Gold</SelectItem>
