@@ -2,7 +2,7 @@
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GeneralSettings } from "@/components/admin/settings/GeneralSettings";
-import { UserManagement } from "@/components/admin/settings/UserManagement";
+import { UsersSettings } from "@/components/admin/settings/UsersSettings";
 import { SystemSettings } from "@/components/admin/settings/SystemSettings";
 import { SecuritySettings } from "@/components/admin/settings/SecuritySettings";
 import { IntegrationSettings } from "@/components/admin/settings/IntegrationSettings";
@@ -34,7 +34,7 @@ const AdminSettings = () => {
           </TabsContent>
 
           <TabsContent value="users">
-            <UserManagement />
+            <UsersSettings />
           </TabsContent>
 
           <TabsContent value="system">
