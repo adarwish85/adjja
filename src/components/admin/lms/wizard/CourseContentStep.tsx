@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -263,7 +264,51 @@ export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) =>
                       />
                     </div>
 
-                    <div className="flex space-x-2">
+                    {/* Render lessons and quizzes with accordions */}
+                    {topic.items.length > 0 && (
+                      <div className="space-y-3">
+                        <Accordion type="single" collapsible className="w-full">
+                          {topic.items.map((item) => (
+                            <AccordionItem key={item.id} value={item.id} className="border-l-4 border-l-bjj-gold">
+                              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                <div className="flex items-center space-x-2">
+                                  {item.type === "lesson" ? (
+                                    <Video className="h-4 w-4" />
+                                  ) : (
+                                    <HelpCircle className="h-4 w-4" />
+                                  )}
+                                  <span className="font-medium">
+                                    {item.type === "lesson" 
+                                      ? (item as Lesson).name || "Untitled Lesson"
+                                      : (item as Quiz).title || "Untitled Quiz"
+                                    }
+                                  </span>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="px-4 pb-4">
+                                {item.type === "lesson" ? (
+                                  <LessonEditor
+                                    lesson={item as Lesson}
+                                    onUpdate={(updates) => updateItem(topic.id, item.id, updates)}
+                                    onDelete={() => deleteItem(topic.id, item.id)}
+                                  />
+                                ) : (
+                                  <QuizEditor
+                                    quiz={item as Quiz}
+                                    onUpdate={(updates) => updateItem(topic.id, item.id, updates)}
+                                    onDelete={() => deleteItem(topic.id, item.id)}
+                                    onAddQuestion={() => addQuestion(topic.id, item.id)}
+                                  />
+                                )}
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                      </div>
+                    )}
+
+                    {/* Add Lesson and Quiz buttons - always visible at bottom */}
+                    <div className="flex space-x-2 pt-4 border-t">
                       <Button
                         variant="outline"
                         onClick={() => addLesson(topic.id)}
@@ -280,30 +325,6 @@ export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) =>
                         <HelpCircle className="h-4 w-4 mr-2" />
                         Add Quiz
                       </Button>
-                    </div>
-
-                    {/* Render lessons and quizzes */}
-                    <div className="space-y-3">
-                      {topic.items.map((item) => (
-                        <Card key={item.id} className="border-l-4 border-l-bjj-gold">
-                          <CardContent className="p-4">
-                            {item.type === "lesson" ? (
-                              <LessonEditor
-                                lesson={item as Lesson}
-                                onUpdate={(updates) => updateItem(topic.id, item.id, updates)}
-                                onDelete={() => deleteItem(topic.id, item.id)}
-                              />
-                            ) : (
-                              <QuizEditor
-                                quiz={item as Quiz}
-                                onUpdate={(updates) => updateItem(topic.id, item.id, updates)}
-                                onDelete={() => deleteItem(topic.id, item.id)}
-                                onAddQuestion={() => addQuestion(topic.id, item.id)}
-                              />
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
                     </div>
                   </div>
                 </CardContent>
@@ -378,11 +399,9 @@ const LessonEditor = ({ lesson, onUpdate, onDelete }: {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="font-medium text-bjj-navy flex items-center">
-          <Video className="h-4 w-4 mr-2" />
-          Lesson: {lesson.name || "Untitled Lesson"}
-          {isLoadingVideoInfo && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
-        </h4>
+        <div className="flex items-center space-x-2">
+          {isLoadingVideoInfo && <Loader2 className="h-4 w-4 animate-spin" />}
+        </div>
         <Button
           variant="ghost"
           size="sm"
@@ -469,10 +488,9 @@ const QuizEditor = ({ quiz, onUpdate, onDelete, onAddQuestion }: {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="font-medium text-bjj-navy flex items-center">
-          <HelpCircle className="h-4 w-4 mr-2" />
-          Quiz: {quiz.title || "Untitled Quiz"}
-        </h4>
+        <div className="flex items-center space-x-2">
+          {/* Title is now in the accordion trigger */}
+        </div>
         <Button
           variant="ghost"
           size="sm"
