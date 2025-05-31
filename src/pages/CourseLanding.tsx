@@ -107,7 +107,7 @@ const CourseLanding = () => {
                   <span>English</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Certificate className="h-4 w-4" />
+                  <Award className="h-4 w-4" />
                   <span>Certificate of completion</span>
                 </div>
               </div>
@@ -160,7 +160,7 @@ const CourseLanding = () => {
                           <span>Access on mobile and TV</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Certificate className="h-4 w-4" />
+                          <Award className="h-4 w-4" />
                           <span>Certificate of completion</span>
                         </div>
                       </div>
