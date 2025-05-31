@@ -1,149 +1,114 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { 
-  BookOpen, 
-  Users, 
-  PlayCircle, 
-  Award, 
-  TrendingUp, 
-  Clock,
-  Plus,
-  Upload,
-  BarChart3
-} from "lucide-react";
+import { BookOpen, Users, Play, Award, TrendingUp, DollarSign } from "lucide-react";
+import { useCourses } from "@/hooks/useCourses";
+import { useCourseEnrollments } from "@/hooks/useCourseEnrollments";
+import { useContentLibrary } from "@/hooks/useContentLibrary";
 
 export const LMSOverview = () => {
-  const kpiData = [
+  const { courses, isLoading: coursesLoading } = useCourses();
+  const { enrollments, isLoading: enrollmentsLoading } = useCourseEnrollments();
+  const { contentItems, isLoading: contentLoading } = useContentLibrary();
+
+  const stats = [
     {
       title: "Total Courses",
-      value: "45",
-      change: "+5",
-      changeType: "positive" as const,
+      value: courses.length.toString(),
       icon: BookOpen,
       color: "text-blue-600",
       bgColor: "bg-blue-100",
+      loading: coursesLoading,
     },
     {
       title: "Active Students",
-      value: "1,247",
-      change: "+89",
-      changeType: "positive" as const,
+      value: enrollments.filter(e => e.status === "Active").length.toString(),
       icon: Users,
       color: "text-green-600",
       bgColor: "bg-green-100",
+      loading: enrollmentsLoading,
     },
     {
-      title: "Videos Watched",
-      value: "8,934",
-      change: "+234",
-      changeType: "positive" as const,
-      icon: PlayCircle,
+      title: "Content Items",
+      value: contentItems.length.toString(),
+      icon: Play,
       color: "text-purple-600",
       bgColor: "bg-purple-100",
+      loading: contentLoading,
     },
     {
-      title: "Certificates Issued",
-      value: "312",
-      change: "+28",
-      changeType: "positive" as const,
+      title: "Completions",
+      value: enrollments.filter(e => e.status === "Completed").length.toString(),
       icon: Award,
-      color: "text-bjj-gold-dark",
+      color: "text-yellow-600",
       bgColor: "bg-yellow-100",
+      loading: enrollmentsLoading,
     },
-  ];
-
-  const recentActivity = [
-    { action: "New course 'Advanced Guard Passing' published", time: "2 hours ago", type: "course" },
-    { action: "Student John Doe completed 'Basic Positions'", time: "4 hours ago", type: "completion" },
-    { action: "Video 'Kimura from Guard' uploaded", time: "6 hours ago", type: "upload" },
-    { action: "Certificate issued to Maria Silva", time: "1 day ago", type: "certificate" },
-    { action: "Course 'Competition Prep' updated", time: "2 days ago", type: "update" },
-  ];
-
-  const popularCourses = [
-    { name: "BJJ Fundamentals", students: 234, rating: 4.9, revenue: "$2,340" },
-    { name: "Guard Passing System", students: 189, rating: 4.8, revenue: "$1,890" },
-    { name: "Submission Defense", students: 156, rating: 4.7, revenue: "$1,560" },
-    { name: "Competition Preparation", students: 123, rating: 4.9, revenue: "$1,230" },
+    {
+      title: "Avg Progress",
+      value: enrollments.length > 0 
+        ? Math.round(enrollments.reduce((acc, e) => acc + (e.progress_percentage || 0), 0) / enrollments.length) + "%"
+        : "0%",
+      icon: TrendingUp,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-100",
+      loading: enrollmentsLoading,
+    },
+    {
+      title: "Revenue",
+      value: "$" + courses.reduce((acc, c) => acc + (c.price || 0) * (c.total_students || 0), 0).toFixed(0),
+      icon: DollarSign,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-100",
+      loading: coursesLoading,
+    },
   ];
 
   return (
     <div className="space-y-6">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpiData.map((kpi) => (
-          <Card key={kpi.title} className="hover:shadow-lg transition-shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {stats.map((stat) => (
+          <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-bjj-gray">
-                {kpi.title}
+                {stat.title}
               </CardTitle>
-              <div className={`p-2 rounded-full ${kpi.bgColor}`}>
-                <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
+              <div className={`h-10 w-10 rounded-full ${stat.bgColor} flex items-center justify-center`}>
+                <stat.icon className={`h-5 w-5 ${stat.color}`} />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">{kpi.value}</div>
-              <p className="text-xs text-green-600">
-                +{kpi.change} from last month
-              </p>
+              <div className="text-2xl font-bold text-bjj-navy">
+                {stat.loading ? "..." : stat.value}
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-bjj-navy">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Course
-            </Button>
-            <Button variant="outline">
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Content
-            </Button>
-            <Button variant="outline">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              View Analytics
-            </Button>
-            <Button variant="outline">
-              <Award className="h-4 w-4 mr-2" />
-              Issue Certificate
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-bjj-navy flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Recent Activity
-            </CardTitle>
+            <CardTitle className="text-bjj-navy">Recent Course Activity</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start space-x-3">
-                  <div className={`p-1 rounded-full ${
-                    activity.type === 'course' ? 'bg-blue-100' :
-                    activity.type === 'completion' ? 'bg-green-100' :
-                    activity.type === 'upload' ? 'bg-purple-100' :
-                    activity.type === 'certificate' ? 'bg-yellow-100' : 'bg-gray-100'
-                  }`}>
-                    <div className="h-2 w-2 rounded-full bg-current" />
+              {enrollments.slice(0, 5).map((enrollment) => (
+                <div key={enrollment.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-bjj-navy">{enrollment.students?.name}</h4>
+                    <p className="text-sm text-bjj-gray">{enrollment.courses?.title}</p>
+                    <p className="text-xs text-bjj-gray">
+                      Progress: {enrollment.progress_percentage || 0}%
+                    </p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-bjj-navy">{activity.action}</p>
-                    <p className="text-xs text-bjj-gray">{activity.time}</p>
+                  <div className="text-right">
+                    <div className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                      enrollment.status === "Active" ? "bg-green-100 text-green-800" :
+                      enrollment.status === "Completed" ? "bg-blue-100 text-blue-800" :
+                      "bg-gray-100 text-gray-800"
+                    }`}>
+                      {enrollment.status}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -151,30 +116,30 @@ export const LMSOverview = () => {
           </CardContent>
         </Card>
 
-        {/* Popular Courses */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-bjj-navy flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Popular Courses
-            </CardTitle>
+            <CardTitle className="text-bjj-navy">Popular Courses</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {popularCourses.map((course, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-bjj-navy text-sm">{course.name}</h4>
-                    <div className="flex items-center space-x-3 text-xs text-bjj-gray mt-1">
-                      <span>{course.students} students</span>
-                      <span>⭐ {course.rating}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {course.revenue}
-                      </Badge>
+              {courses
+                .sort((a, b) => (b.total_students || 0) - (a.total_students || 0))
+                .slice(0, 5)
+                .map((course) => (
+                  <div key={course.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-bjj-navy">{course.title}</h4>
+                      <p className="text-sm text-bjj-gray">by {course.instructor}</p>
+                      <p className="text-xs text-bjj-gray">
+                        {course.total_students} students • {course.rating}/5 ⭐
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-bjj-navy">${course.price}</div>
+                      <div className="text-xs text-bjj-gray">{course.level}</div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </CardContent>
         </Card>
