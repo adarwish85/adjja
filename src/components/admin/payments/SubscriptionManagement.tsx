@@ -16,81 +16,59 @@ import {
   DollarSign,
   TrendingUp
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export const SubscriptionManagement = () => {
-  const subscriptionStats = [
-    { title: "Active Subscriptions", value: "324", icon: Users, color: "text-green-600", bgColor: "bg-green-100" },
-    { title: "Monthly Revenue", value: "$12,450", icon: DollarSign, color: "text-blue-600", bgColor: "bg-blue-100" },
-    { title: "Churn Rate", value: "2.3%", icon: TrendingUp, color: "text-yellow-600", bgColor: "bg-yellow-100" },
-    { title: "Renewals This Month", value: "89", icon: Calendar, color: "text-purple-600", bgColor: "bg-purple-100" },
+  const { data: subscriptions, refetch } = useQuery({
+    queryKey: ['subscriptions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscribers')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: subscriptionStats } = useQuery({
+    queryKey: ['subscription-stats'],
+    queryFn: async () => {
+      const activeCount = subscriptions?.filter(sub => sub.subscribed).length || 0;
+      const monthlyRevenue = subscriptions?.reduce((sum, sub) => {
+        if (!sub.subscribed) return sum;
+        const tierAmount = sub.subscription_tier === 'Basic' ? 19.99 : 
+                          sub.subscription_tier === 'Premium' ? 49.99 : 99.99;
+        return sum + tierAmount;
+      }, 0) || 0;
+
+      return {
+        activeSubscriptions: activeCount,
+        monthlyRevenue,
+        churnRate: "2.3%",
+        renewalsThisMonth: Math.floor(activeCount * 0.8)
+      };
+    },
+    enabled: !!subscriptions
+  });
+
+  const subscriptionStatsDisplay = [
+    { title: "Active Subscriptions", value: subscriptionStats?.activeSubscriptions?.toString() || "0", icon: Users, color: "text-green-600", bgColor: "bg-green-100" },
+    { title: "Monthly Revenue", value: `$${subscriptionStats?.monthlyRevenue?.toFixed(2) || '0.00'}`, icon: DollarSign, color: "text-blue-600", bgColor: "bg-blue-100" },
+    { title: "Churn Rate", value: subscriptionStats?.churnRate || "0%", icon: TrendingUp, color: "text-yellow-600", bgColor: "bg-yellow-100" },
+    { title: "Renewals This Month", value: subscriptionStats?.renewalsThisMonth?.toString() || "0", icon: Calendar, color: "text-purple-600", bgColor: "bg-purple-100" },
   ];
 
-  const subscriptions = [
-    {
-      id: "SUB-001",
-      customer: "João Silva",
-      email: "joao@email.com",
-      plan: "Premium Monthly",
-      amount: "$29.99",
-      status: "active",
-      nextBilling: "2024-02-15",
-      created: "2023-12-15"
-    },
-    {
-      id: "SUB-002",
-      customer: "Maria Santos",
-      email: "maria@email.com",
-      plan: "Basic Monthly",
-      amount: "$19.99",
-      status: "active",
-      nextBilling: "2024-02-10",
-      created: "2024-01-10"
-    },
-    {
-      id: "SUB-003",
-      customer: "Carlos Mendes",
-      email: "carlos@email.com",
-      plan: "Premium Annual",
-      amount: "$299.99",
-      status: "cancelled",
-      nextBilling: "N/A",
-      created: "2023-11-20"
-    },
-    {
-      id: "SUB-004",
-      customer: "Ana Costa",
-      email: "ana@email.com",
-      plan: "Basic Monthly",
-      amount: "$19.99",
-      status: "past_due",
-      nextBilling: "2024-01-20",
-      created: "2023-10-15"
-    },
-    {
-      id: "SUB-005",
-      customer: "Roberto Lima",
-      email: "roberto@email.com",
-      plan: "Premium Monthly",
-      amount: "$29.99",
-      status: "paused",
-      nextBilling: "2024-03-01",
-      created: "2023-09-05"
-    }
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active": return "bg-green-100 text-green-800";
-      case "cancelled": return "bg-red-100 text-red-800";
-      case "past_due": return "bg-yellow-100 text-yellow-800";
-      case "paused": return "bg-gray-100 text-gray-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
+  const getStatusColor = (subscribed: boolean) => {
+    return subscribed ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
   };
 
-  const getPlanColor = (plan: string) => {
-    if (plan.includes("Premium")) return "bg-purple-100 text-purple-800";
-    if (plan.includes("Basic")) return "bg-blue-100 text-blue-800";
+  const getPlanColor = (tier: string) => {
+    if (tier?.includes("Premium")) return "bg-purple-100 text-purple-800";
+    if (tier?.includes("Basic")) return "bg-blue-100 text-blue-800";
+    if (tier?.includes("Enterprise")) return "bg-orange-100 text-orange-800";
     return "bg-gray-100 text-gray-800";
   };
 
@@ -98,7 +76,7 @@ export const SubscriptionManagement = () => {
     <div className="space-y-6">
       {/* Subscription Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {subscriptionStats.map((stat) => (
+        {subscriptionStatsDisplay.map((stat) => (
           <Card key={stat.title} className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-bjj-gray">
@@ -140,7 +118,7 @@ export const SubscriptionManagement = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => refetch()}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
@@ -160,10 +138,8 @@ export const SubscriptionManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Subscription ID</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Plan</TableHead>
-                  <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Next Billing</TableHead>
                   <TableHead>Created</TableHead>
@@ -171,32 +147,31 @@ export const SubscriptionManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {subscriptions.map((subscription) => (
+                {subscriptions?.map((subscription) => (
                   <TableRow key={subscription.id}>
-                    <TableCell className="font-medium">
-                      {subscription.id}
-                    </TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{subscription.customer}</div>
                         <div className="text-sm text-bjj-gray">{subscription.email}</div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={getPlanColor(subscription.plan)}>
-                        {subscription.plan}
+                      <Badge variant="outline" className={getPlanColor(subscription.subscription_tier || '')}>
+                        {subscription.subscription_tier || 'No Plan'}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      {subscription.amount}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={getStatusColor(subscription.status)}>
-                        {subscription.status.replace('_', ' ')}
+                      <Badge variant="outline" className={getStatusColor(subscription.subscribed)}>
+                        {subscription.subscribed ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
-                    <TableCell>{subscription.nextBilling}</TableCell>
-                    <TableCell>{subscription.created}</TableCell>
+                    <TableCell>
+                      {subscription.subscription_end ? 
+                        new Date(subscription.subscription_end).toLocaleDateString() : 'N/A'
+                      }
+                    </TableCell>
+                    <TableCell>
+                      {new Date(subscription.created_at).toLocaleDateString()}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button variant="ghost" size="sm">
