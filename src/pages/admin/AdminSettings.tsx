@@ -14,8 +14,8 @@ const AdminSettings = () => {
     <SuperAdminLayout>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-bjj-navy">Settings</h1>
-          <p className="text-bjj-gray">Manage system configuration and preferences</p>
+          <h1 className="text-3xl font-bold text-bjj-navy">Academy Settings</h1>
+          <p className="text-bjj-gray">Manage academy configuration and preferences</p>
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">

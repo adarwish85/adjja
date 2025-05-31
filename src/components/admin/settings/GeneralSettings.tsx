@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building, Globe, Clock, Palette } from "lucide-react";
+import { Building, Globe, Clock, Palette, Upload, X } from "lucide-react";
 import { useSettings, GeneralSettings as GeneralSettingsType } from "@/hooks/useSettings";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -22,11 +22,18 @@ export const GeneralSettings = () => {
   
   const { theme, colorScheme, setTheme, setColorScheme } = useTheme();
   const [settings, setSettings] = useState<GeneralSettingsType>(defaultGeneralSettings);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   // Load saved settings on component mount
   useEffect(() => {
     const savedSettings = loadGeneralSettings();
     setSettings(savedSettings);
+    
+    // Load logo preview if exists
+    if (savedSettings.academyLogo) {
+      setLogoPreview(savedSettings.academyLogo);
+    }
   }, []);
 
   const handleSave = async () => {
@@ -35,6 +42,30 @@ export const GeneralSettings = () => {
 
   const handleReset = () => {
     setSettings(defaultGeneralSettings);
+    setLogoFile(null);
+    setLogoPreview(null);
+  };
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setLogoPreview(result);
+        setSettings(prev => ({ ...prev, academyLogo: result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+    setSettings(prev => ({ ...prev, academyLogo: "" }));
   };
 
   const updateBusinessHours = (day: string, field: 'enabled' | 'start' | 'end', value: boolean | string) => {
@@ -62,32 +93,73 @@ export const GeneralSettings = () => {
 
   return (
     <div className="space-y-6">
-      {/* Organization Settings */}
+      {/* Academy Settings */}
       <Card>
         <CardHeader>
           <CardTitle className="text-bjj-navy flex items-center gap-2">
             <Building className="h-5 w-5" />
-            Organization Settings
+            Academy Settings
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Academy Logo */}
+          <div className="space-y-2">
+            <Label htmlFor="academy-logo">Academy Logo</Label>
+            <div className="flex items-center gap-4">
+              {logoPreview ? (
+                <div className="relative">
+                  <img 
+                    src={logoPreview} 
+                    alt="Academy Logo" 
+                    className="w-16 h-16 object-contain border rounded-lg bg-white"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6"
+                    onClick={removeLogo}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                  <Upload className="h-6 w-6 text-gray-400" />
+                </div>
+              )}
+              <div>
+                <Input
+                  id="academy-logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="max-w-xs"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Upload PNG, JPG, or SVG. Recommended size: 64x64px
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="org-name">Organization Name</Label>
+              <Label htmlFor="academy-name">Academy Name</Label>
               <Input 
-                id="org-name" 
-                value={settings.organizationName}
-                onChange={(e) => setSettings(prev => ({ ...prev, organizationName: e.target.value }))}
-                placeholder="Enter organization name"
+                id="academy-name" 
+                value={settings.academyName}
+                onChange={(e) => setSettings(prev => ({ ...prev, academyName: e.target.value }))}
+                placeholder="Enter academy name"
               />
             </div>
             <div>
-              <Label htmlFor="org-code">Organization Code</Label>
+              <Label htmlFor="academy-code">Academy Code</Label>
               <Input 
-                id="org-code" 
-                value={settings.organizationCode}
-                onChange={(e) => setSettings(prev => ({ ...prev, organizationCode: e.target.value }))}
-                placeholder="Enter organization code"
+                id="academy-code" 
+                value={settings.academyCode}
+                onChange={(e) => setSettings(prev => ({ ...prev, academyCode: e.target.value }))}
+                placeholder="Enter academy code"
               />
             </div>
             <div>
@@ -111,12 +183,12 @@ export const GeneralSettings = () => {
             </div>
           </div>
           <div>
-            <Label htmlFor="address">Organization Address</Label>
+            <Label htmlFor="address">Academy Address</Label>
             <Input 
               id="address" 
               value={settings.address}
               onChange={(e) => setSettings(prev => ({ ...prev, address: e.target.value }))}
-              placeholder="Enter organization address"
+              placeholder="Enter academy address"
             />
           </div>
         </CardContent>

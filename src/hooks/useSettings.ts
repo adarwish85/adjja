@@ -1,10 +1,12 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface GeneralSettings {
-  organizationName: string;
-  organizationCode: string;
+  academyName: string;
+  academyCode: string;
+  academyLogo: string;
   contactEmail: string;
   contactPhone: string;
   address: string;
@@ -212,8 +214,9 @@ export const useSettings = () => {
 
   // Default settings with Cairo timezone and Egyptian Pound
   const defaultGeneralSettings: GeneralSettings = {
-    organizationName: "Australian Jiu-Jitsu Academy",
-    organizationCode: "ADJJA",
+    academyName: "Australian Jiu-Jitsu Academy",
+    academyCode: "ADJJA",
+    academyLogo: "",
     contactEmail: "admin@adjja.com",
     contactPhone: "+61 400 123 456",
     address: "123 BJJ Street, Sydney, NSW 2000, Australia",
