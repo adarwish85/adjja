@@ -28,138 +28,236 @@ const weekdays = [
 const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
 const minutes = ["00", "15", "30", "45"];
 
+interface DaySchedule {
+  enabled: boolean;
+  startHour: string;
+  startMinute: string;
+  startPeriod: string;
+  endHour: string;
+  endMinute: string;
+  endPeriod: string;
+}
+
 export const ScheduleSelector = ({ value, onChange }: ScheduleSelectorProps) => {
   // Parse existing schedule if it exists
   const parseSchedule = (schedule: string) => {
-    if (!schedule) return { days: [], hour: "", minute: "", period: "" };
+    const defaultSchedule: Record<string, DaySchedule> = {};
+    weekdays.forEach(day => {
+      defaultSchedule[day.id] = {
+        enabled: false,
+        startHour: "",
+        startMinute: "",
+        startPeriod: "",
+        endHour: "",
+        endMinute: "",
+        endPeriod: "",
+      };
+    });
+
+    if (!schedule) return defaultSchedule;
     
-    // Try to parse format like "Mon, Wed, Fri - 6:00 AM"
-    const parts = schedule.split(" - ");
-    if (parts.length !== 2) return { days: [], hour: "", minute: "", period: "" };
+    // Try to parse format like "Mon 6:00 AM - 7:00 AM, Wed 7:00 PM - 8:30 PM"
+    const daySchedules = schedule.split(", ");
     
-    const daysPart = parts[0];
-    const timePart = parts[1];
+    daySchedules.forEach(daySchedule => {
+      const parts = daySchedule.split(" ");
+      if (parts.length >= 5) {
+        const dayShort = parts[0];
+        const startTime = parts[1];
+        const startPeriod = parts[2];
+        // parts[3] is "-"
+        const endTime = parts[4];
+        const endPeriod = parts[5];
+        
+        const day = weekdays.find(w => w.short === dayShort);
+        if (day && startTime && endTime) {
+          const [startHour, startMinute] = startTime.split(":");
+          const [endHour, endMinute] = endTime.split(":");
+          
+          if (startHour && startMinute && endHour && endMinute) {
+            defaultSchedule[day.id] = {
+              enabled: true,
+              startHour,
+              startMinute,
+              startPeriod: startPeriod || "",
+              endHour,
+              endMinute,
+              endPeriod: endPeriod || "",
+            };
+          }
+        }
+      }
+    });
     
-    const selectedDays = weekdays
-      .filter(day => daysPart.includes(day.short))
-      .map(day => day.id);
-    
-    const timeMatch = timePart.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/);
-    if (!timeMatch) return { days: selectedDays, hour: "", minute: "", period: "" };
-    
-    return {
-      days: selectedDays,
-      hour: timeMatch[1],
-      minute: timeMatch[2],
-      period: timeMatch[3],
-    };
+    return defaultSchedule;
   };
 
-  const parsed = parseSchedule(value);
-  const [selectedDays, setSelectedDays] = useState<string[]>(parsed.days);
-  const [selectedHour, setSelectedHour] = useState(parsed.hour);
-  const [selectedMinute, setSelectedMinute] = useState(parsed.minute);
-  const [selectedPeriod, setSelectedPeriod] = useState(parsed.period);
+  const [daySchedules, setDaySchedules] = useState<Record<string, DaySchedule>>(parseSchedule(value));
 
-  const updateSchedule = (days: string[], hour: string, minute: string, period: string) => {
-    if (days.length === 0 || !hour || !minute || !period) {
-      onChange("");
-      return;
-    }
-
-    const dayStrings = days
-      .map(dayId => weekdays.find(w => w.id === dayId)?.short)
+  const updateSchedule = (schedules: Record<string, DaySchedule>) => {
+    const enabledDays = Object.entries(schedules)
+      .filter(([_, schedule]) => schedule.enabled && 
+        schedule.startHour && schedule.startMinute && schedule.startPeriod &&
+        schedule.endHour && schedule.endMinute && schedule.endPeriod)
+      .map(([dayId, schedule]) => {
+        const day = weekdays.find(w => w.id === dayId);
+        if (!day) return null;
+        
+        return `${day.short} ${schedule.startHour}:${schedule.startMinute} ${schedule.startPeriod} - ${schedule.endHour}:${schedule.endMinute} ${schedule.endPeriod}`;
+      })
       .filter(Boolean);
     
-    const scheduleString = `${dayStrings.join(", ")} - ${hour}:${minute} ${period}`;
+    const scheduleString = enabledDays.join(", ");
     onChange(scheduleString);
   };
 
-  const handleDayChange = (dayId: string, checked: boolean) => {
-    const newDays = checked 
-      ? [...selectedDays, dayId]
-      : selectedDays.filter(d => d !== dayId);
-    
-    setSelectedDays(newDays);
-    updateSchedule(newDays, selectedHour, selectedMinute, selectedPeriod);
+  const handleDayToggle = (dayId: string, enabled: boolean) => {
+    const newSchedules = {
+      ...daySchedules,
+      [dayId]: {
+        ...daySchedules[dayId],
+        enabled,
+      }
+    };
+    setDaySchedules(newSchedules);
+    updateSchedule(newSchedules);
   };
 
-  const handleTimeChange = (type: 'hour' | 'minute' | 'period', value: string) => {
-    let newHour = selectedHour;
-    let newMinute = selectedMinute;
-    let newPeriod = selectedPeriod;
-
-    if (type === 'hour') newHour = value;
-    if (type === 'minute') newMinute = value;
-    if (type === 'period') newPeriod = value;
-
-    setSelectedHour(newHour);
-    setSelectedMinute(newMinute);
-    setSelectedPeriod(newPeriod);
-    
-    updateSchedule(selectedDays, newHour, newMinute, newPeriod);
+  const handleTimeChange = (dayId: string, field: keyof DaySchedule, value: string) => {
+    const newSchedules = {
+      ...daySchedules,
+      [dayId]: {
+        ...daySchedules[dayId],
+        [field]: value,
+      }
+    };
+    setDaySchedules(newSchedules);
+    updateSchedule(newSchedules);
   };
 
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-sm font-medium mb-3 block">Select Days</Label>
-        <div className="grid grid-cols-2 gap-2">
+        <Label className="text-sm font-medium mb-3 block">Select Days and Times</Label>
+        <div className="space-y-3">
           {weekdays.map((day) => (
-            <div key={day.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={day.id}
-                checked={selectedDays.includes(day.id)}
-                onCheckedChange={(checked) => handleDayChange(day.id, !!checked)}
-              />
-              <Label htmlFor={day.id} className="text-sm">
-                {day.label}
-              </Label>
+            <div key={day.id} className="border rounded-lg p-3">
+              <div className="flex items-center space-x-2 mb-3">
+                <Checkbox
+                  id={day.id}
+                  checked={daySchedules[day.id]?.enabled || false}
+                  onCheckedChange={(checked) => handleDayToggle(day.id, !!checked)}
+                />
+                <Label htmlFor={day.id} className="text-sm font-medium">
+                  {day.label}
+                </Label>
+              </div>
+              
+              {daySchedules[day.id]?.enabled && (
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600 min-w-[40px]">From:</span>
+                    <Select 
+                      value={daySchedules[day.id]?.startHour || ""} 
+                      onValueChange={(value) => handleTimeChange(day.id, 'startHour', value)}
+                    >
+                      <SelectTrigger className="w-16">
+                        <SelectValue placeholder="Hr" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hours.map((hour) => (
+                          <SelectItem key={hour} value={hour}>
+                            {hour}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <span>:</span>
+
+                    <Select 
+                      value={daySchedules[day.id]?.startMinute || ""} 
+                      onValueChange={(value) => handleTimeChange(day.id, 'startMinute', value)}
+                    >
+                      <SelectTrigger className="w-16">
+                        <SelectValue placeholder="Min" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {minutes.map((minute) => (
+                          <SelectItem key={minute} value={minute}>
+                            {minute}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select 
+                      value={daySchedules[day.id]?.startPeriod || ""} 
+                      onValueChange={(value) => handleTimeChange(day.id, 'startPeriod', value)}
+                    >
+                      <SelectTrigger className="w-16">
+                        <SelectValue placeholder="AM/PM" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AM">AM</SelectItem>
+                        <SelectItem value="PM">PM</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600 min-w-[40px]">To:</span>
+                    <Select 
+                      value={daySchedules[day.id]?.endHour || ""} 
+                      onValueChange={(value) => handleTimeChange(day.id, 'endHour', value)}
+                    >
+                      <SelectTrigger className="w-16">
+                        <SelectValue placeholder="Hr" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hours.map((hour) => (
+                          <SelectItem key={hour} value={hour}>
+                            {hour}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <span>:</span>
+
+                    <Select 
+                      value={daySchedules[day.id]?.endMinute || ""} 
+                      onValueChange={(value) => handleTimeChange(day.id, 'endMinute', value)}
+                    >
+                      <SelectTrigger className="w-16">
+                        <SelectValue placeholder="Min" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {minutes.map((minute) => (
+                          <SelectItem key={minute} value={minute}>
+                            {minute}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select 
+                      value={daySchedules[day.id]?.endPeriod || ""} 
+                      onValueChange={(value) => handleTimeChange(day.id, 'endPeriod', value)}
+                    >
+                      <SelectTrigger className="w-16">
+                        <SelectValue placeholder="AM/PM" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AM">AM</SelectItem>
+                        <SelectItem value="PM">PM</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
-        </div>
-      </div>
-
-      <div>
-        <Label className="text-sm font-medium mb-3 block">Select Time</Label>
-        <div className="flex space-x-2">
-          <Select value={selectedHour} onValueChange={(value) => handleTimeChange('hour', value)}>
-            <SelectTrigger className="w-20">
-              <SelectValue placeholder="Hour" />
-            </SelectTrigger>
-            <SelectContent>
-              {hours.map((hour) => (
-                <SelectItem key={hour} value={hour}>
-                  {hour}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <span className="flex items-center">:</span>
-
-          <Select value={selectedMinute} onValueChange={(value) => handleTimeChange('minute', value)}>
-            <SelectTrigger className="w-20">
-              <SelectValue placeholder="Min" />
-            </SelectTrigger>
-            <SelectContent>
-              {minutes.map((minute) => (
-                <SelectItem key={minute} value={minute}>
-                  {minute}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedPeriod} onValueChange={(value) => handleTimeChange('period', value)}>
-            <SelectTrigger className="w-20">
-              <SelectValue placeholder="AM/PM" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="AM">AM</SelectItem>
-              <SelectItem value="PM">PM</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
 

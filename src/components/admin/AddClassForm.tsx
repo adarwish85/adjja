@@ -32,7 +32,6 @@ export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }
     name: classItem?.name || "",
     instructor: classItem?.instructor || "",
     schedule: classItem?.schedule || "",
-    duration: classItem?.duration || 60,
     capacity: classItem?.capacity || 20,
     level: classItem?.level || "Beginner" as const,
     location: classItem?.location || "",
@@ -43,22 +42,56 @@ export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }
   // Get active coaches for the dropdown
   const activeCoaches = coaches.filter(coach => coach.status === "active");
 
+  // Calculate duration based on schedule
+  const calculateDuration = (schedule: string): number => {
+    if (!schedule) return 60; // default duration
+    
+    // Parse the first day's time to calculate duration
+    const daySchedules = schedule.split(", ");
+    if (daySchedules.length > 0) {
+      const firstDay = daySchedules[0];
+      const timeMatch = firstDay.match(/(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)/);
+      
+      if (timeMatch) {
+        const [, startHour, startMinute, startPeriod, endHour, endMinute, endPeriod] = timeMatch;
+        
+        // Convert to 24-hour format
+        let start24Hour = parseInt(startHour);
+        let end24Hour = parseInt(endHour);
+        
+        if (startPeriod === "PM" && start24Hour !== 12) start24Hour += 12;
+        if (startPeriod === "AM" && start24Hour === 12) start24Hour = 0;
+        if (endPeriod === "PM" && end24Hour !== 12) end24Hour += 12;
+        if (endPeriod === "AM" && end24Hour === 12) end24Hour = 0;
+        
+        const startMinutes = start24Hour * 60 + parseInt(startMinute);
+        const endMinutes = end24Hour * 60 + parseInt(endMinute);
+        
+        return endMinutes - startMinutes;
+      }
+    }
+    
+    return 60; // default duration
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log("Form submission data:", formData);
+    const duration = calculateDuration(formData.schedule);
+    console.log("Form submission data:", { ...formData, duration });
     
     if (isEditing && classItem) {
       onSubmit({
         ...classItem,
         ...formData,
+        duration,
       });
     } else {
       const newClass: Omit<Class, "id" | "created_at" | "updated_at"> = {
         name: formData.name,
         instructor: formData.instructor,
         schedule: formData.schedule,
-        duration: formData.duration,
+        duration,
         capacity: formData.capacity,
         enrolled: 0, // Default to 0 for new classes
         level: formData.level,
@@ -125,20 +158,7 @@ export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="duration">Duration (minutes)</Label>
-          <Input
-            id="duration"
-            type="number"
-            min="15"
-            max="180"
-            value={formData.duration}
-            onChange={(e) => handleChange("duration", parseInt(e.target.value) || 60)}
-            required
-          />
-        </div>
-        
+      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="capacity">Capacity</Label>
           <Input
@@ -151,9 +171,7 @@ export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }
             required
           />
         </div>
-      </div>
 
-      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="level">Level</Label>
           <Select
@@ -193,26 +211,26 @@ export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }
             </SelectContent>
           </Select>
         </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <Select
-            value={formData.status}
-            onValueChange={(value) => handleChange("status", value)}
-            required
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              {statusOptions.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="status">Status</Label>
+        <Select
+          value={formData.status}
+          onValueChange={(value) => handleChange("status", value)}
+          required
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select status" />
+          </SelectTrigger>
+          <SelectContent>
+            {statusOptions.map((status) => (
+              <SelectItem key={status} value={status}>
+                {status}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">
