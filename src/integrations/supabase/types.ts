@@ -644,6 +644,7 @@ export type Database = {
           role_id: string | null
           status: string | null
           updated_at: string | null
+          username: string | null
         }
         Insert: {
           created_at?: string | null
@@ -655,6 +656,7 @@ export type Database = {
           role_id?: string | null
           status?: string | null
           updated_at?: string | null
+          username?: string | null
         }
         Update: {
           created_at?: string | null
@@ -666,6 +668,7 @@ export type Database = {
           role_id?: string | null
           status?: string | null
           updated_at?: string | null
+          username?: string | null
         }
         Relationships: [
           {
@@ -969,7 +972,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_student_account: {
+        Args: {
+          p_email: string
+          p_password: string
+          p_username: string
+          p_name: string
+          p_phone?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

@@ -39,6 +39,10 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
     attendance_rate: student?.attendance_rate || 0,
     joined_date: student?.joined_date || new Date().toISOString().split('T')[0],
     last_attended: student?.last_attended || new Date().toISOString().split('T')[0],
+    // New fields for account creation
+    username: "",
+    password: "",
+    createAccount: !isEditing, // Only show for new students
   });
 
   // Get active coaches for the dropdown
@@ -69,6 +73,10 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
         attendance_rate: formData.attendance_rate,
         joined_date: formData.joined_date,
         last_attended: formData.last_attended || null,
+        // Add account creation data
+        username: formData.createAccount ? formData.username : undefined,
+        password: formData.createAccount ? formData.password : undefined,
+        createAccount: formData.createAccount,
       };
       
       console.log("Submitting new student:", newStudent);
@@ -76,7 +84,7 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
     }
   };
 
-  const handleChange = (field: string, value: string | number) => {
+  const handleChange = (field: string, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -141,6 +149,51 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
           </Select>
         </div>
       </div>
+
+      {/* Account Creation Section - Only for new students */}
+      {!isEditing && (
+        <div className="border-t pt-4 space-y-4">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="createAccount"
+              checked={formData.createAccount}
+              onChange={(e) => handleChange("createAccount", e.target.checked)}
+              className="rounded"
+            />
+            <Label htmlFor="createAccount" className="text-sm font-medium">
+              Create student portal account
+            </Label>
+          </div>
+          
+          {formData.createAccount && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={formData.username}
+                  onChange={(e) => handleChange("username", e.target.value)}
+                  placeholder="Enter username"
+                  required={formData.createAccount}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => handleChange("password", e.target.value)}
+                  placeholder="Enter password"
+                  required={formData.createAccount}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">

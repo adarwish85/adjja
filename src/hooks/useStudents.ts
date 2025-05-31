@@ -19,6 +19,10 @@ export interface Student {
   last_attended: string | null;
   created_at: string;
   updated_at: string;
+  // Optional fields for account creation
+  username?: string;
+  password?: string;
+  createAccount?: boolean;
 }
 
 export const useStudents = () => {
@@ -61,9 +65,34 @@ export const useStudents = () => {
     try {
       console.log("Adding student with data:", studentData);
       
+      // If account creation is requested, create the user account first
+      if (studentData.createAccount && studentData.username && studentData.password) {
+        console.log("Creating student account...");
+        
+        // Call the database function to create the student account
+        const { data: accountData, error: accountError } = await supabase.rpc('create_student_account', {
+          p_email: studentData.email,
+          p_password: studentData.password,
+          p_username: studentData.username,
+          p_name: studentData.name,
+          p_phone: studentData.phone
+        });
+
+        if (accountError) {
+          console.error("Account creation error:", accountError);
+          throw new Error(`Failed to create student account: ${accountError.message}`);
+        }
+
+        console.log("Student account created successfully:", accountData);
+        toast.success("Student account created successfully");
+      }
+
+      // Create the student record (remove account-specific fields)
+      const { username, password, createAccount, ...studentRecord } = studentData;
+      
       const { data, error } = await supabase
         .from("students")
-        .insert([studentData])
+        .insert([studentRecord])
         .select()
         .single();
 
@@ -89,7 +118,7 @@ export const useStudents = () => {
       return typedStudent;
     } catch (error) {
       console.error("Error adding student:", error);
-      toast.error("Failed to add student");
+      toast.error(error instanceof Error ? error.message : "Failed to add student");
       throw error;
     }
   };
