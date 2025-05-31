@@ -21,9 +21,10 @@ import {
   Settings,
   Shield
 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 const menuItems = [
-  { title: "Dashboard", icon: BarChart3, url: "/admin/dashboard", active: true },
+  { title: "Dashboard", icon: BarChart3, url: "/admin/dashboard" },
   { title: "Coaches", icon: Users, url: "/admin/coaches" },
   { title: "Students", icon: GraduationCap, url: "/admin/students" },
   { title: "Classes", icon: Calendar, url: "/admin/classes" },
@@ -35,6 +36,8 @@ const menuItems = [
 ];
 
 export const SuperAdminSidebar = () => {
+  const location = useLocation();
+
   return (
     <Sidebar className="border-r border-gray-200">
       <SidebarHeader className="p-6 border-b border-gray-200">
@@ -60,7 +63,7 @@ export const SuperAdminSidebar = () => {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    isActive={item.active}
+                    isActive={location.pathname === item.url}
                     className="w-full justify-start px-3 py-2 text-bjj-gray hover:bg-bjj-gold/10 hover:text-bjj-gold-dark data-[active=true]:bg-bjj-gold/20 data-[active=true]:text-bjj-gold-dark"
                   >
                     <a href={item.url} className="flex items-center space-x-3">
