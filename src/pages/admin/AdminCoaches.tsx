@@ -16,72 +16,31 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2, Mail, Phone } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Mail, Phone, Loader2 } from "lucide-react";
 import { AddCoachForm } from "@/components/admin/AddCoachForm";
-
-interface Coach {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  branch: string;
-  belt: string;
-  specialties: string[];
-  status: "active" | "inactive";
-  studentsCount: number;
-  joinedDate: string;
-}
-
-const mockCoaches: Coach[] = [
-  {
-    id: "1",
-    name: "Marcus Silva",
-    email: "marcus@adjja.com",
-    phone: "+1 (555) 123-4567",
-    branch: "Downtown",
-    belt: "Black Belt",
-    specialties: ["Competition", "No-Gi"],
-    status: "active",
-    studentsCount: 45,
-    joinedDate: "2020-03-15",
-  },
-  {
-    id: "2",
-    name: "Ana Rodriguez",
-    email: "ana@adjja.com",
-    phone: "+1 (555) 987-6543",
-    branch: "Westside",
-    belt: "Brown Belt",
-    specialties: ["Fundamentals", "Women's Classes"],
-    status: "active",
-    studentsCount: 32,
-    joinedDate: "2021-08-22",
-  },
-  {
-    id: "3",
-    name: "David Chen",
-    email: "david@adjja.com",
-    phone: "+1 (555) 456-7890",
-    branch: "North Valley",
-    belt: "Purple Belt",
-    specialties: ["Kids Classes", "Self Defense"],
-    status: "active",
-    studentsCount: 28,
-    joinedDate: "2022-01-10",
-  },
-];
+import { useCoaches, type Coach } from "@/hooks/useCoaches";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const AdminCoaches = () => {
-  const [coaches, setCoaches] = useState<Coach[]>(mockCoaches);
+  const { coaches, loading, addCoach, updateCoach, deleteCoach } = useCoaches();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCoach, setEditingCoach] = useState<Coach | null>(null);
+  const [deletingCoach, setDeletingCoach] = useState<Coach | null>(null);
 
   const filteredCoaches = coaches.filter(
     (coach) =>
@@ -90,24 +49,34 @@ const AdminCoaches = () => {
       coach.branch.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddCoach = (newCoach: Omit<Coach, "id">) => {
-    const coach: Coach = {
-      ...newCoach,
-      id: Date.now().toString(),
-    };
-    setCoaches([...coaches, coach]);
-    setIsAddDialogOpen(false);
+  const handleAddCoach = async (newCoach: Omit<Coach, "id" | "created_at" | "updated_at">) => {
+    try {
+      await addCoach(newCoach);
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      // Error is already handled in the hook
+    }
   };
 
-  const handleEditCoach = (updatedCoach: Coach) => {
-    setCoaches(coaches.map(coach => 
-      coach.id === updatedCoach.id ? updatedCoach : coach
-    ));
-    setEditingCoach(null);
+  const handleEditCoach = async (updatedCoach: Coach) => {
+    try {
+      const { id, created_at, updated_at, ...updates } = updatedCoach;
+      await updateCoach(id, updates);
+      setEditingCoach(null);
+    } catch (error) {
+      // Error is already handled in the hook
+    }
   };
 
-  const handleDeleteCoach = (coachId: string) => {
-    setCoaches(coaches.filter(coach => coach.id !== coachId));
+  const handleDeleteCoach = async () => {
+    if (deletingCoach) {
+      try {
+        await deleteCoach(deletingCoach.id);
+        setDeletingCoach(null);
+      } catch (error) {
+        // Error is already handled in the hook
+      }
+    }
   };
 
   const getBeltColor = (belt: string) => {
@@ -126,6 +95,23 @@ const AdminCoaches = () => {
         return "bg-gray-500 text-white";
     }
   };
+
+  const activeCoaches = coaches.filter(c => c.status === "active");
+  const totalStudents = coaches.reduce((sum, coach) => sum + coach.students_count, 0);
+  const uniqueBranches = new Set(coaches.map(c => c.branch)).size;
+
+  if (loading) {
+    return (
+      <SuperAdminLayout>
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-bjj-gold" />
+            <span className="ml-2 text-bjj-gray">Loading coaches...</span>
+          </div>
+        </div>
+      </SuperAdminLayout>
+    );
+  }
 
   return (
     <SuperAdminLayout>
@@ -170,9 +156,7 @@ const AdminCoaches = () => {
               <CardTitle className="text-sm font-medium text-bjj-gray">Active Coaches</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">
-                {coaches.filter(c => c.status === "active").length}
-              </div>
+              <div className="text-2xl font-bold text-bjj-navy">{activeCoaches.length}</div>
             </CardContent>
           </Card>
           <Card>
@@ -180,9 +164,7 @@ const AdminCoaches = () => {
               <CardTitle className="text-sm font-medium text-bjj-gray">Total Students</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">
-                {coaches.reduce((sum, coach) => sum + coach.studentsCount, 0)}
-              </div>
+              <div className="text-2xl font-bold text-bjj-navy">{totalStudents}</div>
             </CardContent>
           </Card>
           <Card>
@@ -190,9 +172,7 @@ const AdminCoaches = () => {
               <CardTitle className="text-sm font-medium text-bjj-gray">Branches</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">
-                {new Set(coaches.map(c => c.branch)).size}
-              </div>
+              <div className="text-2xl font-bold text-bjj-navy">{uniqueBranches}</div>
             </CardContent>
           </Card>
         </div>
@@ -236,7 +216,7 @@ const AdminCoaches = () => {
                       <div>
                         <div className="font-medium text-bjj-navy">{coach.name}</div>
                         <div className="text-sm text-bjj-gray">
-                          Joined {new Date(coach.joinedDate).toLocaleDateString()}
+                          Joined {new Date(coach.joined_date).toLocaleDateString()}
                         </div>
                       </div>
                     </TableCell>
@@ -246,10 +226,12 @@ const AdminCoaches = () => {
                           <Mail className="h-3 w-3 mr-1 text-bjj-gray" />
                           {coach.email}
                         </div>
-                        <div className="flex items-center text-sm">
-                          <Phone className="h-3 w-3 mr-1 text-bjj-gray" />
-                          {coach.phone}
-                        </div>
+                        {coach.phone && (
+                          <div className="flex items-center text-sm">
+                            <Phone className="h-3 w-3 mr-1 text-bjj-gray" />
+                            {coach.phone}
+                          </div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -270,7 +252,7 @@ const AdminCoaches = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium">{coach.studentsCount}</div>
+                      <div className="font-medium">{coach.students_count}</div>
                     </TableCell>
                     <TableCell>
                       <Badge 
@@ -292,7 +274,7 @@ const AdminCoaches = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDeleteCoach(coach.id)}
+                          onClick={() => setDeletingCoach(coach)}
                           className="text-red-600 hover:text-red-800"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -324,6 +306,28 @@ const AdminCoaches = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deletingCoach} onOpenChange={(open) => !open && setDeletingCoach(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the coach
+                "{deletingCoach?.name}" from the system.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteCoach}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </SuperAdminLayout>
   );

@@ -12,23 +12,11 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-
-interface Coach {
-  id?: string;
-  name: string;
-  email: string;
-  phone: string;
-  branch: string;
-  belt: string;
-  specialties: string[];
-  status: "active" | "inactive";
-  studentsCount: number;
-  joinedDate: string;
-}
+import { Coach } from "@/hooks/useCoaches";
 
 interface AddCoachFormProps {
   coach?: Coach;
-  onSubmit: (coach: Coach | Omit<Coach, "id">) => void;
+  onSubmit: (coach: Omit<Coach, "id" | "created_at" | "updated_at">) => void;
   isEditing?: boolean;
 }
 
@@ -55,8 +43,8 @@ export const AddCoachForm = ({ coach, onSubmit, isEditing = false }: AddCoachFor
     belt: coach?.belt || "",
     specialties: coach?.specialties || [],
     status: coach?.status || "active" as const,
-    studentsCount: coach?.studentsCount || 0,
-    joinedDate: coach?.joinedDate || new Date().toISOString().split('T')[0],
+    students_count: coach?.students_count || 0,
+    joined_date: coach?.joined_date || new Date().toISOString().split('T')[0],
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -67,10 +55,7 @@ export const AddCoachForm = ({ coach, onSubmit, isEditing = false }: AddCoachFor
       return;
     }
 
-    const coachData = isEditing && coach ? { ...formData, id: coach.id } : formData;
-    onSubmit(coachData as any);
-    
-    toast.success(isEditing ? "Coach updated successfully" : "Coach added successfully");
+    onSubmit(formData);
     
     if (!isEditing) {
       setFormData({
@@ -81,8 +66,8 @@ export const AddCoachForm = ({ coach, onSubmit, isEditing = false }: AddCoachFor
         belt: "",
         specialties: [],
         status: "active",
-        studentsCount: 0,
-        joinedDate: new Date().toISOString().split('T')[0],
+        students_count: 0,
+        joined_date: new Date().toISOString().split('T')[0],
       });
     }
   };
@@ -192,8 +177,8 @@ export const AddCoachForm = ({ coach, onSubmit, isEditing = false }: AddCoachFor
             id="studentsCount"
             type="number"
             min="0"
-            value={formData.studentsCount}
-            onChange={(e) => setFormData(prev => ({ ...prev, studentsCount: parseInt(e.target.value) || 0 }))}
+            value={formData.students_count}
+            onChange={(e) => setFormData(prev => ({ ...prev, students_count: parseInt(e.target.value) || 0 }))}
             placeholder="0"
           />
         </div>
@@ -203,8 +188,8 @@ export const AddCoachForm = ({ coach, onSubmit, isEditing = false }: AddCoachFor
           <Input
             id="joinedDate"
             type="date"
-            value={formData.joinedDate}
-            onChange={(e) => setFormData(prev => ({ ...prev, joinedDate: e.target.value }))}
+            value={formData.joined_date}
+            onChange={(e) => setFormData(prev => ({ ...prev, joined_date: e.target.value }))}
           />
         </div>
       </div>
