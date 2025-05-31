@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +15,7 @@ interface MultiStepStudentFormProps {
 }
 
 const steps = [
-  { id: 1, title: "Basic Information", description: "Personal details & branch" },
+  { id: 1, title: "Basic Information", description: "Personal details" },
   { id: 2, title: "Class Information", description: "Belt, coach & class enrollment" },
   { id: 3, title: "Account Setup", description: "Portal access credentials" },
 ];
@@ -27,7 +26,7 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     name: student?.name || "",
     email: student?.email || "",
     phone: student?.phone || "",
-    branch: student?.branch || "",
+    branch: student?.branch || "Main Branch", // Default branch since it's required in backend
     belt: student?.belt || "",
     stripes: student?.stripes || 0,
     coach: student?.coach || "",
@@ -80,7 +79,7 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return formData.name && formData.email && formData.branch;
+        return formData.name && formData.email;
       case 2:
         return formData.belt && formData.coach;
       case 3:
