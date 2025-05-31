@@ -19,7 +19,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { AddBranchForm } from "@/components/admin/AddBranchForm";
+import { EditBranchForm } from "@/components/admin/EditBranchForm";
+import { useBranches } from "@/hooks/useBranches";
 import { 
   Building, 
   MapPin, 
@@ -32,63 +45,25 @@ import {
   Trash2 
 } from "lucide-react";
 import { useState } from "react";
+import type { Tables } from "@/integrations/supabase/types";
 
-const mockBranches = [
-  {
-    id: 1,
-    name: "Downtown Academy",
-    address: "123 Main St, Downtown",
-    city: "Los Angeles",
-    phone: "(555) 123-4567",
-    totalStudents: 150,
-    activeClasses: 12,
-    status: "Active"
-  },
-  {
-    id: 2,
-    name: "Westside Branch",
-    address: "456 Ocean Ave, Westside",
-    city: "Los Angeles",
-    phone: "(555) 987-6543",
-    totalStudents: 85,
-    activeClasses: 8,
-    status: "Active"
-  },
-  {
-    id: 3,
-    name: "Valley Training Center",
-    address: "789 Valley Blvd, Valley",
-    city: "Los Angeles", 
-    phone: "(555) 456-7890",
-    totalStudents: 120,
-    activeClasses: 10,
-    status: "Active"
-  },
-  {
-    id: 4,
-    name: "Eastside Dojo",
-    address: "321 East St, Eastside",
-    city: "Los Angeles",
-    phone: "(555) 234-5678",
-    totalStudents: 95,
-    activeClasses: 7,
-    status: "Maintenance"
-  }
-];
+type Branch = Tables<"branches">;
 
 const AdminBranches = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
+  const { branches, isLoading, createBranch, updateBranch, deleteBranch } = useBranches();
 
-  const filteredBranches = mockBranches.filter(branch =>
+  const filteredBranches = branches.filter(branch =>
     branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     branch.city.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalBranches = mockBranches.length;
-  const totalStudents = mockBranches.reduce((sum, branch) => sum + branch.totalStudents, 0);
-  const totalClasses = mockBranches.reduce((sum, branch) => sum + branch.activeClasses, 0);
-  const activeBranches = mockBranches.filter(branch => branch.status === "Active").length;
+  const totalBranches = branches.length;
+  const totalStudents = branches.reduce((sum, branch) => sum + (branch.total_students || 0), 0);
+  const totalClasses = branches.reduce((sum, branch) => sum + (branch.active_classes || 0), 0);
+  const activeBranches = branches.filter(branch => branch.status === "Active").length;
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -98,6 +73,33 @@ const AdminBranches = () => {
       default: return "outline";
     }
   };
+
+  const handleEditBranch = (branchData: Partial<Branch>) => {
+    if (editingBranch) {
+      updateBranch.mutate(
+        { id: editingBranch.id, ...branchData },
+        {
+          onSuccess: () => {
+            setEditingBranch(null);
+          },
+        }
+      );
+    }
+  };
+
+  const handleDeleteBranch = (branchId: string) => {
+    deleteBranch.mutate(branchId);
+  };
+
+  if (isLoading) {
+    return (
+      <SuperAdminLayout>
+        <div className="p-6">
+          <div className="text-center">Loading branches...</div>
+        </div>
+      </SuperAdminLayout>
+    );
+  }
 
   return (
     <SuperAdminLayout>
@@ -225,34 +227,78 @@ const AdminBranches = () => {
                     <TableCell>
                       <div className="flex items-center">
                         <Users className="h-4 w-4 mr-1 text-bjj-gray" />
-                        {branch.totalStudents}
+                        {branch.total_students || 0}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center">
                         <Building className="h-4 w-4 mr-1 text-bjj-gray" />
-                        {branch.activeClasses}
+                        {branch.active_classes || 0}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getStatusBadgeVariant(branch.status)}>
-                        {branch.status}
+                      <Badge variant={getStatusBadgeVariant(branch.status || "Active")}>
+                        {branch.status || "Active"}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm">
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <Dialog open={editingBranch?.id === branch.id} onOpenChange={(open) => !open && setEditingBranch(null)}>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="sm" onClick={() => setEditingBranch(branch)}>
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Edit Branch</DialogTitle>
+                            </DialogHeader>
+                            {editingBranch && (
+                              <EditBranchForm
+                                branch={editingBranch}
+                                onSave={handleEditBranch}
+                                onClose={() => setEditingBranch(null)}
+                                isLoading={updateBranch.isPending}
+                              />
+                            )}
+                          </DialogContent>
+                        </Dialog>
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the branch "{branch.name}".
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteBranch(branch.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            {filteredBranches.length === 0 && (
+              <div className="text-center py-8 text-bjj-gray">
+                {branches.length === 0 ? "No branches found. Create your first branch!" : "No branches match your search."}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
