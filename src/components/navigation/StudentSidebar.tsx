@@ -10,7 +10,10 @@ import {
   SidebarMenuItem,
   SidebarHeader,
 } from "@/components/ui/sidebar";
-import { BarChart3, BookOpen, Calendar, GraduationCap, Home, FileText, User, Shield } from "lucide-react";
+import { BarChart3, BookOpen, Calendar, GraduationCap, Home, FileText, User, Shield, LogOut } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
 const menuItems = [
   {
@@ -51,6 +54,9 @@ const menuItems = [
 ];
 
 export const StudentSidebar = () => {
+  const location = useLocation();
+  const { signOut } = useAuth();
+
   return (
     <Sidebar className="border-r">
       <SidebarHeader className="p-6 border-b">
@@ -72,14 +78,31 @@ export const StudentSidebar = () => {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center space-x-3">
+                  <SidebarMenuButton asChild isActive={location.pathname === item.url}>
+                    <Link to={item.url} className="flex items-center space-x-3">
                       <item.icon className="h-5 w-5" />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <Button
+                  onClick={signOut}
+                  variant="ghost"
+                  className="w-full justify-start text-bjj-gray hover:text-bjj-gold"
+                >
+                  <LogOut className="h-5 w-5 mr-3" />
+                  Sign Out
+                </Button>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
