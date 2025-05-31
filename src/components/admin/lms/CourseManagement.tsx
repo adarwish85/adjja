@@ -22,6 +22,7 @@ import {
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
 import { useCourses } from "@/hooks/useCourses";
 import { AddCourseForm } from "./AddCourseForm";
+import { CreateCourseWizard } from "./CreateCourseWizard";
 
 export const CourseManagement = () => {
   const { courses, isLoading, deleteCourse } = useCourses();
@@ -29,6 +30,7 @@ export const CourseManagement = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
 
   const filteredCourses = courses.filter(course =>
     course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -62,20 +64,30 @@ export const CourseManagement = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-bjj-navy">Course Management</CardTitle>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-white">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Course
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Add New Course</DialogTitle>
-                </DialogHeader>
-                <AddCourseForm onClose={() => setIsAddDialogOpen(false)} />
-              </DialogContent>
-            </Dialog>
+            <div className="flex space-x-2">
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="border-bjj-gold text-bjj-gold hover:bg-bjj-gold hover:text-white">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Quick Add
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Add New Course</DialogTitle>
+                  </DialogHeader>
+                  <AddCourseForm onClose={() => setIsAddDialogOpen(false)} />
+                </DialogContent>
+              </Dialog>
+              
+              <Button 
+                onClick={() => setIsWizardOpen(true)}
+                className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Course Wizard
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -190,6 +202,12 @@ export const CourseManagement = () => {
               }}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
+        <DialogContent className="max-w-full h-[90vh] overflow-auto">
+          <CreateCourseWizard onClose={() => setIsWizardOpen(false)} />
         </DialogContent>
       </Dialog>
     </div>
