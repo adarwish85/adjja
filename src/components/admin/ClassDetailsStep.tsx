@@ -9,10 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const levels = ["Beginner", "Intermediate", "Advanced", "Kids", "All Levels"];
-const statusOptions = ["Active", "Inactive", "Cancelled"];
-const locations = ["Mat 1", "Mat 2", "Both Mats", "Outdoor Area"];
+import { useBranches } from "@/hooks/useBranches";
 
 interface ClassDetailsStepProps {
   formData: {
@@ -25,12 +22,17 @@ interface ClassDetailsStepProps {
   onUpdate: (field: string, value: string | number) => void;
 }
 
+const levels = ["Beginner", "Intermediate", "Advanced", "Kids", "All Levels"];
+const statusOptions = ["Active", "Inactive", "Cancelled"];
+
 export const ClassDetailsStep = ({ formData, onUpdate }: ClassDetailsStepProps) => {
+  const { branches, isLoading: branchesLoading } = useBranches();
+
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="capacity">Capacity *</Label>
+          <Label htmlFor="capacity">Class Capacity</Label>
           <Input
             id="capacity"
             type="number"
@@ -38,12 +40,14 @@ export const ClassDetailsStep = ({ formData, onUpdate }: ClassDetailsStepProps) 
             max="50"
             value={formData.capacity}
             onChange={(e) => onUpdate("capacity", parseInt(e.target.value) || 20)}
+            placeholder="Maximum students"
             required
           />
+          <p className="text-xs text-gray-500">Maximum number of students allowed</p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="level">Level *</Label>
+          <Label htmlFor="level">Class Level</Label>
           <Select
             value={formData.level}
             onValueChange={(value) => onUpdate("level", value)}
@@ -60,32 +64,33 @@ export const ClassDetailsStep = ({ formData, onUpdate }: ClassDetailsStepProps) 
               ))}
             </SelectContent>
           </Select>
+          <p className="text-xs text-gray-500">Skill level required for this class</p>
         </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="location">Location *</Label>
+          <Label htmlFor="location">Branch Location</Label>
           <Select
             value={formData.location}
             onValueChange={(value) => onUpdate("location", value)}
             required
+            disabled={branchesLoading}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select location" />
+              <SelectValue placeholder={branchesLoading ? "Loading branches..." : "Select branch"} />
             </SelectTrigger>
             <SelectContent>
-              {locations.map((location) => (
-                <SelectItem key={location} value={location}>
-                  {location}
+              {branches.map((branch) => (
+                <SelectItem key={branch.id} value={branch.name}>
+                  {branch.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          <p className="text-xs text-gray-500">Which branch will host this class</p>
         </div>
-        
+
         <div className="space-y-2">
-          <Label htmlFor="status">Status *</Label>
+          <Label htmlFor="status">Class Status</Label>
           <Select
             value={formData.status}
             onValueChange={(value) => onUpdate("status", value)}
@@ -102,18 +107,20 @@ export const ClassDetailsStep = ({ formData, onUpdate }: ClassDetailsStepProps) 
               ))}
             </SelectContent>
           </Select>
+          <p className="text-xs text-gray-500">Current status of the class</p>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description">Class Description</Label>
         <Textarea
           id="description"
           value={formData.description}
           onChange={(e) => onUpdate("description", e.target.value)}
-          placeholder="Enter class description (optional)"
+          placeholder="Describe what students will learn in this class..."
           rows={3}
         />
+        <p className="text-xs text-gray-500">Optional description for students</p>
       </div>
     </div>
   );

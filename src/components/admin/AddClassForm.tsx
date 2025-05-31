@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Class } from "@/hooks/useClasses";
 import { useCoaches } from "@/hooks/useCoaches";
+import { useBranches } from "@/hooks/useBranches";
 import { ScheduleSelector } from "./ScheduleSelector";
 
 interface AddClassFormProps {
@@ -24,10 +25,10 @@ interface AddClassFormProps {
 
 const levels = ["Beginner", "Intermediate", "Advanced", "Kids", "All Levels"];
 const statusOptions = ["Active", "Inactive", "Cancelled"];
-const locations = ["Mat 1", "Mat 2", "Both Mats", "Outdoor Area"];
 
 export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }: AddClassFormProps) => {
   const { coaches, loading: coachesLoading } = useCoaches();
+  const { branches, isLoading: branchesLoading } = useBranches();
   const [formData, setFormData] = useState({
     name: classItem?.name || "",
     instructor: classItem?.instructor || "",
@@ -193,19 +194,20 @@ export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="location">Location</Label>
+          <Label htmlFor="location">Branch Location</Label>
           <Select
             value={formData.location}
             onValueChange={(value) => handleChange("location", value)}
             required
+            disabled={branchesLoading}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select location" />
+              <SelectValue placeholder={branchesLoading ? "Loading branches..." : "Select branch"} />
             </SelectTrigger>
             <SelectContent>
-              {locations.map((location) => (
-                <SelectItem key={location} value={location}>
-                  {location}
+              {branches.map((branch) => (
+                <SelectItem key={branch.id} value={branch.name}>
+                  {branch.name}
                 </SelectItem>
               ))}
             </SelectContent>
