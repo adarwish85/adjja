@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -329,27 +329,42 @@ const LessonEditor = ({ lesson, onUpdate, onDelete }: {
   onDelete: () => void;
 }) => {
   const [isLoadingVideoInfo, setIsLoadingVideoInfo] = useState(false);
-  const [localVideoUrl, setLocalVideoUrl] = useState(lesson.videoUrl);
+  
+  // Initialize local state with existing video URL
+  const [localVideoUrl, setLocalVideoUrl] = useState(lesson.videoUrl || "");
+
+  // Update local state when lesson changes (for edit mode)
+  useEffect(() => {
+    setLocalVideoUrl(lesson.videoUrl || "");
+  }, [lesson.videoUrl]);
 
   const handleVideoUrlChange = async (url: string) => {
     setLocalVideoUrl(url);
     onUpdate({ videoUrl: url });
     
-    if (url && url !== lesson.videoUrl) {
+    // Only fetch video info for new URLs, not existing ones
+    if (url && url !== lesson.videoUrl && url.includes('youtube')) {
       const videoId = extractYouTubeVideoId(url);
       if (videoId) {
         setIsLoadingVideoInfo(true);
         try {
           const videoInfo = await fetchYouTubeVideoInfo(videoId);
           if (videoInfo) {
-            const updates: Partial<Lesson> = {
-              duration: videoInfo.duration
-            };
+            const updates: Partial<Lesson> = {};
+            
+            // Only update duration if it's still the default (10 minutes)
+            if (lesson.duration === 10) {
+              updates.duration = videoInfo.duration;
+            }
+            
             // Only update the title if it's currently empty
             if (!lesson.name.trim()) {
               updates.name = videoInfo.title;
             }
-            onUpdate(updates);
+            
+            if (Object.keys(updates).length > 0) {
+              onUpdate(updates);
+            }
           }
         } catch (error) {
           console.error('Error fetching video info:', error);
