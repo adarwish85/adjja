@@ -32,7 +32,17 @@ export const useCoaches = () => {
 
       if (error) throw error;
 
-      setCoaches(data || []);
+      // Type the data properly by ensuring status is correctly typed
+      const typedCoaches: Coach[] = (data || []).map(coach => ({
+        ...coach,
+        status: coach.status as "active" | "inactive",
+        specialties: coach.specialties || [],
+        phone: coach.phone || null,
+        students_count: coach.students_count || 0,
+        joined_date: coach.joined_date || new Date().toISOString().split('T')[0]
+      }));
+
+      setCoaches(typedCoaches);
     } catch (error) {
       console.error("Error fetching coaches:", error);
       toast.error("Failed to fetch coaches");
@@ -51,9 +61,18 @@ export const useCoaches = () => {
 
       if (error) throw error;
 
-      setCoaches(prev => [...prev, data]);
+      const typedCoach: Coach = {
+        ...data,
+        status: data.status as "active" | "inactive",
+        specialties: data.specialties || [],
+        phone: data.phone || null,
+        students_count: data.students_count || 0,
+        joined_date: data.joined_date || new Date().toISOString().split('T')[0]
+      };
+
+      setCoaches(prev => [...prev, typedCoach]);
       toast.success("Coach added successfully");
-      return data;
+      return typedCoach;
     } catch (error) {
       console.error("Error adding coach:", error);
       toast.error("Failed to add coach");
@@ -72,9 +91,18 @@ export const useCoaches = () => {
 
       if (error) throw error;
 
-      setCoaches(prev => prev.map(coach => coach.id === id ? data : coach));
+      const typedCoach: Coach = {
+        ...data,
+        status: data.status as "active" | "inactive",
+        specialties: data.specialties || [],
+        phone: data.phone || null,
+        students_count: data.students_count || 0,
+        joined_date: data.joined_date || new Date().toISOString().split('T')[0]
+      };
+
+      setCoaches(prev => prev.map(coach => coach.id === id ? typedCoach : coach));
       toast.success("Coach updated successfully");
-      return data;
+      return typedCoach;
     } catch (error) {
       console.error("Error updating coach:", error);
       toast.error("Failed to update coach");
