@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -11,6 +10,7 @@ import { CourseReviewStep } from "./wizard/CourseReviewStep";
 import { useCourses } from "@/hooks/useCourses";
 import { useToast } from "@/hooks/use-toast";
 import { generateCourseSlug } from "@/utils/youtubeUtils";
+import { useCourseTopics } from "@/hooks/useCourseTopics";
 
 export interface CourseWizardData {
   // Step 1: Course Details
@@ -118,6 +118,20 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
   });
 
   const { createCourse, updateCourse, saveCourseContent } = useCourses();
+  const { data: existingTopics, isLoading: isLoadingTopics } = useCourseTopics(
+    isEditMode && course ? course.id : null
+  );
+
+  // Load existing course content when editing
+  useEffect(() => {
+    if (isEditMode && existingTopics && existingTopics.length > 0) {
+      console.log("Loading existing topics into wizard:", existingTopics);
+      setWizardData(prev => ({
+        ...prev,
+        topics: existingTopics,
+      }));
+    }
+  }, [isEditMode, existingTopics]);
 
   const updateWizardData = (updates: Partial<CourseWizardData>) => {
     setWizardData(prev => ({ ...prev, ...updates }));
@@ -358,6 +372,18 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
   }
 
   const renderStepContent = () => {
+    // Show loading while fetching existing topics in edit mode
+    if (isEditMode && isLoadingTopics) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bjj-gold mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading course content...</p>
+          </div>
+        </div>
+      );
+    }
+
     switch (currentStep) {
       case 1:
         return (
