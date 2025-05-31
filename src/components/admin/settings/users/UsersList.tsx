@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { 
   Users, 
   Search, 
   Plus,
@@ -29,65 +37,19 @@ import {
   Phone,
   Shield
 } from "lucide-react";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  role: string;
-  status: "active" | "inactive" | "pending";
-  lastLogin: string;
-  avatar?: string;
-  createdAt: string;
-}
-
-const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "John Smith",
-    email: "john@adjja.com",
-    phone: "+61 400 123 456",
-    role: "Super Admin",
-    status: "active",
-    lastLogin: "2 hours ago",
-    createdAt: "2024-01-15"
-  },
-  {
-    id: "2",
-    name: "Sarah Wilson",
-    email: "sarah@adjja.com",
-    phone: "+61 400 123 457",
-    role: "Admin",
-    status: "active",
-    lastLogin: "1 day ago",
-    createdAt: "2024-01-10"
-  },
-  {
-    id: "3",
-    name: "Mike Johnson",
-    email: "mike@adjja.com",
-    role: "Coach",
-    status: "inactive",
-    lastLogin: "1 week ago",
-    createdAt: "2024-01-05"
-  },
-  {
-    id: "4",
-    name: "Emma Davis",
-    email: "emma@adjja.com",
-    phone: "+61 400 123 458",
-    role: "Student",
-    status: "pending",
-    lastLogin: "Never",
-    createdAt: "2024-01-20"
-  }
-];
+import { useUsers } from "@/hooks/useUsers";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { AddUserForm } from "./AddUserForm";
+import { EditUserForm } from "./EditUserForm";
 
 export const UsersList = () => {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const { users, isLoading, deleteUser } = useUsers();
+  const { roles } = useUserRoles();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("all");
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,6 +77,27 @@ export const UsersList = () => {
     }
   };
 
+  const handleEditUser = (user: any) => {
+    setSelectedUser(user);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (confirm("Are you sure you want to delete this user?")) {
+      await deleteUser(userId);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Loading users...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -123,10 +106,20 @@ export const UsersList = () => {
             <Users className="h-5 w-5" />
             Academy Users
           </CardTitle>
-          <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy">
-            <Plus className="h-4 w-4 mr-2" />
-            Add User
-          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy">
+                <Plus className="h-4 w-4 mr-2" />
+                Add User
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New User</DialogTitle>
+              </DialogHeader>
+              <AddUserForm onSuccess={() => setIsAddDialogOpen(false)} />
+            </DialogContent>
+          </Dialog>
         </div>
       </CardHeader>
       <CardContent>
@@ -146,10 +139,9 @@ export const UsersList = () => {
             className="px-3 py-2 border rounded-md"
           >
             <option value="all">All Roles</option>
-            <option value="Super Admin">Super Admin</option>
-            <option value="Admin">Admin</option>
-            <option value="Coach">Coach</option>
-            <option value="Student">Student</option>
+            {roles.map(role => (
+              <option key={role.id} value={role.name}>{role.name}</option>
+            ))}
           </select>
         </div>
 
@@ -208,10 +200,10 @@ export const UsersList = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm text-gray-500">
-                    {user.lastLogin}
+                    {user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}
                   </TableCell>
                   <TableCell className="text-sm text-gray-500">
-                    {new Date(user.createdAt).toLocaleDateString()}
+                    {new Date(user.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -221,7 +213,7 @@ export const UsersList = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditUser(user)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit User
                         </DropdownMenuItem>
@@ -229,7 +221,10 @@ export const UsersList = () => {
                           <Shield className="h-4 w-4 mr-2" />
                           Manage Permissions
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuItem 
+                          className="text-red-600"
+                          onClick={() => handleDeleteUser(user.id)}
+                        >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete User
                         </DropdownMenuItem>
@@ -256,6 +251,21 @@ export const UsersList = () => {
           </div>
         </div>
       </CardContent>
+
+      {/* Edit User Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <EditUserForm 
+              user={selectedUser}
+              onSuccess={() => setIsEditDialogOpen(false)} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

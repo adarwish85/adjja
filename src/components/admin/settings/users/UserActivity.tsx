@@ -23,101 +23,22 @@ import {
   Activity, 
   Search, 
   Download,
-  Filter,
-  Calendar,
   User,
   Shield,
   Settings,
-  Eye
 } from "lucide-react";
-
-interface ActivityLog {
-  id: string;
-  userId: string;
-  userName: string;
-  action: string;
-  category: string;
-  details: string;
-  ipAddress: string;
-  userAgent: string;
-  timestamp: string;
-  status: "success" | "failed" | "warning";
-}
-
-const mockActivityLogs: ActivityLog[] = [
-  {
-    id: "1",
-    userId: "1",
-    userName: "John Smith",
-    action: "User Login",
-    category: "Authentication",
-    details: "Successful login from Chrome on Windows",
-    ipAddress: "192.168.1.100",
-    userAgent: "Chrome 120.0.0",
-    timestamp: "2024-01-22T10:30:00Z",
-    status: "success"
-  },
-  {
-    id: "2",
-    userId: "2",
-    userName: "Sarah Wilson",
-    action: "Role Updated",
-    category: "User Management",
-    details: "Role changed from Coach to Admin",
-    ipAddress: "192.168.1.101",
-    userAgent: "Firefox 121.0.0",
-    timestamp: "2024-01-22T09:15:00Z",
-    status: "success"
-  },
-  {
-    id: "3",
-    userId: "3",
-    userName: "Mike Johnson",
-    action: "Failed Login",
-    category: "Authentication",
-    details: "Invalid password attempt",
-    ipAddress: "192.168.1.102",
-    userAgent: "Safari 17.0.0",
-    timestamp: "2024-01-22T08:45:00Z",
-    status: "failed"
-  },
-  {
-    id: "4",
-    userId: "1",
-    userName: "John Smith",
-    action: "Settings Modified",
-    category: "System",
-    details: "Updated academy general settings",
-    ipAddress: "192.168.1.100",
-    userAgent: "Chrome 120.0.0",
-    timestamp: "2024-01-22T08:30:00Z",
-    status: "success"
-  },
-  {
-    id: "5",
-    userId: "4",
-    userName: "Emma Davis",
-    action: "Permission Granted",
-    category: "User Management",
-    details: "Granted manage_students permission",
-    ipAddress: "192.168.1.103",
-    userAgent: "Chrome 120.0.0",
-    timestamp: "2024-01-22T07:20:00Z",
-    status: "warning"
-  }
-];
+import { useUserActivity } from "@/hooks/useUserActivity";
 
 export const UserActivity = () => {
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(mockActivityLogs);
+  const { activityLogs, isLoading } = useUserActivity();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
-  const [dateRange, setDateRange] = useState("today");
 
   const filteredLogs = activityLogs.filter(log => {
-    const matchesSearch = log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = log.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         log.details.toLowerCase().includes(searchTerm.toLowerCase());
+                         (log.details && log.details.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = selectedCategory === "all" || log.category === selectedCategory;
     const matchesStatus = selectedStatus === "all" || log.status === selectedStatus;
     return matchesSearch && matchesCategory && matchesStatus;
@@ -149,13 +70,13 @@ export const UserActivity = () => {
     const csv = [
       ["Timestamp", "User", "Action", "Category", "Status", "Details", "IP Address"],
       ...filteredLogs.map(log => [
-        formatTimestamp(log.timestamp),
-        log.userName,
+        formatTimestamp(log.created_at),
+        log.user_name,
         log.action,
         log.category,
         log.status,
-        log.details,
-        log.ipAddress
+        log.details || "",
+        log.ip_address || ""
       ])
     ].map(row => row.join(",")).join("\n");
 
@@ -166,6 +87,16 @@ export const UserActivity = () => {
     a.download = `user-activity-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Loading activity logs...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -178,8 +109,8 @@ export const UserActivity = () => {
                 <Shield className="h-4 w-4 text-green-600" />
               </div>
               <div>
-                <div className="text-sm text-gray-600">Today's Logins</div>
-                <div className="text-xl font-bold text-green-600">24</div>
+                <div className="text-sm text-gray-600">Total Activities</div>
+                <div className="text-xl font-bold text-green-600">{activityLogs.length}</div>
               </div>
             </div>
           </CardContent>
@@ -193,7 +124,9 @@ export const UserActivity = () => {
               </div>
               <div>
                 <div className="text-sm text-gray-600">Failed Attempts</div>
-                <div className="text-xl font-bold text-red-600">3</div>
+                <div className="text-xl font-bold text-red-600">
+                  {activityLogs.filter(log => log.status === 'failed').length}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -206,8 +139,10 @@ export const UserActivity = () => {
                 <User className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <div className="text-sm text-gray-600">Active Users</div>
-                <div className="text-xl font-bold text-blue-600">18</div>
+                <div className="text-sm text-gray-600">Unique Users</div>
+                <div className="text-xl font-bold text-blue-600">
+                  {new Set(activityLogs.map(log => log.user_id)).size}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -221,7 +156,9 @@ export const UserActivity = () => {
               </div>
               <div>
                 <div className="text-sm text-gray-600">System Changes</div>
-                <div className="text-xl font-bold text-yellow-600">7</div>
+                <div className="text-xl font-bold text-yellow-600">
+                  {activityLogs.filter(log => log.category === 'System').length}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -282,18 +219,6 @@ export const UserActivity = () => {
                 <SelectItem value="warning">Warning</SelectItem>
               </SelectContent>
             </Select>
-            
-            <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Date Range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="quarter">This Quarter</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Activity Table */}
@@ -307,18 +232,16 @@ export const UserActivity = () => {
                   <TableHead>Category</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Details</TableHead>
-                  <TableHead>IP Address</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredLogs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell className="text-sm">
-                      {formatTimestamp(log.timestamp)}
+                      {formatTimestamp(log.created_at)}
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium">{log.userName}</div>
-                      <div className="text-xs text-gray-500">{log.userAgent}</div>
+                      <div className="font-medium">{log.user_name}</div>
                     </TableCell>
                     <TableCell className="font-medium">{log.action}</TableCell>
                     <TableCell>
@@ -334,9 +257,6 @@ export const UserActivity = () => {
                     </TableCell>
                     <TableCell className="text-sm max-w-xs truncate">
                       {log.details}
-                    </TableCell>
-                    <TableCell className="text-sm font-mono">
-                      {log.ipAddress}
                     </TableCell>
                   </TableRow>
                 ))}

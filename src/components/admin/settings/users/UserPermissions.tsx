@@ -1,6 +1,6 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -19,60 +19,7 @@ import {
   Clock,
   AlertTriangle
 } from "lucide-react";
-
-interface UserPermission {
-  userId: string;
-  userName: string;
-  userEmail: string;
-  role: string;
-  permissions: {
-    [key: string]: {
-      granted: boolean;
-      grantedBy: string;
-      grantedAt: string;
-      expiresAt?: string;
-    };
-  };
-}
-
-const mockUserPermissions: UserPermission[] = [
-  {
-    userId: "1",
-    userName: "John Smith",
-    userEmail: "john@adjja.com",
-    role: "Super Admin",
-    permissions: {
-      "manage_users": { granted: true, grantedBy: "System", grantedAt: "2024-01-01" },
-      "manage_roles": { granted: true, grantedBy: "System", grantedAt: "2024-01-01" },
-      "view_analytics": { granted: true, grantedBy: "System", grantedAt: "2024-01-01" },
-      "system_settings": { granted: true, grantedBy: "System", grantedAt: "2024-01-01" }
-    }
-  },
-  {
-    userId: "2",
-    userName: "Sarah Wilson",
-    userEmail: "sarah@adjja.com",
-    role: "Admin",
-    permissions: {
-      "manage_users": { granted: true, grantedBy: "John Smith", grantedAt: "2024-01-15" },
-      "view_analytics": { granted: true, grantedBy: "System", grantedAt: "2024-01-10" },
-      "manage_classes": { granted: true, grantedBy: "System", grantedAt: "2024-01-10" },
-      "system_settings": { granted: false, grantedBy: "", grantedAt: "" }
-    }
-  },
-  {
-    userId: "3",
-    userName: "Mike Johnson",
-    userEmail: "mike@adjja.com",
-    role: "Coach",
-    permissions: {
-      "manage_classes": { granted: true, grantedBy: "Sarah Wilson", grantedAt: "2024-01-20", expiresAt: "2024-12-31" },
-      "manage_students": { granted: true, grantedBy: "System", grantedAt: "2024-01-05" },
-      "view_analytics": { granted: false, grantedBy: "", grantedAt: "" },
-      "manage_users": { granted: false, grantedBy: "", grantedAt: "" }
-    }
-  }
-];
+import { useUserPermissions } from "@/hooks/useUserPermissions";
 
 const permissionCategories = {
   "User Management": ["manage_users", "manage_roles"],
@@ -82,7 +29,7 @@ const permissionCategories = {
 };
 
 export const UserPermissions = () => {
-  const [userPermissions, setUserPermissions] = useState<UserPermission[]>(mockUserPermissions);
+  const { userPermissions, isLoading, toggleUserPermission } = useUserPermissions();
   const [selectedUser, setSelectedUser] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -92,31 +39,6 @@ export const UserPermissions = () => {
     const matchesUser = selectedUser === "all" || user.userId === selectedUser;
     return matchesSearch && matchesUser;
   });
-
-  const toggleUserPermission = (userId: string, permission: string) => {
-    setUserPermissions(prev => 
-      prev.map(user => {
-        if (user.userId === userId) {
-          const currentPermission = user.permissions[permission];
-          const newGranted = !currentPermission?.granted;
-          
-          return {
-            ...user,
-            permissions: {
-              ...user.permissions,
-              [permission]: {
-                granted: newGranted,
-                grantedBy: newGranted ? "Current Admin" : "",
-                grantedAt: newGranted ? new Date().toISOString().split('T')[0] : "",
-                expiresAt: currentPermission?.expiresAt
-              }
-            }
-          };
-        }
-        return user;
-      })
-    );
-  };
 
   const getPermissionStatus = (permission: any) => {
     if (!permission?.granted) return { status: "denied", color: "bg-red-100 text-red-800" };
@@ -130,6 +52,16 @@ export const UserPermissions = () => {
     }
     return { status: "granted", color: "bg-green-100 text-green-800" };
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Loading permissions...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -256,19 +188,27 @@ export const UserPermissions = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center p-4 border rounded-lg">
-              <div className="text-2xl font-bold text-green-600">12</div>
+              <div className="text-2xl font-bold text-green-600">
+                {userPermissions.reduce((acc, user) => 
+                  acc + Object.values(user.permissions).filter(p => p.granted).length, 0
+                )}
+              </div>
               <div className="text-sm text-gray-600">Active Permissions</div>
             </div>
             <div className="text-center p-4 border rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">3</div>
+              <div className="text-2xl font-bold text-yellow-600">0</div>
               <div className="text-sm text-gray-600">Expiring Soon</div>
             </div>
             <div className="text-center p-4 border rounded-lg">
-              <div className="text-2xl font-bold text-red-600">1</div>
+              <div className="text-2xl font-bold text-red-600">0</div>
               <div className="text-sm text-gray-600">Expired</div>
             </div>
             <div className="text-center p-4 border rounded-lg">
-              <div className="text-2xl font-bold text-gray-600">8</div>
+              <div className="text-2xl font-bold text-gray-600">
+                {userPermissions.reduce((acc, user) => 
+                  acc + Object.values(user.permissions).filter(p => !p.granted).length, 0
+                )}
+              </div>
               <div className="text-sm text-gray-600">Denied</div>
             </div>
           </div>

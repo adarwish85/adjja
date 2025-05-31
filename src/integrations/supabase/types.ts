@@ -633,6 +633,50 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          last_login: string | null
+          name: string
+          phone: string | null
+          role_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          last_login?: string | null
+          name: string
+          phone?: string | null
+          role_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          last_login?: string | null
+          name?: string
+          phone?: string | null
+          role_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_questions: {
         Row: {
           correct_answer: string | null
@@ -767,6 +811,114 @@ export type Database = {
           subscription_tier?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_activity_logs: {
+        Row: {
+          action: string
+          category: string
+          created_at: string | null
+          details: string | null
+          id: string
+          ip_address: string | null
+          status: string | null
+          user_agent: string | null
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          action: string
+          category: string
+          created_at?: string | null
+          details?: string | null
+          id?: string
+          ip_address?: string | null
+          status?: string | null
+          user_agent?: string | null
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          action?: string
+          category?: string
+          created_at?: string | null
+          details?: string | null
+          id?: string
+          ip_address?: string | null
+          status?: string | null
+          user_agent?: string | null
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
+      user_permissions: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          granted: boolean | null
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          permission_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          granted?: boolean | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          permission_name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          granted?: boolean | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          permission_name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_system: boolean | null
+          name: string
+          permissions: string[] | null
+          updated_at: string | null
+          user_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name: string
+          permissions?: string[] | null
+          updated_at?: string | null
+          user_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name?: string
+          permissions?: string[] | null
+          updated_at?: string | null
+          user_count?: number | null
         }
         Relationships: []
       }

@@ -17,87 +17,38 @@ import {
   Shield, 
   Plus, 
   Edit, 
-  Trash2,
   Users,
   Settings,
   Lock
 } from "lucide-react";
+import { useUserRoles } from "@/hooks/useUserRoles";
 
-interface Permission {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-}
-
-interface Role {
-  id: string;
-  name: string;
-  description: string;
-  userCount: number;
-  permissions: string[];
-  isSystem: boolean;
-}
-
-const mockPermissions: Permission[] = [
-  { id: "1", name: "manage_users", description: "Create, edit, and delete users", category: "User Management" },
-  { id: "2", name: "manage_roles", description: "Create and modify user roles", category: "User Management" },
-  { id: "3", name: "view_analytics", description: "Access analytics and reports", category: "Analytics" },
-  { id: "4", name: "manage_classes", description: "Create and manage classes", category: "Classes" },
-  { id: "5", name: "manage_students", description: "Manage student records", category: "Students" },
-  { id: "6", name: "manage_coaches", description: "Manage coach profiles", category: "Coaches" },
-  { id: "7", name: "manage_payments", description: "Process and view payments", category: "Financial" },
-  { id: "8", name: "system_settings", description: "Access system configuration", category: "System" },
-];
-
-const mockRoles: Role[] = [
-  {
-    id: "1",
-    name: "Super Admin",
-    description: "Full access to all academy features and settings",
-    userCount: 1,
-    permissions: ["1", "2", "3", "4", "5", "6", "7", "8"],
-    isSystem: true
-  },
-  {
-    id: "2",
-    name: "Admin",
-    description: "Manage users, classes, and view reports",
-    userCount: 3,
-    permissions: ["1", "3", "4", "5", "6", "7"],
-    isSystem: true
-  },
-  {
-    id: "3",
-    name: "Coach",
-    description: "Manage assigned classes and students",
-    userCount: 12,
-    permissions: ["4", "5"],
-    isSystem: true
-  },
-  {
-    id: "4",
-    name: "Student",
-    description: "Basic access to student portal",
-    userCount: 156,
-    permissions: [],
-    isSystem: true
-  }
+const availablePermissions = [
+  { id: "manage_users", name: "Manage Users", description: "Create, edit, and delete users", category: "User Management" },
+  { id: "manage_roles", name: "Manage Roles", description: "Create and modify user roles", category: "User Management" },
+  { id: "view_analytics", name: "View Analytics", description: "Access analytics and reports", category: "Analytics" },
+  { id: "manage_classes", name: "Manage Classes", description: "Create and manage classes", category: "Classes" },
+  { id: "manage_students", name: "Manage Students", description: "Manage student records", category: "Students" },
+  { id: "manage_coaches", name: "Manage Coaches", description: "Manage coach profiles", category: "Coaches" },
+  { id: "manage_payments", name: "Manage Payments", description: "Process and view payments", category: "Financial" },
+  { id: "system_settings", name: "System Settings", description: "Access system configuration", category: "System" },
 ];
 
 export const RoleManagement = () => {
-  const [roles, setRoles] = useState<Role[]>(mockRoles);
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const { roles, isLoading, createRole, updateRole } = useUserRoles();
+  const [selectedRole, setSelectedRole] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newRole, setNewRole] = useState({ name: "", description: "", permissions: [] as string[] });
 
   const getPermissionsByCategory = () => {
-    const categories = mockPermissions.reduce((acc, permission) => {
+    const categories = availablePermissions.reduce((acc, permission) => {
       if (!acc[permission.category]) {
         acc[permission.category] = [];
       }
       acc[permission.category].push(permission);
       return acc;
-    }, {} as Record<string, Permission[]>);
+    }, {} as Record<string, typeof availablePermissions>);
     return categories;
   };
 
@@ -106,21 +57,47 @@ export const RoleManagement = () => {
     return role?.permissions.includes(permissionId) || false;
   };
 
-  const togglePermission = (roleId: string, permissionId: string) => {
-    setRoles(prevRoles => 
-      prevRoles.map(role => {
-        if (role.id === roleId) {
-          const newPermissions = role.permissions.includes(permissionId)
-            ? role.permissions.filter(p => p !== permissionId)
-            : [...role.permissions, permissionId];
-          return { ...role, permissions: newPermissions };
-        }
-        return role;
-      })
-    );
+  const togglePermission = async (roleId: string, permissionId: string) => {
+    const role = roles.find(r => r.id === roleId);
+    if (!role || role.is_system) return;
+
+    const newPermissions = role.permissions.includes(permissionId)
+      ? role.permissions.filter(p => p !== permissionId)
+      : [...role.permissions, permissionId];
+
+    await updateRole(roleId, { permissions: newPermissions });
+  };
+
+  const handleCreateRole = async () => {
+    if (!newRole.name || !newRole.description) return;
+    
+    await createRole(newRole);
+    setNewRole({ name: "", description: "", permissions: [] });
+    setIsCreateDialogOpen(false);
+  };
+
+  const handleEditRole = async () => {
+    if (!selectedRole) return;
+    
+    await updateRole(selectedRole.id, {
+      name: selectedRole.name,
+      description: selectedRole.description,
+      permissions: selectedRole.permissions
+    });
+    setIsEditDialogOpen(false);
   };
 
   const permissionCategories = getPermissionsByCategory();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Loading roles...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -132,7 +109,7 @@ export const RoleManagement = () => {
               <Shield className="h-5 w-5" />
               Academy Roles
             </CardTitle>
-            <Dialog>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy">
                   <Plus className="h-4 w-4 mr-2" />
@@ -146,13 +123,25 @@ export const RoleManagement = () => {
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="role-name">Role Name</Label>
-                    <Input id="role-name" placeholder="Enter role name" />
+                    <Input 
+                      id="role-name" 
+                      placeholder="Enter role name"
+                      value={newRole.name}
+                      onChange={(e) => setNewRole(prev => ({ ...prev, name: e.target.value }))}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="role-description">Description</Label>
-                    <Input id="role-description" placeholder="Describe this role" />
+                    <Input 
+                      id="role-description" 
+                      placeholder="Describe this role"
+                      value={newRole.description}
+                      onChange={(e) => setNewRole(prev => ({ ...prev, description: e.target.value }))}
+                    />
                   </div>
-                  <Button className="w-full">Create Role</Button>
+                  <Button className="w-full" onClick={handleCreateRole}>
+                    Create Role
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -164,7 +153,7 @@ export const RoleManagement = () => {
               <div key={role.id} className="p-4 border rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-bjj-navy">{role.name}</h4>
-                  {role.isSystem && (
+                  {role.is_system && (
                     <Badge variant="outline" className="text-xs">
                       <Lock className="h-3 w-3 mr-1" />
                       System
@@ -175,7 +164,7 @@ export const RoleManagement = () => {
                 <div className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
-                    {role.userCount} users
+                    {role.user_count} users
                   </span>
                   <Button 
                     variant="outline" 
@@ -211,7 +200,7 @@ export const RoleManagement = () => {
                   {permissions.map((permission) => (
                     <div key={permission.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex-1">
-                        <h5 className="font-medium">{permission.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h5>
+                        <h5 className="font-medium">{permission.name}</h5>
                         <p className="text-sm text-gray-600">{permission.description}</p>
                       </div>
                       <div className="flex items-center gap-4">
@@ -221,7 +210,7 @@ export const RoleManagement = () => {
                             <Switch
                               checked={hasPermission(role.id, permission.id)}
                               onCheckedChange={() => togglePermission(role.id, permission.id)}
-                              disabled={role.isSystem}
+                              disabled={role.is_system}
                             />
                           </div>
                         ))}
@@ -248,45 +237,24 @@ export const RoleManagement = () => {
                   <Label htmlFor="edit-role-name">Role Name</Label>
                   <Input 
                     id="edit-role-name" 
-                    defaultValue={selectedRole.name}
-                    disabled={selectedRole.isSystem}
+                    value={selectedRole.name}
+                    onChange={(e) => setSelectedRole(prev => ({ ...prev, name: e.target.value }))}
+                    disabled={selectedRole.is_system}
                   />
                 </div>
                 <div>
                   <Label>User Count</Label>
-                  <Input value={`${selectedRole.userCount} users`} disabled />
+                  <Input value={`${selectedRole.user_count} users`} disabled />
                 </div>
               </div>
               <div>
                 <Label htmlFor="edit-role-description">Description</Label>
                 <Input 
                   id="edit-role-description" 
-                  defaultValue={selectedRole.description}
-                  disabled={selectedRole.isSystem}
+                  value={selectedRole.description}
+                  onChange={(e) => setSelectedRole(prev => ({ ...prev, description: e.target.value }))}
+                  disabled={selectedRole.is_system}
                 />
-              </div>
-              <div className="space-y-3">
-                <Label>Permissions</Label>
-                {Object.entries(permissionCategories).map(([category, permissions]) => (
-                  <div key={category} className="space-y-2">
-                    <h5 className="font-medium text-sm">{category}</h5>
-                    <div className="space-y-2 pl-4">
-                      {permissions.map((permission) => (
-                        <div key={permission.id} className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium text-sm">{permission.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
-                            <div className="text-xs text-gray-500">{permission.description}</div>
-                          </div>
-                          <Switch
-                            checked={hasPermission(selectedRole.id, permission.id)}
-                            onCheckedChange={() => togglePermission(selectedRole.id, permission.id)}
-                            disabled={selectedRole.isSystem}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
@@ -294,7 +262,8 @@ export const RoleManagement = () => {
                 </Button>
                 <Button 
                   className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy"
-                  disabled={selectedRole.isSystem}
+                  onClick={handleEditRole}
+                  disabled={selectedRole.is_system}
                 >
                   Save Changes
                 </Button>
