@@ -57,9 +57,7 @@ export const DashboardOverview = () => {
           <CardContent>
             <div className="text-2xl font-bold text-bjj-navy">{kpi.value}</div>
             <p className={`text-xs ${
-              kpi.changeType === 'positive' ? 'text-green-600' : 
-              kpi.changeType === 'negative' ? 'text-red-600' : 
-              'text-bjj-gray'
+              kpi.changeType === 'positive' ? 'text-green-600' : 'text-bjj-gray'
             }`}>
               {kpi.change} from last month
             </p>
