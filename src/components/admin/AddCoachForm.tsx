@@ -45,6 +45,10 @@ export const AddCoachForm = ({ coach, onSubmit, isEditing = false }: AddCoachFor
     status: coach?.status || "active" as const,
     students_count: coach?.students_count || 0,
     joined_date: coach?.joined_date || new Date().toISOString().split('T')[0],
+    // Fields for account creation
+    username: "",
+    password: "",
+    createAccount: !isEditing, // Default to true for new coaches, false for editing
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -54,6 +58,8 @@ export const AddCoachForm = ({ coach, onSubmit, isEditing = false }: AddCoachFor
       toast.error("Please fill in all required fields");
       return;
     }
+
+    console.log("Form submission data:", formData);
 
     onSubmit(formData);
     
@@ -68,6 +74,9 @@ export const AddCoachForm = ({ coach, onSubmit, isEditing = false }: AddCoachFor
         status: "active",
         students_count: 0,
         joined_date: new Date().toISOString().split('T')[0],
+        username: "",
+        password: "",
+        createAccount: true,
       });
     }
   };
@@ -137,6 +146,49 @@ export const AddCoachForm = ({ coach, onSubmit, isEditing = false }: AddCoachFor
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      {/* Account Creation Section */}
+      <div className="border-t pt-4 space-y-4">
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="createAccount"
+            checked={formData.createAccount}
+            onChange={(e) => setFormData(prev => ({ ...prev, createAccount: e.target.checked }))}
+            className="rounded"
+          />
+          <Label htmlFor="createAccount" className="text-sm font-medium">
+            {isEditing ? "Create coach portal account" : "Create coach portal account"}
+          </Label>
+        </div>
+        
+        {formData.createAccount && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                value={formData.username}
+                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                placeholder="Enter username"
+                required={formData.createAccount}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                placeholder="Enter password"
+                required={formData.createAccount}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
