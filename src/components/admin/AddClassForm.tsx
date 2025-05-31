@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Class } from "@/hooks/useClasses";
 import { useCoaches } from "@/hooks/useCoaches";
+import { ScheduleSelector } from "./ScheduleSelector";
 
 interface AddClassFormProps {
   classItem?: Class;
@@ -33,7 +34,6 @@ export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }
     schedule: classItem?.schedule || "",
     duration: classItem?.duration || 60,
     capacity: classItem?.capacity || 20,
-    enrolled: classItem?.enrolled || 0,
     level: classItem?.level || "Beginner" as const,
     location: classItem?.location || "",
     status: classItem?.status || "Active" as const,
@@ -60,7 +60,7 @@ export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }
         schedule: formData.schedule,
         duration: formData.duration,
         capacity: formData.capacity,
-        enrolled: formData.enrolled,
+        enrolled: 0, // Default to 0 for new classes
         level: formData.level,
         location: formData.location,
         status: formData.status,
@@ -117,18 +117,15 @@ export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }
         </div>
       </div>
 
+      <div className="space-y-2">
+        <Label>Schedule</Label>
+        <ScheduleSelector
+          value={formData.schedule}
+          onChange={(value) => handleChange("schedule", value)}
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="schedule">Schedule</Label>
-          <Input
-            id="schedule"
-            value={formData.schedule}
-            onChange={(e) => handleChange("schedule", e.target.value)}
-            placeholder="e.g., Mon, Wed, Fri - 6:00 AM"
-            required
-          />
-        </div>
-        
         <div className="space-y-2">
           <Label htmlFor="duration">Duration (minutes)</Label>
           <Input
@@ -141,9 +138,7 @@ export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }
             required
           />
         </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
+        
         <div className="space-y-2">
           <Label htmlFor="capacity">Capacity</Label>
           <Input
@@ -156,19 +151,9 @@ export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }
             required
           />
         </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="enrolled">Enrolled</Label>
-          <Input
-            id="enrolled"
-            type="number"
-            min="0"
-            value={formData.enrolled}
-            onChange={(e) => handleChange("enrolled", parseInt(e.target.value) || 0)}
-            required
-          />
-        </div>
-        
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="level">Level</Label>
           <Select
@@ -188,9 +173,7 @@ export const AddClassForm = ({ classItem, onSubmit, onClose, isEditing = false }
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
+        
         <div className="space-y-2">
           <Label htmlFor="location">Location</Label>
           <Select
