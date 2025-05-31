@@ -22,6 +22,8 @@ import {
   Shield
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import { useSettings } from "@/hooks/useSettings";
+import { useEffect, useState } from "react";
 
 const menuItems = [
   { title: "Dashboard", icon: BarChart3, url: "/admin/dashboard" },
@@ -37,14 +39,50 @@ const menuItems = [
 
 export const SuperAdminSidebar = () => {
   const location = useLocation();
+  const { loadGeneralSettings } = useSettings();
+  const [academyInfo, setAcademyInfo] = useState({
+    academyName: "ADJJA",
+    academyCode: "ADJJA",
+    academyLogo: ""
+  });
+
+  useEffect(() => {
+    const settings = loadGeneralSettings();
+    setAcademyInfo({
+      academyName: settings.academyName,
+      academyCode: settings.academyCode,
+      academyLogo: settings.academyLogo
+    });
+
+    // Listen for settings changes
+    const handleStorageChange = () => {
+      const updatedSettings = loadGeneralSettings();
+      setAcademyInfo({
+        academyName: updatedSettings.academyName,
+        academyCode: updatedSettings.academyCode,
+        academyLogo: updatedSettings.academyLogo
+      });
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [loadGeneralSettings]);
 
   return (
     <Sidebar className="border-r border-gray-200">
       <SidebarHeader className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-bjj-gold rounded-lg flex items-center justify-center">
-            <Shield className="h-6 w-6 text-white" />
-          </div>
+          {academyInfo.academyLogo ? (
+            <img 
+              src={academyInfo.academyLogo} 
+              alt="Academy Logo" 
+              className="h-10 w-10 object-contain"
+            />
+          ) : (
+            <div className="h-10 w-10 bg-bjj-gold rounded-lg flex items-center justify-center">
+              <Shield className="h-6 w-6 text-white" />
+            </div>
+          )}
           <div>
             <h2 className="text-xl font-bold text-bjj-navy">ADJJA</h2>
             <p className="text-sm text-bjj-gray">Super Admin</p>

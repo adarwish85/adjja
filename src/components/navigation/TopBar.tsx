@@ -3,65 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, ChevronDown } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { useSettings } from "@/hooks/useSettings";
-import { useEffect, useState } from "react";
 
 export const TopBar = () => {
-  const { loadGeneralSettings } = useSettings();
-  const [academyInfo, setAcademyInfo] = useState({
-    academyName: "ADJJA",
-    academyCode: "ADJJA",
-    academyLogo: ""
-  });
-
-  useEffect(() => {
-    const settings = loadGeneralSettings();
-    setAcademyInfo({
-      academyName: settings.academyName,
-      academyCode: settings.academyCode,
-      academyLogo: settings.academyLogo
-    });
-
-    // Listen for settings changes
-    const handleStorageChange = () => {
-      const updatedSettings = loadGeneralSettings();
-      setAcademyInfo({
-        academyName: updatedSettings.academyName,
-        academyCode: updatedSettings.academyCode,
-        academyLogo: updatedSettings.academyLogo
-      });
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [loadGeneralSettings]);
-
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <SidebarTrigger className="text-bjj-gray hover:text-bjj-navy" />
-          
-          {/* Academy Logo and Code */}
-          <div className="flex items-center space-x-3">
-            {academyInfo.academyLogo ? (
-              <img 
-                src={academyInfo.academyLogo} 
-                alt="Academy Logo" 
-                className="w-8 h-8 object-contain"
-              />
-            ) : (
-              <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
-                <span className="text-primary-foreground text-sm font-bold">
-                  {academyInfo.academyCode.charAt(0)}
-                </span>
-              </div>
-            )}
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-bjj-navy">{academyInfo.academyCode}</span>
-              <span className="text-xs text-bjj-gray">Academy</span>
-            </div>
-          </div>
         </div>
         
         <div className="flex items-center space-x-4">
