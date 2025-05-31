@@ -44,6 +44,7 @@ export const useUserPermissions = () => {
           id,
           name,
           email,
+          created_at,
           user_roles:role_id (
             name,
             permissions

@@ -31,7 +31,14 @@ export const useUserActivity = () => {
         .limit(100);
 
       if (error) throw error;
-      setActivityLogs(data || []);
+      
+      // Type the data properly to match our interface
+      const typedData: ActivityLog[] = (data || []).map(log => ({
+        ...log,
+        status: log.status as "success" | "failed" | "warning"
+      }));
+      
+      setActivityLogs(typedData);
     } catch (error) {
       console.error('Error fetching activity logs:', error);
       toast({
