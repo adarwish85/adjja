@@ -73,6 +73,7 @@ export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) =>
       items: [],
     };
     onUpdate({ topics: [...data.topics, newTopic] });
+    setOpenTopics(prev => [...prev, newTopic.id]);
   };
 
   const updateTopic = (topicId: string, updates: Partial<Topic>) => {
@@ -328,21 +329,23 @@ const LessonEditor = ({ lesson, onUpdate, onDelete }: {
   onDelete: () => void;
 }) => {
   const [isLoadingVideoInfo, setIsLoadingVideoInfo] = useState(false);
+  const [localVideoUrl, setLocalVideoUrl] = useState(lesson.videoUrl);
 
   const handleVideoUrlChange = async (url: string) => {
+    setLocalVideoUrl(url);
     onUpdate({ videoUrl: url });
     
-    if (url) {
+    if (url && url !== lesson.videoUrl) {
       const videoId = extractYouTubeVideoId(url);
       if (videoId) {
         setIsLoadingVideoInfo(true);
         try {
           const videoInfo = await fetchYouTubeVideoInfo(videoId);
           if (videoInfo) {
-            // Only update the title if it's currently empty
             const updates: Partial<Lesson> = {
               duration: videoInfo.duration
             };
+            // Only update the title if it's currently empty
             if (!lesson.name.trim()) {
               updates.name = videoInfo.title;
             }
@@ -399,15 +402,15 @@ const LessonEditor = ({ lesson, onUpdate, onDelete }: {
       <div className="space-y-2">
         <Label>Video URL (YouTube)</Label>
         <Input
-          value={lesson.videoUrl}
+          value={localVideoUrl}
           onChange={(e) => handleVideoUrlChange(e.target.value)}
           placeholder="https://www.youtube.com/watch?v=..."
         />
       </div>
 
       {/* YouTube Video Preview */}
-      {lesson.videoUrl && (
-        <YouTubePreview url={lesson.videoUrl} />
+      {localVideoUrl && (
+        <YouTubePreview url={localVideoUrl} />
       )}
 
       <div className="space-y-2">

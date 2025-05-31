@@ -137,14 +137,21 @@ export const useCourses = () => {
       console.log("Saving course content for course:", courseId, topics);
       
       // First, delete existing topics for this course
-      await supabase
+      const { error: deleteError } = await supabase
         .from("course_topics")
         .delete()
         .eq("course_id", courseId);
+      
+      if (deleteError) {
+        console.error("Error deleting existing topics:", deleteError);
+        throw deleteError;
+      }
 
       // Save each topic
       for (let topicIndex = 0; topicIndex < topics.length; topicIndex++) {
         const topic = topics[topicIndex];
+        
+        console.log("Saving topic:", topic);
         
         // Insert topic
         const { data: topicData, error: topicError } = await supabase
@@ -158,11 +165,18 @@ export const useCourses = () => {
           .select()
           .single();
 
-        if (topicError) throw topicError;
+        if (topicError) {
+          console.error("Error saving topic:", topicError);
+          throw topicError;
+        }
+
+        console.log("Saved topic data:", topicData);
 
         // Save topic items (lessons and quizzes)
         for (let itemIndex = 0; itemIndex < topic.items.length; itemIndex++) {
           const item = topic.items[itemIndex];
+          
+          console.log("Saving item:", item);
           
           if (item.type === "lesson") {
             const { error: lessonError } = await supabase
@@ -179,7 +193,10 @@ export const useCourses = () => {
                 order_index: itemIndex,
               });
 
-            if (lessonError) throw lessonError;
+            if (lessonError) {
+              console.error("Error saving lesson:", lessonError);
+              throw lessonError;
+            }
           } else if (item.type === "quiz") {
             const { data: quizData, error: quizError } = await supabase
               .from("course_quizzes")
@@ -197,7 +214,10 @@ export const useCourses = () => {
               .select()
               .single();
 
-            if (quizError) throw quizError;
+            if (quizError) {
+              console.error("Error saving quiz:", quizError);
+              throw quizError;
+            }
 
             // Save quiz questions
             for (let questionIndex = 0; questionIndex < item.questions.length; questionIndex++) {
@@ -217,7 +237,10 @@ export const useCourses = () => {
                   order_index: questionIndex,
                 });
 
-              if (questionError) throw questionError;
+              if (questionError) {
+                console.error("Error saving question:", questionError);
+                throw questionError;
+              }
             }
           }
         }
