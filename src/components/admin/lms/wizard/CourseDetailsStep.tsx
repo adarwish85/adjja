@@ -244,6 +244,9 @@ export const CourseDetailsStep = ({ data, onUpdate, courseId }: CourseDetailsSte
             onChange={(e) => onUpdate({ featuredImage: e.target.value })}
             placeholder="https://example.com/image.jpg"
           />
+          <p className="text-xs text-gray-500">
+            Leave empty to use the first video thumbnail as featured image
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -254,6 +257,9 @@ export const CourseDetailsStep = ({ data, onUpdate, courseId }: CourseDetailsSte
             onChange={(e) => onUpdate({ introVideo: e.target.value })}
             placeholder="https://www.youtube.com/watch?v=..."
           />
+          <p className="text-xs text-gray-500">
+            Leave empty to use the first lesson video as intro
+          </p>
         </div>
       </div>
     </div>

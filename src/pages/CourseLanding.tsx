@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { 
   Play, 
   Clock, 
@@ -16,11 +22,16 @@ import {
   CheckCircle,
   Globe,
   Smartphone,
-  Monitor
+  Monitor,
+  Eye
 } from "lucide-react";
+import { useState } from "react";
+import { VideoPlayer } from "@/components/VideoPlayer";
 
 const CourseLanding = () => {
   const { courseId } = useParams();
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ["course", courseId],
@@ -95,16 +106,21 @@ const CourseLanding = () => {
   const totalMinutes = totalDuration % 60;
   const studentCount = enrollmentCount || course.total_students || 0;
 
+  // Use first video as fallback for featured image and intro video
+  const firstVideo = videos?.[0];
+  const featuredImage = course.thumbnail_url || (firstVideo?.video_url ? getYoutubeThumbnail(firstVideo.video_url) : null);
+  const introVideo = course.intro_video || firstVideo?.video_url;
+
   // Group videos by sections (for now, we'll create basic sections based on video titles)
   const sections = videos ? [
     {
-      title: "Course Content",
+      title: "Course Lessons",
       videos: videos,
       duration: totalDuration
     }
   ] : [];
 
-  const learningOutcomes = [
+  const learningOutcomes = course.learning_outcomes || [
     "Master fundamental BJJ techniques and positions",
     "Understand basic transitions and movement patterns", 
     "Learn effective submission holds and escapes",
@@ -113,12 +129,34 @@ const CourseLanding = () => {
     "Improve physical conditioning and flexibility"
   ];
 
-  const requirements = [
+  const requirements = course.requirements || [
     "No prior martial arts experience required",
     "A gi (Brazilian Jiu-Jitsu uniform) is recommended but not required for video lessons",
     "Willingness to learn and practice regularly",
     "Basic physical fitness (modifications provided for all levels)"
   ];
+
+  const handleVideoPreview = (videoUrl: string) => {
+    setSelectedVideo(videoUrl);
+    setIsPlayerOpen(true);
+  };
+
+  const handlePreviewCourse = () => {
+    if (introVideo) {
+      handleVideoPreview(introVideo);
+    }
+  };
+
+  function getYoutubeThumbnail(url: string): string {
+    const videoId = extractYouTubeVideoId(url);
+    return videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : '';
+  }
+
+  function extractYouTubeVideoId(url: string): string | null {
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -176,9 +214,9 @@ const CourseLanding = () => {
                 <CardContent className="p-0">
                   {/* Video Preview */}
                   <div className="relative aspect-video bg-gray-800 rounded-t-lg overflow-hidden">
-                    {course.thumbnail_url ? (
+                    {featuredImage ? (
                       <img 
-                        src={course.thumbnail_url} 
+                        src={featuredImage} 
                         alt={course.title}
                         className="w-full h-full object-cover"
                       />
@@ -186,7 +224,12 @@ const CourseLanding = () => {
                       <div className="w-full h-full bg-gradient-to-br from-bjj-navy to-bjj-gold"></div>
                     )}
                     <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-                      <Button size="lg" className="bg-white text-black hover:bg-gray-100">
+                      <Button 
+                        size="lg" 
+                        className="bg-white text-black hover:bg-gray-100"
+                        onClick={handlePreviewCourse}
+                        disabled={!introVideo}
+                      >
                         <Play className="h-6 w-6 mr-2" />
                         Preview Course
                       </Button>
@@ -262,39 +305,58 @@ const CourseLanding = () => {
               </CardContent>
             </Card>
 
-            {/* Course Content */}
+            {/* Course Content with Accordion */}
             <Card>
               <CardContent className="p-6">
                 <h2 className="text-2xl font-bold text-bjj-navy mb-4">Course content</h2>
                 <div className="space-y-2 text-sm text-gray-600 mb-4">
                   <span>{sections.length} sections • {totalVideos} lectures • {totalHours}h {totalMinutes}m total length</span>
                 </div>
-                <div className="space-y-2">
-                  {sections.map((section, index) => (
-                    <div key={index} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-3">
-                        <h3 className="font-medium">{section.title}</h3>
-                        <span className="text-sm text-gray-600">{section.videos.length} lectures • {Math.floor(section.duration / 60)}h {section.duration % 60}m</span>
-                      </div>
-                      <div className="space-y-2">
-                        {section.videos.map((video) => (
-                          <div key={video.id} className="flex items-center justify-between text-sm text-gray-600 ml-4">
-                            <div className="flex items-center gap-2">
-                              <Play className="h-3 w-3" />
-                              <span>{video.title}</span>
-                            </div>
-                            <span>{video.duration_minutes || 0} min</span>
+                
+                {totalVideos > 0 ? (
+                  <Accordion type="single" collapsible className="w-full">
+                    {sections.map((section, sectionIndex) => (
+                      <AccordionItem key={sectionIndex} value={`section-${sectionIndex}`}>
+                        <AccordionTrigger className="text-left">
+                          <div className="flex justify-between items-center w-full pr-4">
+                            <span className="font-medium">{section.title}</span>
+                            <span className="text-sm text-gray-600">
+                              {section.videos.length} lectures • {Math.floor(section.duration / 60)}h {section.duration % 60}m
+                            </span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  {totalVideos === 0 && (
-                    <div className="border rounded-lg p-4 text-center text-gray-500">
-                      Course content is being prepared. Check back soon!
-                    </div>
-                  )}
-                </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-2 ml-4">
+                            {section.videos.map((video) => (
+                              <div key={video.id} className="flex items-center justify-between text-sm border-b pb-2">
+                                <div className="flex items-center gap-2 flex-1">
+                                  <Play className="h-3 w-3 text-gray-400" />
+                                  <span className="flex-1">{video.title}</span>
+                                  {video.is_preview && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleVideoPreview(video.video_url)}
+                                      className="text-bjj-gold hover:text-bjj-gold-dark h-6 px-2"
+                                    >
+                                      <Eye className="h-3 w-3 mr-1" />
+                                      Preview
+                                    </Button>
+                                  )}
+                                </div>
+                                <span className="text-gray-500 ml-2">{video.duration_minutes || 0} min</span>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                ) : (
+                  <div className="border rounded-lg p-4 text-center text-gray-500">
+                    Course content is being prepared. Check back soon!
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -360,6 +422,18 @@ const CourseLanding = () => {
           </div>
         </div>
       </div>
+
+      {/* Video Player Modal */}
+      {isPlayerOpen && selectedVideo && (
+        <VideoPlayer
+          videoUrl={selectedVideo}
+          isOpen={isPlayerOpen}
+          onClose={() => {
+            setIsPlayerOpen(false);
+            setSelectedVideo(null);
+          }}
+        />
+      )}
     </div>
   );
 };
