@@ -14,6 +14,7 @@ import AdminClasses from "./pages/admin/AdminClasses";
 import AdminBranches from "./pages/admin/AdminBranches";
 import AdminLMS from "./pages/admin/AdminLMS";
 import AdminPayments from "./pages/admin/AdminPayments";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
