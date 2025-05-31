@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,6 +80,7 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
+        // Only validate name and email since branch is automatically set to default
         return formData.name && formData.email;
       case 2:
         return formData.belt && formData.coach;
