@@ -127,6 +127,10 @@ const LandingPage = () => {
                     onClick={() => {
                       if (role.title === "Super Admin") {
                         window.location.href = "/admin/dashboard";
+                      } else if (role.title === "Coach") {
+                        window.location.href = "/coach/dashboard";
+                      } else if (role.title === "Student") {
+                        window.location.href = "/student/dashboard";
                       }
                     }}
                   >
