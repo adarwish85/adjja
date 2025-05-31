@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Coach } from "@/hooks/useCoaches";
+import { Coach } from "@/types/coach";
 import { CoachBasicInfoStep } from "./CoachBasicInfoStep";
 import { CoachProfessionalInfoStep } from "./CoachProfessionalInfoStep";
 import { CoachAccountStep } from "./CoachAccountStep";

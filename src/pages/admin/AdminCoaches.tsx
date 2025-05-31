@@ -22,7 +22,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Trash2, Mail, Phone, Loader2 } from "lucide-react";
 import { MultiStepCoachForm } from "@/components/admin/coach/MultiStepCoachForm";
-import { useCoaches, type Coach } from "@/hooks/useCoaches";
+import { useCoaches } from "@/hooks/useCoaches";
+import { Coach } from "@/types/coach";
 import {
   AlertDialog,
   AlertDialogAction,

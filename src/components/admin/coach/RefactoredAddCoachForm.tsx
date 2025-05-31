@@ -1,8 +1,7 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Coach } from "@/hooks/useCoaches";
+import { Coach } from "@/types/coach";
 import { AddCoachBasicInfo } from "./AddCoachBasicInfo";
 import { AddCoachProfessionalInfo } from "./AddCoachProfessionalInfo";
 import { AddCoachAccountInfo } from "./AddCoachAccountInfo";
