@@ -12,7 +12,7 @@ import {
   Users, 
   Star, 
   Download, 
-  Certificate, 
+  Award, 
   CheckCircle,
   Globe,
   Smartphone,
