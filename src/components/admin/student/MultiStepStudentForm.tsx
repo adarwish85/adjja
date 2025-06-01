@@ -43,18 +43,30 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
   });
 
   const updateFormData = (updates: Partial<typeof formData>) => {
-    setFormData(prev => ({ ...prev, ...updates }));
+    console.log("Updating form data:", updates);
+    setFormData(prev => {
+      const newData = { ...prev, ...updates };
+      console.log("New form data:", newData);
+      return newData;
+    });
   };
 
   const nextStep = () => {
+    console.log("Next step clicked, current step:", currentStep);
+    console.log("Form data at next step:", formData);
+    console.log("Is step valid:", isStepValid());
+    
     if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
+      console.log("Moving to step:", currentStep + 1);
     }
   };
 
   const prevStep = () => {
+    console.log("Previous step clicked, current step:", currentStep);
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+      console.log("Moving to step:", currentStep - 1);
     }
   };
 
@@ -78,20 +90,31 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
   };
 
   const isStepValid = () => {
+    console.log("Validating step:", currentStep, "with form data:", formData);
+    
     switch (currentStep) {
       case 1:
         // Only validate name and email since branch is automatically set to default
-        return formData.name && formData.email;
+        const step1Valid = !!(formData.name && formData.email);
+        console.log("Step 1 validation:", { name: formData.name, email: formData.email, valid: step1Valid });
+        return step1Valid;
       case 2:
-        return formData.belt && formData.coach;
+        const step2Valid = !!(formData.belt && formData.coach);
+        console.log("Step 2 validation:", { belt: formData.belt, coach: formData.coach, valid: step2Valid });
+        return step2Valid;
       case 3:
-        return !formData.createAccount || (formData.username && formData.password);
+        const step3Valid = !formData.createAccount || (formData.username && formData.password);
+        console.log("Step 3 validation:", { createAccount: formData.createAccount, username: formData.username, password: formData.password, valid: step3Valid });
+        return step3Valid;
       default:
+        console.log("Invalid step:", currentStep);
         return false;
     }
   };
 
   const progress = (currentStep / steps.length) * 100;
+
+  console.log("Rendering MultiStepStudentForm - Current step:", currentStep, "Progress:", progress);
 
   return (
     <div className="space-y-6">
