@@ -51,22 +51,59 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     });
   };
 
+  const isStepValid = () => {
+    console.log("Validating step:", currentStep, "with form data:", formData);
+    
+    try {
+      switch (currentStep) {
+        case 1:
+          // Only validate name and email since branch is automatically set to default
+          const step1Valid = !!(formData.name && formData.email);
+          console.log("Step 1 validation:", { name: formData.name, email: formData.email, valid: step1Valid });
+          return step1Valid;
+        case 2:
+          const step2Valid = !!(formData.belt && formData.coach);
+          console.log("Step 2 validation:", { belt: formData.belt, coach: formData.coach, valid: step2Valid });
+          return step2Valid;
+        case 3:
+          const step3Valid = !formData.createAccount || (formData.username && formData.password);
+          console.log("Step 3 validation:", { createAccount: formData.createAccount, username: formData.username, password: formData.password, valid: step3Valid });
+          return step3Valid;
+        default:
+          console.log("Invalid step:", currentStep);
+          return false;
+      }
+    } catch (error) {
+      console.error("Error in step validation:", error);
+      return false;
+    }
+  };
+
   const nextStep = () => {
     console.log("Next step clicked, current step:", currentStep);
     console.log("Form data at next step:", formData);
-    console.log("Is step valid:", isStepValid());
+    
+    const stepValid = isStepValid();
+    console.log("Is step valid:", stepValid);
+    
+    if (!stepValid) {
+      console.error("Step validation failed, cannot proceed");
+      return;
+    }
     
     if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1);
-      console.log("Moving to step:", currentStep + 1);
+      const newStep = currentStep + 1;
+      console.log("Moving to step:", newStep);
+      setCurrentStep(newStep);
     }
   };
 
   const prevStep = () => {
     console.log("Previous step clicked, current step:", currentStep);
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-      console.log("Moving to step:", currentStep - 1);
+      const newStep = currentStep - 1;
+      console.log("Moving to step:", newStep);
+      setCurrentStep(newStep);
     }
   };
 
@@ -89,32 +126,47 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     onSubmit(studentData);
   };
 
-  const isStepValid = () => {
-    console.log("Validating step:", currentStep, "with form data:", formData);
-    
-    switch (currentStep) {
-      case 1:
-        // Only validate name and email since branch is automatically set to default
-        const step1Valid = !!(formData.name && formData.email);
-        console.log("Step 1 validation:", { name: formData.name, email: formData.email, valid: step1Valid });
-        return step1Valid;
-      case 2:
-        const step2Valid = !!(formData.belt && formData.coach);
-        console.log("Step 2 validation:", { belt: formData.belt, coach: formData.coach, valid: step2Valid });
-        return step2Valid;
-      case 3:
-        const step3Valid = !formData.createAccount || (formData.username && formData.password);
-        console.log("Step 3 validation:", { createAccount: formData.createAccount, username: formData.username, password: formData.password, valid: step3Valid });
-        return step3Valid;
-      default:
-        console.log("Invalid step:", currentStep);
-        return false;
-    }
-  };
-
   const progress = (currentStep / steps.length) * 100;
 
   console.log("Rendering MultiStepStudentForm - Current step:", currentStep, "Progress:", progress);
+
+  const renderStepContent = () => {
+    console.log("Rendering step content for step:", currentStep);
+    
+    try {
+      switch (currentStep) {
+        case 1:
+          return (
+            <StudentBasicInfoStep
+              formData={formData}
+              updateFormData={updateFormData}
+            />
+          );
+        case 2:
+          return (
+            <StudentClassInfoStep
+              formData={formData}
+              updateFormData={updateFormData}
+              isEditing={isEditing}
+            />
+          );
+        case 3:
+          return (
+            <StudentAccountStep
+              formData={formData}
+              updateFormData={updateFormData}
+              isEditing={isEditing}
+            />
+          );
+        default:
+          console.error("Invalid step:", currentStep);
+          return <div>Error: Invalid step</div>;
+      }
+    } catch (error) {
+      console.error("Error rendering step content:", error);
+      return <div>Error rendering step content</div>;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -162,29 +214,10 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
       {/* Step Content */}
       <Card>
         <CardHeader>
-          <CardTitle>{steps[currentStep - 1].title}</CardTitle>
+          <CardTitle>{steps[currentStep - 1]?.title || "Unknown Step"}</CardTitle>
         </CardHeader>
         <CardContent>
-          {currentStep === 1 && (
-            <StudentBasicInfoStep
-              formData={formData}
-              updateFormData={updateFormData}
-            />
-          )}
-          {currentStep === 2 && (
-            <StudentClassInfoStep
-              formData={formData}
-              updateFormData={updateFormData}
-              isEditing={isEditing}
-            />
-          )}
-          {currentStep === 3 && (
-            <StudentAccountStep
-              formData={formData}
-              updateFormData={updateFormData}
-              isEditing={isEditing}
-            />
-          )}
+          {renderStepContent()}
         </CardContent>
       </Card>
 
