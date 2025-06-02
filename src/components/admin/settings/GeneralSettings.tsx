@@ -82,13 +82,15 @@ export const GeneralSettings = () => {
   };
 
   const handleThemeChange = (newTheme: string) => {
+    const themeValue = newTheme as 'light' | 'dark' | 'auto';
     setSettings(prev => ({ ...prev, theme: newTheme }));
-    setTheme(newTheme as 'light' | 'dark' | 'auto');
+    setTheme(themeValue);
   };
 
   const handleColorSchemeChange = (newColorScheme: string) => {
+    const colorSchemeValue = newColorScheme as 'bjj-gold' | 'blue' | 'green' | 'purple' | 'black';
     setSettings(prev => ({ ...prev, colorScheme: newColorScheme }));
-    setColorScheme(newColorScheme as 'bjj-gold' | 'blue' | 'green' | 'purple');
+    setColorScheme(colorSchemeValue);
   };
 
   return (
@@ -334,6 +336,7 @@ export const GeneralSettings = () => {
                   <SelectValue placeholder="Select color scheme" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="black">Black</SelectItem>
                   <SelectItem value="bjj-gold">BJJ Gold</SelectItem>
                   <SelectItem value="blue">Blue</SelectItem>
                   <SelectItem value="green">Green</SelectItem>

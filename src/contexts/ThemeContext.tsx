@@ -3,9 +3,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface ThemeContextType {
   theme: 'light' | 'dark' | 'auto';
-  colorScheme: 'bjj-gold' | 'blue' | 'green' | 'purple';
+  colorScheme: 'bjj-gold' | 'blue' | 'green' | 'purple' | 'black';
   setTheme: (theme: 'light' | 'dark' | 'auto') => void;
-  setColorScheme: (scheme: 'bjj-gold' | 'blue' | 'green' | 'purple') => void;
+  setColorScheme: (scheme: 'bjj-gold' | 'blue' | 'green' | 'purple' | 'black') => void;
   applyTheme: () => void;
 }
 
@@ -21,7 +21,7 @@ export const useTheme = () => {
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<'light' | 'dark' | 'auto'>('light');
-  const [colorScheme, setColorSchemeState] = useState<'bjj-gold' | 'blue' | 'green' | 'purple'>('bjj-gold');
+  const [colorScheme, setColorSchemeState] = useState<'bjj-gold' | 'blue' | 'green' | 'purple' | 'black'>('black');
 
   // Load theme from settings
   useEffect(() => {
@@ -29,7 +29,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
       setThemeState(settings.theme || 'light');
-      setColorSchemeState(settings.colorScheme || 'bjj-gold');
+      setColorSchemeState(settings.colorScheme || 'black');
     }
   }, []);
 
@@ -107,6 +107,21 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         '--bjj-gold': '#a855f7',
         '--bjj-gold-dark': '#7c3aed',
         '--bjj-gold-light': '#c4b5fd',
+      },
+      'black': {
+        '--primary': '0 0% 9%', // Black
+        '--primary-foreground': '210 40% 98%',
+        '--accent': '0 0% 15%', // Lighter black for accents
+        '--accent-foreground': '210 40% 98%',
+        '--destructive': '0 84.2% 60.2%',
+        '--destructive-foreground': '210 40% 98%',
+        '--secondary': '0 0% 94%',
+        '--secondary-foreground': '0 0% 20%',
+        '--muted': '0 0% 96%',
+        '--muted-foreground': '0 0% 45%',
+        '--bjj-gold': '#1a1a1a',
+        '--bjj-gold-dark': '#000000',
+        '--bjj-gold-light': '#404040',
       }
     };
 
@@ -121,16 +136,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setTheme = (newTheme: 'light' | 'dark' | 'auto') => {
     setThemeState(newTheme);
-    // Update localStorage
+    // Update localStorage immediately
     const savedSettings = localStorage.getItem('adjja_general_settings');
     const settings = savedSettings ? JSON.parse(savedSettings) : {};
     settings.theme = newTheme;
     localStorage.setItem('adjja_general_settings', JSON.stringify(settings));
   };
 
-  const setColorScheme = (newScheme: 'bjj-gold' | 'blue' | 'green' | 'purple') => {
+  const setColorScheme = (newScheme: 'bjj-gold' | 'blue' | 'green' | 'purple' | 'black') => {
     setColorSchemeState(newScheme);
-    // Update localStorage
+    // Update localStorage immediately
     const savedSettings = localStorage.getItem('adjja_general_settings');
     const settings = savedSettings ? JSON.parse(savedSettings) : {};
     settings.colorScheme = newScheme;
