@@ -3,6 +3,8 @@ import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Volume2, VolumeX, Maximize, X } from "lucide-react";
+import { extractYouTubeVideoId } from "@/utils/youtubeUtils";
+import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 
 interface VideoPlayerProps {
   videoUrl: string;
@@ -11,109 +13,111 @@ interface VideoPlayerProps {
 }
 
 export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
   const [showControls, setShowControls] = useState(true);
-  const [videoSrc, setVideoSrc] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
-
-  // Extract YouTube video ID
-  const extractYouTubeVideoId = (url: string): string | null => {
-    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
-    const match = url.match(regex);
-    return match ? match[1] : null;
-  };
 
   const isYouTubeVideo = (url: string) => {
     return url.includes('youtube.com') || url.includes('youtu.be');
   };
 
-  // Get direct video URL for YouTube videos
-  const getDirectVideoUrl = async (url: string): Promise<string> => {
-    if (isYouTubeVideo(url)) {
-      const videoId = extractYouTubeVideoId(url);
-      if (videoId) {
-        // Use a YouTube video extraction service or API
-        // For now, we'll use a fallback approach with YouTube's direct video URLs
-        // Note: This might need to be updated based on YouTube's current policies
-        try {
-          // Try different quality formats
-          const formats = [
-            `https://www.youtube.com/watch?v=${videoId}&format=mp4`,
-            `https://youtu.be/${videoId}`,
-          ];
-          
-          // For demonstration, we'll use the original URL but handle it differently
-          // In a production environment, you'd want to use a proper YouTube extraction service
-          return url;
-        } catch (error) {
-          console.error('Error extracting YouTube video:', error);
-          return url;
-        }
-      }
-    }
-    return url;
-  };
+  const youTubeVideoId = isYouTubeVideo(videoUrl) ? extractYouTubeVideoId(videoUrl) : null;
+  
+  // YouTube player for YouTube videos
+  const {
+    isReady: youTubeReady,
+    isPlaying: youTubePlaying,
+    currentTime: youTubeCurrentTime,
+    duration: youTubeDuration,
+    volume: youTubeVolume,
+    isMuted: youTubeIsMuted,
+    play: youTubePlay,
+    pause: youTubePause,
+    seekTo: youTubeSeekTo,
+    setVolume: youTubeSetVolume,
+    toggleMute: youTubeToggleMute,
+  } = useYouTubePlayer(youTubeVideoId, 'youtube-player');
+
+  // HTML5 video state for direct videos
+  const [htmlIsPlaying, setHtmlIsPlaying] = useState(false);
+  const [htmlCurrentTime, setHtmlCurrentTime] = useState(0);
+  const [htmlDuration, setHtmlDuration] = useState(0);
+  const [htmlVolume, setHtmlVolume] = useState(1);
+  const [htmlIsMuted, setHtmlIsMuted] = useState(false);
+
+  // Unified state based on video type
+  const isPlaying = youTubeVideoId ? youTubePlaying : htmlIsPlaying;
+  const currentTime = youTubeVideoId ? youTubeCurrentTime : htmlCurrentTime;
+  const duration = youTubeVideoId ? youTubeDuration : htmlDuration;
+  const volume = youTubeVideoId ? youTubeVolume / 100 : htmlVolume;
+  const isMuted = youTubeVideoId ? youTubeIsMuted : htmlIsMuted;
+  const playerReady = youTubeVideoId ? youTubeReady : !isLoading;
 
   useEffect(() => {
-    if (isOpen && videoUrl) {
-      setIsLoading(true);
-      getDirectVideoUrl(videoUrl).then((directUrl) => {
-        setVideoSrc(directUrl);
-        setIsLoading(false);
-      });
+    if (youTubeVideoId && youTubeReady) {
+      setIsLoading(false);
     }
-  }, [isOpen, videoUrl]);
+  }, [youTubeVideoId, youTubeReady]);
 
   const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
+    if (youTubeVideoId) {
+      if (youTubePlaying) {
+        youTubePause();
+      } else {
+        youTubePlay();
+      }
+    } else if (videoRef.current) {
+      if (htmlIsPlaying) {
         videoRef.current.pause();
       } else {
         videoRef.current.play();
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
   const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
-
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration);
+    if (youTubeVideoId) {
+      youTubeToggleMute();
+    } else if (videoRef.current) {
+      const newMuted = !htmlIsMuted;
+      videoRef.current.muted = newMuted;
+      setHtmlIsMuted(newMuted);
     }
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
-    if (videoRef.current) {
+    if (youTubeVideoId) {
+      youTubeSeekTo(time);
+    } else if (videoRef.current) {
       videoRef.current.currentTime = time;
-      setCurrentTime(time);
+      setHtmlCurrentTime(time);
     }
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const vol = parseFloat(e.target.value);
-    if (videoRef.current) {
+    if (youTubeVideoId) {
+      youTubeSetVolume(vol * 100);
+    } else if (videoRef.current) {
       videoRef.current.volume = vol;
-      setVolume(vol);
-      setIsMuted(vol === 0);
+      setHtmlVolume(vol);
+      setHtmlIsMuted(vol === 0);
+    }
+  };
+
+  const handleFullscreen = () => {
+    if (playerContainerRef.current) {
+      if (!isFullscreen) {
+        playerContainerRef.current.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
     }
   };
 
@@ -133,19 +137,47 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     }, 3000);
   };
 
+  // HTML5 video event handlers
+  const handleHtmlTimeUpdate = () => {
+    if (videoRef.current) {
+      setHtmlCurrentTime(videoRef.current.currentTime);
+    }
+  };
+
+  const handleHtmlLoadedMetadata = () => {
+    if (videoRef.current) {
+      setHtmlDuration(videoRef.current.duration);
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) {
-      setIsPlaying(false);
-      setCurrentTime(0);
-      setVideoSrc("");
+      setHtmlIsPlaying(false);
+      setHtmlCurrentTime(0);
       setIsLoading(true);
+      setIsFullscreen(false);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl h-[80vh] p-0 bg-black">
-        <div className="relative w-full h-full flex items-center justify-center">
+        <div 
+          ref={playerContainerRef}
+          className="relative w-full h-full flex items-center justify-center"
+        >
           <Button
             variant="ghost"
             size="sm"
@@ -165,108 +197,95 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
               onMouseMove={handleMouseMove}
               onMouseLeave={() => setShowControls(false)}
             >
-              <video
-                ref={videoRef}
-                src={isYouTubeVideo(videoSrc) ? undefined : videoSrc}
-                className="w-full h-full object-contain"
-                onTimeUpdate={handleTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onClick={togglePlay}
-                crossOrigin="anonymous"
-                preload="metadata"
-                onError={(e) => {
-                  console.error('Video error:', e);
-                  // Fallback for YouTube videos - show error message
-                  if (isYouTubeVideo(videoUrl)) {
-                    console.warn('YouTube video cannot be played directly due to CORS restrictions');
-                  }
-                }}
-              >
-                {isYouTubeVideo(videoSrc) && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white">
-                    <div className="text-center">
-                      <p className="mb-4">Unable to play YouTube video directly</p>
-                      <p className="text-sm text-gray-400">Please use the original YouTube link to view this content</p>
-                      <Button
-                        variant="outline"
-                        className="mt-4"
-                        onClick={() => window.open(videoUrl, '_blank')}
-                      >
-                        Open in New Tab
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </video>
+              {youTubeVideoId ? (
+                <div id="youtube-player" className="w-full h-full" />
+              ) : (
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  className="w-full h-full object-contain"
+                  onTimeUpdate={handleHtmlTimeUpdate}
+                  onLoadedMetadata={handleHtmlLoadedMetadata}
+                  onPlay={() => setHtmlIsPlaying(true)}
+                  onPause={() => setHtmlIsPlaying(false)}
+                  onClick={togglePlay}
+                  crossOrigin="anonymous"
+                  preload="metadata"
+                />
+              )}
 
               {/* Custom Video Controls */}
-              {!isYouTubeVideo(videoSrc) && (
-                <div
-                  className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
-                    showControls ? 'opacity-100' : 'opacity-0'
-                  }`}
-                >
-                  {/* Progress Bar */}
-                  <div className="mb-4">
-                    <input
-                      type="range"
-                      min="0"
-                      max={duration || 0}
-                      value={currentTime}
-                      onChange={handleSeek}
-                      className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-                    />
-                  </div>
+              <div
+                className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
+                  showControls ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                {/* Progress Bar */}
+                <div className="mb-4">
+                  <input
+                    type="range"
+                    min="0"
+                    max={duration || 0}
+                    value={currentTime}
+                    onChange={handleSeek}
+                    className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
 
-                  {/* Controls Row */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={togglePlay}
-                        className="text-white hover:bg-gray-700"
-                      >
-                        {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                      </Button>
-
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={toggleMute}
-                          className="text-white hover:bg-gray-700"
-                        >
-                          {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                        </Button>
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.1"
-                          value={volume}
-                          onChange={handleVolumeChange}
-                          className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-                        />
-                      </div>
-
-                      <span className="text-white text-sm">
-                        {formatTime(currentTime)} / {formatTime(duration)}
-                      </span>
-                    </div>
-
+                {/* Controls Row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => videoRef.current?.requestFullscreen()}
+                      onClick={togglePlay}
                       className="text-white hover:bg-gray-700"
                     >
-                      <Maximize className="h-4 w-4" />
+                      {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                     </Button>
+
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={toggleMute}
+                        className="text-white hover:bg-gray-700"
+                      >
+                        {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                      </Button>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={volume}
+                        onChange={handleVolumeChange}
+                        className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                      />
+                    </div>
+
+                    <span className="text-white text-sm">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </span>
                   </div>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleFullscreen}
+                    className="text-white hover:bg-gray-700"
+                  >
+                    <Maximize className="h-4 w-4" />
+                  </Button>
                 </div>
+              </div>
+
+              {/* Click overlay for YouTube videos */}
+              {youTubeVideoId && (
+                <div 
+                  className="absolute inset-0 z-10"
+                  onClick={togglePlay}
+                />
               )}
             </div>
           )}
