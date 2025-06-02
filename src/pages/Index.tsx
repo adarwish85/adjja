@@ -1,11 +1,8 @@
-
 import LandingPage from "@/components/LandingPage";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-
 const Index = () => {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-bjj-navy to-bjj-navy/90">
+  return <div className="min-h-screen bg-gradient-to-br from-bjj-navy to-bjj-navy/90">
       {/* Navigation Header */}
       <nav className="bg-white/10 backdrop-blur-sm border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,7 +15,7 @@ const Index = () => {
             </div>
             <div className="flex items-center space-x-4">
               <Link to="/login">
-                <Button variant="outline" className="border-white text-white hover:bg-white hover:text-bjj-navy">
+                <Button variant="outline" className="border-white hover:bg-white text-zinc-950">
                   Student Login
                 </Button>
               </Link>
@@ -32,8 +29,6 @@ const Index = () => {
 
       {/* Main Content */}
       <LandingPage />
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
