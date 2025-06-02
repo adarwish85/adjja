@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -35,6 +34,11 @@ export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: St
   const { classes, loading: classesLoading } = useClasses();
   const activeCoaches = coaches.filter(coach => coach.status === "active");
   const activeClasses = classes.filter(cls => cls.status === "Active");
+
+  const handleClassEnrollmentChange = (value: string) => {
+    // Convert "none" back to undefined for the form data
+    updateFormData({ class_enrollment: value === "none" ? undefined : value });
+  };
 
   return (
     <div className="space-y-4">
@@ -145,15 +149,15 @@ export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: St
       <div className="space-y-2">
         <Label htmlFor="class_enrollment">Class Enrollment (Optional)</Label>
         <Select
-          value={formData.class_enrollment || ""}
-          onValueChange={(value) => updateFormData({ class_enrollment: value || undefined })}
+          value={formData.class_enrollment || "none"}
+          onValueChange={handleClassEnrollmentChange}
           disabled={classesLoading}
         >
           <SelectTrigger>
             <SelectValue placeholder={classesLoading ? "Loading classes..." : "Select class (optional)"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">No class selected</SelectItem>
+            <SelectItem value="none">No class selected</SelectItem>
             {activeClasses.map((cls) => (
               <SelectItem key={cls.id} value={cls.name}>
                 {cls.name} - {cls.instructor} ({cls.schedule})
