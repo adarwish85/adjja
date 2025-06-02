@@ -115,6 +115,14 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
               iv_load_policy: 3,
               cc_load_policy: 0,
               playsinline: 1,
+              showinfo: 0,
+              logo: 0,
+              color: 'white',
+              enablejsapi: 1,
+              origin: window.location.origin,
+              wmode: 'transparent',
+              branding: 0,
+              autohide: 1
             },
             events: {
               onReady: (event: any) => {

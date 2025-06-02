@@ -197,6 +197,43 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl h-[80vh] p-0 bg-black">
+        <style jsx>{`
+          /* Hide YouTube branding and controls */
+          iframe {
+            pointer-events: none !important;
+          }
+          
+          .ytp-chrome-top,
+          .ytp-chrome-bottom,
+          .ytp-watermark,
+          .ytp-gradient-top,
+          .ytp-gradient-bottom,
+          .ytp-title,
+          .ytp-show-cards-title,
+          .ytp-pause-overlay,
+          .ytp-related-on-error-overlay,
+          .ytp-endscreen-element,
+          .ytp-ce-element,
+          .ytp-cards-teaser,
+          .ytp-suggested-action,
+          .iv-branding,
+          .branding-img,
+          .annotation,
+          .video-annotations {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+          }
+          
+          /* Ensure iframe fills container */
+          #youtube-player iframe {
+            width: 100% !important;
+            height: 100% !important;
+            border: none !important;
+            background: transparent !important;
+          }
+        `}</style>
+        
         <div 
           ref={playerContainerRef}
           className="relative w-full h-full flex items-center justify-center"
@@ -230,7 +267,19 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
               onMouseLeave={() => setShowControls(false)}
             >
               {youTubeVideoId ? (
-                <div id="youtube-player" className="w-full h-full" />
+                <div className="relative w-full h-full">
+                  <div 
+                    id="youtube-player" 
+                    className="w-full h-full"
+                    style={{ pointerEvents: 'none' }}
+                  />
+                  {/* Complete overlay to block YouTube interaction */}
+                  <div 
+                    className="absolute inset-0 z-20 bg-transparent"
+                    onClick={togglePlay}
+                    style={{ pointerEvents: 'auto' }}
+                  />
+                </div>
               ) : (
                 <video
                   ref={videoRef}
@@ -248,45 +297,48 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                 />
               )}
 
-              {/* Custom Video Controls */}
+              {/* Enhanced Custom Video Controls */}
               {playerReady && (
                 <div
-                  className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
+                  className={`absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 transition-opacity duration-300 ${
                     showControls ? 'opacity-100' : 'opacity-0'
                   }`}
                 >
                   {/* Progress Bar */}
-                  <div className="mb-4">
+                  <div className="mb-6">
                     <input
                       type="range"
                       min="0"
                       max={duration || 0}
                       value={currentTime}
                       onChange={handleSeek}
-                      className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                      className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider accent-white"
+                      style={{
+                        background: `linear-gradient(to right, white 0%, white ${(currentTime / (duration || 1)) * 100}%, #4B5563 ${(currentTime / (duration || 1)) * 100}%, #4B5563 100%)`
+                      }}
                     />
                   </div>
 
                   {/* Controls Row */}
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-6">
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="lg"
                         onClick={togglePlay}
-                        className="text-white hover:bg-gray-700"
+                        className="text-white hover:bg-gray-700 p-3"
                       >
-                        {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                        {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
                       </Button>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-3">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={toggleMute}
-                          className="text-white hover:bg-gray-700"
+                          className="text-white hover:bg-gray-700 p-2"
                         >
-                          {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                          {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
                         </Button>
                         <input
                           type="range"
@@ -295,11 +347,11 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                           step="0.1"
                           value={volume}
                           onChange={handleVolumeChange}
-                          className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                          className="w-24 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-white"
                         />
                       </div>
 
-                      <span className="text-white text-sm">
+                      <span className="text-white text-base font-medium">
                         {formatTime(currentTime)} / {formatTime(duration)}
                       </span>
                     </div>
@@ -308,20 +360,12 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                       variant="ghost"
                       size="sm"
                       onClick={handleFullscreen}
-                      className="text-white hover:bg-gray-700"
+                      className="text-white hover:bg-gray-700 p-2"
                     >
-                      <Maximize className="h-4 w-4" />
+                      <Maximize className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
-              )}
-
-              {/* Click overlay for YouTube videos */}
-              {youTubeVideoId && playerReady && (
-                <div 
-                  className="absolute inset-0 z-10"
-                  onClick={togglePlay}
-                />
               )}
             </div>
           )}
