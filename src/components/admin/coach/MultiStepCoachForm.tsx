@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Coach } from "@/types/coach";
 import { CoachBasicInfoStep } from "./CoachBasicInfoStep";
 import { CoachProfessionalInfoStep } from "./CoachProfessionalInfoStep";
+import { CoachClassAssignmentStep } from "./CoachClassAssignmentStep";
 import { CoachAccountStep } from "./CoachAccountStep";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -16,8 +18,9 @@ interface MultiStepCoachFormProps {
 
 const steps = [
   { id: 1, title: "Basic Information", description: "Personal details" },
-  { id: 2, title: "Professional Info", description: "Belt, branch & specialties" },
-  { id: 3, title: "Account Setup", description: "Portal access credentials" },
+  { id: 2, title: "Professional Info", description: "Belt & specialties" },
+  { id: 3, title: "Class Assignment", description: "Assign classes" },
+  { id: 4, title: "Account Setup", description: "Portal access credentials" },
 ];
 
 export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: MultiStepCoachFormProps) => {
@@ -26,11 +29,11 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
     name: coach?.name || "",
     email: coach?.email || "",
     phone: coach?.phone || "",
-    branch: coach?.branch || "",
     belt: coach?.belt || "",
     specialties: coach?.specialties || [],
     status: coach?.status || "active" as const,
     students_count: coach?.students_count || 0,
+    assigned_classes: coach?.assigned_classes || [],
     joined_date: coach?.joined_date || new Date().toISOString().split('T')[0],
     username: "",
     password: "",
@@ -62,8 +65,10 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
       case 1:
         return formData.name && formData.email;
       case 2:
-        return formData.branch && formData.belt;
+        return formData.belt;
       case 3:
+        return true; // Class assignment is optional
+      case 4:
         return !formData.createAccount || (formData.username && formData.password);
       default:
         return false;
@@ -134,6 +139,12 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
             />
           )}
           {currentStep === 3 && (
+            <CoachClassAssignmentStep
+              formData={formData}
+              updateFormData={updateFormData}
+            />
+          )}
+          {currentStep === 4 && (
             <CoachAccountStep
               formData={formData}
               updateFormData={updateFormData}

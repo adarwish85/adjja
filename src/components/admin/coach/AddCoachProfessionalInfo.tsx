@@ -9,24 +9,12 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { useSettings } from "@/hooks/useSettings";
 
-const branches = ["Downtown", "Westside", "North Valley", "East Side"];
 const belts = ["White Belt", "Blue Belt", "Purple Belt", "Brown Belt", "Black Belt"];
-const availableSpecialties = [
-  "Fundamentals",
-  "Competition",
-  "No-Gi",
-  "Kids Classes",
-  "Women's Classes",
-  "Self Defense",
-  "Advanced Techniques",
-  "Wrestling",
-  "MMA"
-];
 
 interface AddCoachProfessionalInfoProps {
   formData: {
-    branch: string;
     belt: string;
     specialties: string[];
     status: "active" | "inactive";
@@ -41,25 +29,13 @@ export const AddCoachProfessionalInfo = ({
   setFormData, 
   handleSpecialtyChange 
 }: AddCoachProfessionalInfoProps) => {
+  const { loadGeneralSettings } = useSettings();
+  const settings = loadGeneralSettings();
+  const availableSpecialties = settings.specialties || [];
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="branch">Branch *</Label>
-          <Select value={formData.branch} onValueChange={(value) => setFormData(prev => ({ ...prev, branch: value }))}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select branch" />
-            </SelectTrigger>
-            <SelectContent>
-              {branches.map((branch) => (
-                <SelectItem key={branch} value={branch}>
-                  {branch}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
         <div className="space-y-2">
           <Label htmlFor="belt">Belt Rank *</Label>
           <Select value={formData.belt} onValueChange={(value) => setFormData(prev => ({ ...prev, belt: value }))}>
@@ -75,9 +51,7 @@ export const AddCoachProfessionalInfo = ({
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
+        
         <div className="space-y-2">
           <Label htmlFor="status">Status</Label>
           <Select value={formData.status} onValueChange={(value: "active" | "inactive") => setFormData(prev => ({ ...prev, status: value }))}>
@@ -90,36 +64,42 @@ export const AddCoachProfessionalInfo = ({
             </SelectContent>
           </Select>
         </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="studentsCount">Current Students</Label>
-          <Input
-            id="studentsCount"
-            type="number"
-            min="0"
-            value={formData.students_count}
-            onChange={(e) => setFormData(prev => ({ ...prev, students_count: parseInt(e.target.value) || 0 }))}
-            placeholder="0"
-          />
-        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="studentsCount">Current Students</Label>
+        <Input
+          id="studentsCount"
+          type="number"
+          min="0"
+          value={formData.students_count}
+          onChange={(e) => setFormData(prev => ({ ...prev, students_count: parseInt(e.target.value) || 0 }))}
+          placeholder="0"
+        />
       </div>
 
       <div className="space-y-2">
         <Label>Specialties</Label>
-        <div className="grid grid-cols-3 gap-2">
-          {availableSpecialties.map((specialty) => (
-            <div key={specialty} className="flex items-center space-x-2">
-              <Checkbox
-                id={specialty}
-                checked={formData.specialties.includes(specialty)}
-                onCheckedChange={(checked) => handleSpecialtyChange(specialty, checked as boolean)}
-              />
-              <Label htmlFor={specialty} className="text-sm">
-                {specialty}
-              </Label>
-            </div>
-          ))}
-        </div>
+        {availableSpecialties.length === 0 ? (
+          <p className="text-gray-500 text-sm">
+            No specialties configured. Go to Settings → General to add specialties.
+          </p>
+        ) : (
+          <div className="grid grid-cols-3 gap-2">
+            {availableSpecialties.map((specialty) => (
+              <div key={specialty} className="flex items-center space-x-2">
+                <Checkbox
+                  id={specialty}
+                  checked={formData.specialties.includes(specialty)}
+                  onCheckedChange={(checked) => handleSpecialtyChange(specialty, checked as boolean)}
+                />
+                <Label htmlFor={specialty} className="text-sm">
+                  {specialty}
+                </Label>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

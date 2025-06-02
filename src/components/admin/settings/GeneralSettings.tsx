@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building, Globe, Clock, Palette, Upload, X } from "lucide-react";
+import { Building, Globe, Clock, Palette, Upload, X, Star } from "lucide-react";
 import { useSettings, GeneralSettings as GeneralSettingsType } from "@/hooks/useSettings";
 import { useTheme } from "@/contexts/ThemeContext";
+import { SpecialtiesManagement } from "./SpecialtiesManagement";
 
 export const GeneralSettings = () => {
   const { 
@@ -91,6 +91,10 @@ export const GeneralSettings = () => {
     const colorSchemeValue = newColorScheme as 'bjj-gold' | 'blue' | 'green' | 'purple' | 'black';
     setSettings(prev => ({ ...prev, colorScheme: newColorScheme }));
     setColorScheme(colorSchemeValue);
+  };
+
+  const handleSpecialtiesUpdate = (newSpecialties: string[]) => {
+    setSettings(prev => ({ ...prev, specialties: newSpecialties }));
   };
 
   return (
@@ -195,6 +199,12 @@ export const GeneralSettings = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Specialties Management */}
+      <SpecialtiesManagement 
+        specialties={settings.specialties}
+        onUpdate={handleSpecialtiesUpdate}
+      />
 
       {/* Regional Settings */}
       <Card>

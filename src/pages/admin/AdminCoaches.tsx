@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Button } from "@/components/ui/button";
@@ -45,8 +46,7 @@ const AdminCoaches = () => {
   const filteredCoaches = coaches.filter(
     (coach) =>
       coach.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      coach.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      coach.branch.toLowerCase().includes(searchTerm.toLowerCase())
+      coach.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddCoach = async (newCoach: Omit<Coach, "id" | "created_at" | "updated_at">) => {
@@ -98,7 +98,7 @@ const AdminCoaches = () => {
 
   const activeCoaches = coaches.filter(c => c.status === "active");
   const totalStudents = coaches.reduce((sum, coach) => sum + coach.students_count, 0);
-  const uniqueBranches = new Set(coaches.map(c => c.branch)).size;
+  const totalClasses = coaches.reduce((sum, coach) => sum + (coach.assigned_classes?.length || 0), 0);
 
   if (loading) {
     return (
@@ -169,10 +169,10 @@ const AdminCoaches = () => {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-bjj-gray">Branches</CardTitle>
+              <CardTitle className="text-sm font-medium text-bjj-gray">Assigned Classes</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">{uniqueBranches}</div>
+              <div className="text-2xl font-bold text-bjj-navy">{totalClasses}</div>
             </CardContent>
           </Card>
         </div>
@@ -201,9 +201,9 @@ const AdminCoaches = () => {
                 <TableRow>
                   <TableHead>Coach</TableHead>
                   <TableHead>Contact</TableHead>
-                  <TableHead>Branch</TableHead>
                   <TableHead>Belt</TableHead>
                   <TableHead>Specialties</TableHead>
+                  <TableHead>Assigned Classes</TableHead>
                   <TableHead>Students</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
@@ -235,9 +235,6 @@ const AdminCoaches = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{coach.branch}</Badge>
-                    </TableCell>
-                    <TableCell>
                       <Badge className={getBeltColor(coach.belt)}>
                         {coach.belt}
                       </Badge>
@@ -249,6 +246,15 @@ const AdminCoaches = () => {
                             {specialty}
                           </Badge>
                         ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {coach.assigned_classes?.map((className) => (
+                          <Badge key={className} variant="outline" className="text-xs">
+                            {className}
+                          </Badge>
+                        )) || <span className="text-gray-500 text-sm">None</span>}
                       </div>
                     </TableCell>
                     <TableCell>

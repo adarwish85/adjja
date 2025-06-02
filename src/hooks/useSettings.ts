@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +14,7 @@ export interface GeneralSettings {
   language: string;
   theme: string;
   colorScheme: string;
+  specialties: string[];
   businessHours: Record<string, { enabled: boolean; start: string; end: string }>;
 }
 
@@ -212,7 +212,7 @@ export const useSettings = () => {
     { value: "zar", label: "ZAR - South African Rand" }
   ];
 
-  // Default settings with Cairo timezone and Egyptian Pound
+  // Default settings with specialties included
   const defaultGeneralSettings: GeneralSettings = {
     academyName: "Australian Jiu-Jitsu Academy",
     academyCode: "ADJJA",
@@ -224,7 +224,18 @@ export const useSettings = () => {
     currency: "egp",
     language: "en",
     theme: "light",
-    colorScheme: "bjj-gold",
+    colorScheme: "black",
+    specialties: [
+      "Fundamentals",
+      "Competition",
+      "No-Gi",
+      "Kids Classes",
+      "Women's Classes",
+      "Self Defense",
+      "Advanced Techniques",
+      "Wrestling",
+      "MMA"
+    ],
     businessHours: {
       Monday: { enabled: true, start: "06:00", end: "22:00" },
       Tuesday: { enabled: true, start: "06:00", end: "22:00" },

@@ -4,12 +4,12 @@ export interface Coach {
   name: string;
   email: string;
   phone: string | null;
-  branch: string;
   belt: string;
   specialties: string[];
   status: "active" | "inactive";
   students_count: number;
   joined_date: string;
+  assigned_classes: string[];
   created_at: string;
   updated_at: string;
   // Optional fields for account creation
