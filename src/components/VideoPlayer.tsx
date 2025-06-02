@@ -197,7 +197,7 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl h-[80vh] p-0 bg-black">
-        <style jsx>{`
+        <style>{`
           /* Hide YouTube branding and controls */
           iframe {
             pointer-events: none !important;
