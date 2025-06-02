@@ -146,6 +146,7 @@ export type Database = {
       }
       coaches: {
         Row: {
+          assigned_classes: string[] | null
           belt: string
           branch: string
           created_at: string
@@ -160,6 +161,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_classes?: string[] | null
           belt: string
           branch: string
           created_at?: string
@@ -174,6 +176,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_classes?: string[] | null
           belt?: string
           branch?: string
           created_at?: string
