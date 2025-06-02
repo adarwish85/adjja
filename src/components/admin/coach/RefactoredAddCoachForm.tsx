@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -17,11 +18,11 @@ export const RefactoredAddCoachForm = ({ coach, onSubmit, isEditing = false }: R
     name: coach?.name || "",
     email: coach?.email || "",
     phone: coach?.phone || "",
-    branch: coach?.branch || "",
     belt: coach?.belt || "",
     specialties: coach?.specialties || [],
     status: coach?.status || "active" as const,
     students_count: coach?.students_count || 0,
+    assigned_classes: coach?.assigned_classes || [],
     joined_date: coach?.joined_date || new Date().toISOString().split('T')[0],
     username: "",
     password: "",
@@ -31,7 +32,7 @@ export const RefactoredAddCoachForm = ({ coach, onSubmit, isEditing = false }: R
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.branch || !formData.belt) {
+    if (!formData.name || !formData.email || !formData.belt) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -45,11 +46,11 @@ export const RefactoredAddCoachForm = ({ coach, onSubmit, isEditing = false }: R
         name: "",
         email: "",
         phone: "",
-        branch: "",
         belt: "",
         specialties: [],
         status: "active",
         students_count: 0,
+        assigned_classes: [],
         joined_date: new Date().toISOString().split('T')[0],
         username: "",
         password: "",

@@ -12,14 +12,15 @@ export const coachService = {
 
     if (error) throw error;
 
-    // Type the data properly by ensuring status is correctly typed
+    // Type the data properly by ensuring status is correctly typed and adding assigned_classes
     const typedCoaches: Coach[] = (data || []).map(coach => ({
       ...coach,
       status: coach.status as "active" | "inactive",
       specialties: coach.specialties || [],
       phone: coach.phone || null,
       students_count: coach.students_count || 0,
-      joined_date: coach.joined_date || new Date().toISOString().split('T')[0]
+      joined_date: coach.joined_date || new Date().toISOString().split('T')[0],
+      assigned_classes: coach.assigned_classes || []
     }));
 
     return typedCoaches;
@@ -50,12 +51,16 @@ export const coachService = {
       toast.success("Coach account created successfully");
     }
 
-    // Create the coach record (remove account-specific fields)
+    // Create the coach record (remove account-specific fields and add branch as empty for database compatibility)
     const { username, password, createAccount, ...coachRecord } = coachData;
+    const coachWithBranch = {
+      ...coachRecord,
+      branch: "", // Add empty branch for database compatibility
+    };
     
     const { data, error } = await supabase
       .from("coaches")
-      .insert([coachRecord])
+      .insert([coachWithBranch])
       .select()
       .single();
 
@@ -67,7 +72,8 @@ export const coachService = {
       specialties: data.specialties || [],
       phone: data.phone || null,
       students_count: data.students_count || 0,
-      joined_date: data.joined_date || new Date().toISOString().split('T')[0]
+      joined_date: data.joined_date || new Date().toISOString().split('T')[0],
+      assigned_classes: data.assigned_classes || []
     };
 
     toast.success("Coach added successfully");
@@ -99,12 +105,16 @@ export const coachService = {
       toast.success("Coach account created successfully");
     }
 
-    // Remove account-specific fields before updating the coach record
+    // Remove account-specific fields before updating the coach record and add branch as empty for database compatibility
     const { username, password, createAccount, ...coachUpdates } = updates;
+    const updatesWithBranch = {
+      ...coachUpdates,
+      branch: "", // Add empty branch for database compatibility if not present
+    };
     
     const { data, error } = await supabase
       .from("coaches")
-      .update(coachUpdates)
+      .update(updatesWithBranch)
       .eq("id", id)
       .select()
       .single();
@@ -117,7 +127,8 @@ export const coachService = {
       specialties: data.specialties || [],
       phone: data.phone || null,
       students_count: data.students_count || 0,
-      joined_date: data.joined_date || new Date().toISOString().split('T')[0]
+      joined_date: data.joined_date || new Date().toISOString().split('T')[0],
+      assigned_classes: data.assigned_classes || []
     };
 
     toast.success("Coach updated successfully");
