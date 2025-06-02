@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Volume2, VolumeX, Maximize, X } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, X, AlertCircle } from "lucide-react";
 import { extractYouTubeVideoId } from "@/utils/youtubeUtils";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 
@@ -14,7 +14,6 @@ interface VideoPlayerProps {
 
 export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => {
   const [showControls, setShowControls] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
@@ -34,6 +33,8 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     duration: youTubeDuration,
     volume: youTubeVolume,
     isMuted: youTubeIsMuted,
+    error: youTubeError,
+    isLoading: youTubeLoading,
     play: youTubePlay,
     pause: youTubePause,
     seekTo: youTubeSeekTo,
@@ -47,6 +48,8 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   const [htmlDuration, setHtmlDuration] = useState(0);
   const [htmlVolume, setHtmlVolume] = useState(1);
   const [htmlIsMuted, setHtmlIsMuted] = useState(false);
+  const [htmlLoading, setHtmlLoading] = useState(true);
+  const [htmlError, setHtmlError] = useState<string | null>(null);
 
   // Unified state based on video type
   const isPlaying = youTubeVideoId ? youTubePlaying : htmlIsPlaying;
@@ -54,13 +57,9 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   const duration = youTubeVideoId ? youTubeDuration : htmlDuration;
   const volume = youTubeVideoId ? youTubeVolume / 100 : htmlVolume;
   const isMuted = youTubeVideoId ? youTubeIsMuted : htmlIsMuted;
-  const playerReady = youTubeVideoId ? youTubeReady : !isLoading;
-
-  useEffect(() => {
-    if (youTubeVideoId && youTubeReady) {
-      setIsLoading(false);
-    }
-  }, [youTubeVideoId, youTubeReady]);
+  const isLoading = youTubeVideoId ? youTubeLoading : htmlLoading;
+  const error = youTubeVideoId ? youTubeError : htmlError;
+  const playerReady = youTubeVideoId ? youTubeReady : !htmlLoading && !htmlError;
 
   const togglePlay = () => {
     if (youTubeVideoId) {
@@ -147,7 +146,30 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   const handleHtmlLoadedMetadata = () => {
     if (videoRef.current) {
       setHtmlDuration(videoRef.current.duration);
-      setIsLoading(false);
+      setHtmlLoading(false);
+      setHtmlError(null);
+    }
+  };
+
+  const handleHtmlError = () => {
+    console.error('HTML5 video error');
+    setHtmlError('Failed to load video. Please check the video URL.');
+    setHtmlLoading(false);
+  };
+
+  const handleHtmlCanPlay = () => {
+    setHtmlLoading(false);
+    setHtmlError(null);
+  };
+
+  const retryLoad = () => {
+    if (youTubeVideoId) {
+      // For YouTube videos, we can't easily retry, but we can close and reopen
+      onClose();
+    } else if (videoRef.current) {
+      setHtmlLoading(true);
+      setHtmlError(null);
+      videoRef.current.load();
     }
   };
 
@@ -155,7 +177,8 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     if (!isOpen) {
       setHtmlIsPlaying(false);
       setHtmlCurrentTime(0);
-      setIsLoading(true);
+      setHtmlLoading(true);
+      setHtmlError(null);
       setIsFullscreen(false);
     }
   }, [isOpen]);
@@ -187,9 +210,18 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
             <X className="h-4 w-4" />
           </Button>
 
-          {isLoading ? (
-            <div className="flex items-center justify-center">
+          {error ? (
+            <div className="flex flex-col items-center justify-center text-white space-y-4">
+              <AlertCircle className="h-12 w-12 text-red-500" />
+              <p className="text-lg text-center">{error}</p>
+              <Button onClick={retryLoad} variant="outline" className="text-white border-white">
+                Try Again
+              </Button>
+            </div>
+          ) : isLoading ? (
+            <div className="flex flex-col items-center justify-center text-white space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+              <p>Loading video...</p>
             </div>
           ) : (
             <div
@@ -206,6 +238,8 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                   className="w-full h-full object-contain"
                   onTimeUpdate={handleHtmlTimeUpdate}
                   onLoadedMetadata={handleHtmlLoadedMetadata}
+                  onCanPlay={handleHtmlCanPlay}
+                  onError={handleHtmlError}
                   onPlay={() => setHtmlIsPlaying(true)}
                   onPause={() => setHtmlIsPlaying(false)}
                   onClick={togglePlay}
@@ -215,73 +249,75 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
               )}
 
               {/* Custom Video Controls */}
-              <div
-                className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
-                  showControls ? 'opacity-100' : 'opacity-0'
-                }`}
-              >
-                {/* Progress Bar */}
-                <div className="mb-4">
-                  <input
-                    type="range"
-                    min="0"
-                    max={duration || 0}
-                    value={currentTime}
-                    onChange={handleSeek}
-                    className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                </div>
+              {playerReady && (
+                <div
+                  className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
+                    showControls ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  {/* Progress Bar */}
+                  <div className="mb-4">
+                    <input
+                      type="range"
+                      min="0"
+                      max={duration || 0}
+                      value={currentTime}
+                      onChange={handleSeek}
+                      className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                  </div>
 
-                {/* Controls Row */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={togglePlay}
-                      className="text-white hover:bg-gray-700"
-                    >
-                      {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                    </Button>
-
-                    <div className="flex items-center space-x-2">
+                  {/* Controls Row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={toggleMute}
+                        onClick={togglePlay}
                         className="text-white hover:bg-gray-700"
                       >
-                        {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                        {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                       </Button>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        value={volume}
-                        onChange={handleVolumeChange}
-                        className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-                      />
+
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={toggleMute}
+                          className="text-white hover:bg-gray-700"
+                        >
+                          {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                        </Button>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={volume}
+                          onChange={handleVolumeChange}
+                          className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+
+                      <span className="text-white text-sm">
+                        {formatTime(currentTime)} / {formatTime(duration)}
+                      </span>
                     </div>
 
-                    <span className="text-white text-sm">
-                      {formatTime(currentTime)} / {formatTime(duration)}
-                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleFullscreen}
+                      className="text-white hover:bg-gray-700"
+                    >
+                      <Maximize className="h-4 w-4" />
+                    </Button>
                   </div>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleFullscreen}
-                    className="text-white hover:bg-gray-700"
-                  >
-                    <Maximize className="h-4 w-4" />
-                  </Button>
                 </div>
-              </div>
+              )}
 
               {/* Click overlay for YouTube videos */}
-              {youTubeVideoId && (
+              {youTubeVideoId && playerReady && (
                 <div 
                   className="absolute inset-0 z-10"
                   onClick={togglePlay}
