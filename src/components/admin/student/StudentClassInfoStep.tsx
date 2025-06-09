@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -159,7 +160,7 @@ export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: St
           <SelectContent>
             <SelectItem value="none">No class selected</SelectItem>
             {activeClasses.map((cls) => (
-              <SelectItem key={cls.id} value={cls.name}>
+              <SelectItem key={cls.id} value={cls.id}>
                 {cls.name} - {cls.instructor} ({cls.schedule})
               </SelectItem>
             ))}

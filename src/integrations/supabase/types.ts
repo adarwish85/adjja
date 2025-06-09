@@ -96,6 +96,51 @@ export type Database = {
           },
         ]
       }
+      class_enrollments: {
+        Row: {
+          class_id: string
+          created_at: string
+          enrollment_date: string
+          id: string
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          enrollment_date?: string
+          id?: string
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          enrollment_date?: string
+          id?: string
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_enrollments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           capacity: number
@@ -732,6 +777,7 @@ export type Database = {
           attendance_rate: number
           belt: string
           branch: string
+          class_enrollment: string | null
           coach: string
           created_at: string
           email: string
@@ -749,6 +795,7 @@ export type Database = {
           attendance_rate?: number
           belt: string
           branch: string
+          class_enrollment?: string | null
           coach: string
           created_at?: string
           email: string
@@ -766,6 +813,7 @@ export type Database = {
           attendance_rate?: number
           belt?: string
           branch?: string
+          class_enrollment?: string | null
           coach?: string
           created_at?: string
           email?: string
@@ -779,7 +827,15 @@ export type Database = {
           stripes?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_class_enrollment_fkey"
+            columns: ["class_enrollment"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscribers: {
         Row: {
@@ -984,6 +1040,14 @@ export type Database = {
           p_phone?: string
         }
         Returns: string
+      }
+      enroll_student_in_class: {
+        Args: { p_student_id: string; p_class_id: string }
+        Returns: string
+      }
+      unenroll_student_from_class: {
+        Args: { p_student_id: string; p_class_id: string }
+        Returns: boolean
       }
     }
     Enums: {

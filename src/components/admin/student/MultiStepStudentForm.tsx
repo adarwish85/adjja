@@ -36,7 +36,7 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     attendance_rate: student?.attendance_rate || 0,
     joined_date: student?.joined_date || new Date().toISOString().split('T')[0],
     last_attended: student?.last_attended || new Date().toISOString().split('T')[0],
-    class_enrollment: undefined as string | undefined,
+    class_enrollment: student?.class_enrollment || undefined,
     username: "",
     password: "",
     createAccount: !isEditing,
@@ -116,15 +116,14 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
       ...formData,
       phone: formData.phone || null,
       last_attended: formData.last_attended || null,
+      class_enrollment: formData.class_enrollment || null,
       username: formData.createAccount ? formData.username : undefined,
       password: formData.createAccount ? formData.password : undefined,
       createAccount: formData.createAccount,
     };
     
-    const { class_enrollment, ...studentData } = submissionData;
-    
-    console.log("Submitting student data:", studentData);
-    onSubmit(studentData);
+    console.log("Submitting student data:", submissionData);
+    onSubmit(submissionData);
   };
 
   const progress = (currentStep / steps.length) * 100;

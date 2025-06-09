@@ -17,6 +17,7 @@ export interface Student {
   attendance_rate: number;
   joined_date: string;
   last_attended: string | null;
+  class_enrollment?: string | null;
   created_at: string;
   updated_at: string;
   // Optional fields for account creation
@@ -48,6 +49,7 @@ export const useStudents = () => {
         membership_type: student.membership_type as "monthly" | "yearly" | "unlimited",
         phone: student.phone || null,
         last_attended: student.last_attended || null,
+        class_enrollment: student.class_enrollment || null,
         stripes: student.stripes || 0,
         attendance_rate: student.attendance_rate || 0
       }));
@@ -103,12 +105,28 @@ export const useStudents = () => {
 
       console.log("Successfully added student:", data);
 
+      // If student is enrolled in a class, create the enrollment record
+      if (studentRecord.class_enrollment) {
+        const { error: enrollmentError } = await supabase.rpc('enroll_student_in_class', {
+          p_student_id: data.id,
+          p_class_id: studentRecord.class_enrollment
+        });
+
+        if (enrollmentError) {
+          console.error("Enrollment error:", enrollmentError);
+          toast.error("Student added but failed to enroll in class");
+        } else {
+          console.log("Student enrolled in class successfully");
+        }
+      }
+
       const typedStudent: Student = {
         ...data,
         status: data.status as "active" | "inactive" | "on-hold",
         membership_type: data.membership_type as "monthly" | "yearly" | "unlimited",
         phone: data.phone || null,
         last_attended: data.last_attended || null,
+        class_enrollment: data.class_enrollment || null,
         stripes: data.stripes || 0,
         attendance_rate: data.attendance_rate || 0
       };
@@ -155,6 +173,11 @@ export const useStudents = () => {
         toast.success("Student account created successfully");
       }
 
+      // Handle class enrollment changes
+      const currentStudent = students.find(s => s.id === id);
+      const oldClassId = currentStudent?.class_enrollment;
+      const newClassId = updates.class_enrollment;
+
       // Remove account-specific fields before updating the student record
       const { username, password, createAccount, ...studentUpdates } = updates;
       
@@ -179,12 +202,43 @@ export const useStudents = () => {
 
       console.log("Successfully updated student:", data);
 
+      // Handle class enrollment/unenrollment
+      if (oldClassId !== newClassId) {
+        // Unenroll from old class if exists
+        if (oldClassId) {
+          const { error: unenrollError } = await supabase.rpc('unenroll_student_from_class', {
+            p_student_id: id,
+            p_class_id: oldClassId
+          });
+          
+          if (unenrollError) {
+            console.error("Unenrollment error:", unenrollError);
+          }
+        }
+
+        // Enroll in new class if provided
+        if (newClassId) {
+          const { error: enrollmentError } = await supabase.rpc('enroll_student_in_class', {
+            p_student_id: id,
+            p_class_id: newClassId
+          });
+
+          if (enrollmentError) {
+            console.error("Enrollment error:", enrollmentError);
+            toast.error("Student updated but failed to enroll in new class");
+          } else {
+            console.log("Student enrolled in new class successfully");
+          }
+        }
+      }
+
       const typedStudent: Student = {
         ...data,
         status: data.status as "active" | "inactive" | "on-hold",
         membership_type: data.membership_type as "monthly" | "yearly" | "unlimited",
         phone: data.phone || null,
         last_attended: data.last_attended || null,
+        class_enrollment: data.class_enrollment || null,
         stripes: data.stripes || 0,
         attendance_rate: data.attendance_rate || 0
       };
