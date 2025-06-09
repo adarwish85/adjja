@@ -49,7 +49,7 @@ const AdminStudents = () => {
       student.coach.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddStudent = async (newStudent: Omit<Student, "id">) => {
+  const handleAddStudent = async (newStudent: Omit<Student, "id" | "created_at" | "updated_at">) => {
     try {
       await addStudent(newStudent);
       setIsAddDialogOpen(false);
@@ -58,11 +58,35 @@ const AdminStudents = () => {
     }
   };
 
-  const handleEditStudent = async (updatedStudent: Student) => {
+  const handleEditStudent = async (updatedStudent: Omit<Student, "id" | "created_at" | "updated_at">) => {
+    if (!editingStudent) return;
+    
     try {
-      await updateStudent(updatedStudent.id, updatedStudent);
+      console.log("AdminStudents: Preparing update for student:", editingStudent.id);
+      console.log("AdminStudents: Update data:", updatedStudent);
+      
+      // Remove read-only fields and ensure proper data types
+      const updateData = {
+        ...updatedStudent,
+        // Convert undefined to null for UUID fields
+        class_enrollment: updatedStudent.class_enrollment || null,
+        phone: updatedStudent.phone || null,
+        last_attended: updatedStudent.last_attended || null,
+      };
+      
+      // Remove any undefined values
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key as keyof typeof updateData] === undefined) {
+          delete updateData[key as keyof typeof updateData];
+        }
+      });
+      
+      console.log("AdminStudents: Clean update data:", updateData);
+      
+      await updateStudent(editingStudent.id, updateData);
       setEditingStudent(null);
     } catch (error) {
+      console.error("AdminStudents: Update error:", error);
       // Error is already handled in the hook
     }
   };

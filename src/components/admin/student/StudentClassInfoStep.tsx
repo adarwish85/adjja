@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -20,7 +19,7 @@ interface StudentClassInfoStepProps {
     membership_type: "monthly" | "yearly" | "unlimited";
     attendance_rate: number;
     last_attended: string;
-    class_enrollment?: string;
+    class_enrollment?: string | null;
   };
   updateFormData: (updates: any) => void;
   isEditing: boolean;
@@ -37,8 +36,19 @@ export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: St
   const activeClasses = classes.filter(cls => cls.status === "Active");
 
   const handleClassEnrollmentChange = (value: string) => {
-    // Convert "none" back to undefined for the form data
-    updateFormData({ class_enrollment: value === "none" ? undefined : value });
+    console.log("StudentClassInfoStep: Class enrollment change:", value);
+    // Handle the selection properly
+    if (value === "none" || value === "") {
+      updateFormData({ class_enrollment: null });
+    } else {
+      updateFormData({ class_enrollment: value });
+    }
+  };
+
+  // Determine the current selection value for the dropdown
+  const getCurrentClassValue = () => {
+    if (!formData.class_enrollment) return "none";
+    return formData.class_enrollment;
   };
 
   return (
@@ -150,7 +160,7 @@ export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: St
       <div className="space-y-2">
         <Label htmlFor="class_enrollment">Class Enrollment (Optional)</Label>
         <Select
-          value={formData.class_enrollment || "none"}
+          value={getCurrentClassValue()}
           onValueChange={handleClassEnrollmentChange}
           disabled={classesLoading}
         >

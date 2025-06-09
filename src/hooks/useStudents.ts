@@ -26,6 +26,51 @@ export interface Student {
   createAccount?: boolean;
 }
 
+// Helper function to validate UUID
+const isValidUUID = (uuid: string | null | undefined): boolean => {
+  if (!uuid) return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+};
+
+// Helper function to clean update data
+const cleanUpdateData = (data: any) => {
+  const cleaned = { ...data };
+  
+  // Remove read-only fields
+  delete cleaned.id;
+  delete cleaned.created_at;
+  delete cleaned.updated_at;
+  delete cleaned.username;
+  delete cleaned.password;
+  delete cleaned.createAccount;
+  
+  // Handle UUID fields - convert invalid values to null
+  if ('class_enrollment' in cleaned) {
+    if (cleaned.class_enrollment === "undefined" || cleaned.class_enrollment === "" || !isValidUUID(cleaned.class_enrollment)) {
+      cleaned.class_enrollment = null;
+    }
+  }
+  
+  // Handle other nullable fields
+  if ('phone' in cleaned && (cleaned.phone === "" || cleaned.phone === "undefined")) {
+    cleaned.phone = null;
+  }
+  
+  if ('last_attended' in cleaned && (cleaned.last_attended === "" || cleaned.last_attended === "undefined")) {
+    cleaned.last_attended = null;
+  }
+  
+  // Remove undefined values
+  Object.keys(cleaned).forEach(key => {
+    if (cleaned[key] === undefined) {
+      delete cleaned[key];
+    }
+  });
+  
+  return cleaned;
+};
+
 export const useStudents = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +85,7 @@ export const useStudents = () => {
 
       if (error) throw error;
 
-      console.log("Fetched students data:", data);
+      console.log("useStudents: Fetched students data:", data);
 
       // Type the data properly by ensuring fields are correctly typed
       const typedStudents: Student[] = (data || []).map(student => ({
@@ -56,7 +101,7 @@ export const useStudents = () => {
 
       setStudents(typedStudents);
     } catch (error) {
-      console.error("Error fetching students:", error);
+      console.error("useStudents: Error fetching students:", error);
       toast.error("Failed to fetch students");
     } finally {
       setLoading(false);
@@ -143,11 +188,11 @@ export const useStudents = () => {
 
   const updateStudent = async (id: string, updates: Partial<Omit<Student, "id" | "created_at" | "updated_at">>) => {
     try {
-      console.log("Updating student with id:", id, "data:", updates);
+      console.log("useStudents: Updating student with id:", id, "raw updates:", updates);
       
       // If account creation is requested during update, create the user account first
       if (updates.createAccount && updates.username && updates.password) {
-        console.log("Creating student account during update...");
+        console.log("useStudents: Creating student account during update...");
         
         // Get the current student data for the email
         const currentStudent = students.find(s => s.id === id);
@@ -165,11 +210,11 @@ export const useStudents = () => {
         });
 
         if (accountError) {
-          console.error("Account creation error:", accountError);
+          console.error("useStudents: Account creation error:", accountError);
           throw new Error(`Failed to create student account: ${accountError.message}`);
         }
 
-        console.log("Student account created successfully during update:", accountData);
+        console.log("useStudents: Student account created successfully during update:", accountData);
         toast.success("Student account created successfully");
       }
 
@@ -178,15 +223,15 @@ export const useStudents = () => {
       const oldClassId = currentStudent?.class_enrollment;
       const newClassId = updates.class_enrollment;
 
-      // Remove account-specific fields before updating the student record
-      const { username, password, createAccount, ...studentUpdates } = updates;
+      // Clean the update data
+      const cleanUpdates = cleanUpdateData(updates);
+      console.log("useStudents: Clean updates to send:", cleanUpdates);
       
-      // Ensure we're not trying to update with undefined values
-      const cleanUpdates = Object.fromEntries(
-        Object.entries(studentUpdates).filter(([_, value]) => value !== undefined)
-      );
-      
-      console.log("Clean updates to send:", cleanUpdates);
+      // Validate UUID field if present
+      if (cleanUpdates.class_enrollment && !isValidUUID(cleanUpdates.class_enrollment)) {
+        console.error("useStudents: Invalid UUID for class_enrollment:", cleanUpdates.class_enrollment);
+        throw new Error("Invalid class selection");
+      }
       
       const { data, error } = await supabase
         .from("students")
@@ -196,38 +241,40 @@ export const useStudents = () => {
         .single();
 
       if (error) {
-        console.error("Supabase update error:", error);
+        console.error("useStudents: Supabase update error:", error);
         throw error;
       }
 
-      console.log("Successfully updated student:", data);
+      console.log("useStudents: Successfully updated student:", data);
 
       // Handle class enrollment/unenrollment
       if (oldClassId !== newClassId) {
         // Unenroll from old class if exists
-        if (oldClassId) {
+        if (oldClassId && isValidUUID(oldClassId)) {
           const { error: unenrollError } = await supabase.rpc('unenroll_student_from_class', {
             p_student_id: id,
             p_class_id: oldClassId
           });
           
           if (unenrollError) {
-            console.error("Unenrollment error:", unenrollError);
+            console.error("useStudents: Unenrollment error:", unenrollError);
+          } else {
+            console.log("useStudents: Successfully unenrolled from old class");
           }
         }
 
-        // Enroll in new class if provided
-        if (newClassId) {
+        // Enroll in new class if provided and valid
+        if (newClassId && isValidUUID(newClassId)) {
           const { error: enrollmentError } = await supabase.rpc('enroll_student_in_class', {
             p_student_id: id,
             p_class_id: newClassId
           });
 
           if (enrollmentError) {
-            console.error("Enrollment error:", enrollmentError);
+            console.error("useStudents: Enrollment error:", enrollmentError);
             toast.error("Student updated but failed to enroll in new class");
           } else {
-            console.log("Student enrolled in new class successfully");
+            console.log("useStudents: Student enrolled in new class successfully");
           }
         }
       }
@@ -247,7 +294,7 @@ export const useStudents = () => {
       toast.success("Student updated successfully");
       return typedStudent;
     } catch (error) {
-      console.error("Error updating student:", error);
+      console.error("useStudents: Error updating student:", error);
       toast.error(error instanceof Error ? error.message : "Failed to update student");
       throw error;
     }

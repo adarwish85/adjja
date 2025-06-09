@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,17 +35,25 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     attendance_rate: student?.attendance_rate || 0,
     joined_date: student?.joined_date || new Date().toISOString().split('T')[0],
     last_attended: student?.last_attended || new Date().toISOString().split('T')[0],
-    class_enrollment: student?.class_enrollment || undefined,
+    class_enrollment: student?.class_enrollment || null,
     username: "",
     password: "",
     createAccount: !isEditing,
   });
 
   const updateFormData = (updates: Partial<typeof formData>) => {
-    console.log("Updating form data:", updates);
+    console.log("MultiStepStudentForm: Updating form data:", updates);
     setFormData(prev => {
       const newData = { ...prev, ...updates };
-      console.log("Updated form data:", newData);
+      
+      // Ensure class_enrollment is properly handled
+      if ('class_enrollment' in updates) {
+        newData.class_enrollment = updates.class_enrollment === "none" || updates.class_enrollment === "" 
+          ? null 
+          : updates.class_enrollment || null;
+      }
+      
+      console.log("MultiStepStudentForm: Updated form data:", newData);
       return newData;
     });
   };
@@ -104,25 +111,38 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
   };
 
   const handleSubmit = () => {
-    console.log("Form submission initiated");
-    console.log("Final form data:", formData);
+    console.log("MultiStepStudentForm: Form submission initiated");
+    console.log("MultiStepStudentForm: Final form data:", formData);
     
     if (!validateCurrentStep()) {
-      console.log("Final validation failed");
+      console.log("MultiStepStudentForm: Final validation failed");
       return;
     }
     
+    // Clean and prepare submission data
     const submissionData = {
-      ...formData,
+      name: formData.name,
+      email: formData.email,
       phone: formData.phone || null,
+      branch: formData.branch,
+      belt: formData.belt,
+      stripes: formData.stripes,
+      coach: formData.coach,
+      status: formData.status,
+      membership_type: formData.membership_type,
+      attendance_rate: formData.attendance_rate,
+      joined_date: formData.joined_date,
       last_attended: formData.last_attended || null,
-      class_enrollment: formData.class_enrollment || null,
-      username: formData.createAccount ? formData.username : undefined,
-      password: formData.createAccount ? formData.password : undefined,
-      createAccount: formData.createAccount,
+      class_enrollment: formData.class_enrollment,
+      // Only include account fields if creating account
+      ...(formData.createAccount && {
+        username: formData.username,
+        password: formData.password,
+        createAccount: formData.createAccount,
+      }),
     };
     
-    console.log("Submitting student data:", submissionData);
+    console.log("MultiStepStudentForm: Submitting student data:", submissionData);
     onSubmit(submissionData);
   };
 
@@ -161,7 +181,7 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     }
   };
 
-  console.log("Rendering MultiStepStudentForm - Current step:", currentStep, "Progress:", progress);
+  console.log("MultiStepStudentForm: Rendering - Current step:", currentStep, "Progress:", progress);
 
   return (
     <div className="space-y-6">
