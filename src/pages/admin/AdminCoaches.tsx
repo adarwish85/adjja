@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Button } from "@/components/ui/button";
@@ -357,5 +358,3 @@ const AdminCoaches = () => {
 };
 
 export default AdminCoaches;
-
-}
