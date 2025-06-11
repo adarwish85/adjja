@@ -37,6 +37,11 @@ export const useCoaches = () => {
 
   const updateCoach = async (id: string, updates: CoachUpdate) => {
     try {
+      // Validate that we have an ID
+      if (!id) {
+        throw new Error("Coach ID is required for update");
+      }
+
       console.log("useCoaches: Updating coach with id:", id, "updates:", updates);
       const updatedCoach = await coachService.updateCoach(id, updates);
       setCoaches(prev => prev.map(coach => coach.id === id ? updatedCoach : coach));
@@ -56,6 +61,10 @@ export const useCoaches = () => {
 
   const deleteCoach = async (id: string) => {
     try {
+      if (!id) {
+        throw new Error("Coach ID is required for deletion");
+      }
+
       await coachService.deleteCoach(id);
       setCoaches(prev => prev.filter(coach => coach.id !== id));
     } catch (error) {

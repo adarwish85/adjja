@@ -9,6 +9,7 @@ import { CoachProfessionalInfoStep } from "./CoachProfessionalInfoStep";
 import { CoachClassAssignmentStep } from "./CoachClassAssignmentStep";
 import { CoachAccountStep } from "./CoachAccountStep";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
 
 interface MultiStepCoachFormProps {
   coach?: Coach;
@@ -64,16 +65,25 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
       case 1:
         const isStep1Valid = formData.name.trim() !== "" && formData.email.trim() !== "";
         console.log("Step 1 validation - Name:", formData.name, "Email:", formData.email, "Valid:", isStep1Valid);
+        if (!isStep1Valid) {
+          toast.error("Please fill in all required fields: Name and Email");
+        }
         return isStep1Valid;
       case 2:
         const isStep2Valid = formData.belt.trim() !== "";
         console.log("Step 2 validation - Belt:", formData.belt, "Valid:", isStep2Valid);
+        if (!isStep2Valid) {
+          toast.error("Please select a belt rank");
+        }
         return isStep2Valid;
       case 3:
         return true; // Class assignment is optional
       case 4:
         const isStep4Valid = !formData.createAccount || (formData.username.trim() !== "" && formData.password.trim() !== "");
         console.log("Step 4 validation - Create account:", formData.createAccount, "Username:", formData.username, "Password:", formData.password ? "***" : "", "Valid:", isStep4Valid);
+        if (!isStep4Valid) {
+          toast.error("Please provide username and password for account creation");
+        }
         return isStep4Valid;
       default:
         return false;
@@ -109,6 +119,12 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
     
     if (!validateCurrentStep()) {
       console.log("MultiStepCoachForm: Final validation failed");
+      return;
+    }
+
+    // Validate required fields for coach creation/update
+    if (!formData.name.trim() || !formData.email.trim() || !formData.belt.trim()) {
+      toast.error("Please fill in all required fields");
       return;
     }
     

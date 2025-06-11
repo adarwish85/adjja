@@ -58,13 +58,18 @@ const AdminCoaches = () => {
     }
   };
 
-  const handleEditCoach = async (updatedCoach: Coach) => {
+  const handleEditCoach = async (updatedCoachData: Omit<Coach, "id" | "created_at" | "updated_at">) => {
+    if (!editingCoach) {
+      console.error("AdminCoaches: No coach selected for editing");
+      return;
+    }
+
     try {
-      console.log("AdminCoaches: Editing coach:", updatedCoach);
-      // Remove read-only fields before update
-      const { id, created_at, updated_at, ...updates } = updatedCoach;
-      console.log("AdminCoaches: Clean updates:", updates);
-      await updateCoach(id, updates);
+      console.log("AdminCoaches: Editing coach with ID:", editingCoach.id);
+      console.log("AdminCoaches: Updated coach data:", updatedCoachData);
+      
+      // Use the stored editingCoach.id for the update
+      await updateCoach(editingCoach.id, updatedCoachData);
       setEditingCoach(null);
     } catch (error) {
       console.error("AdminCoaches: Error updating coach:", error);
