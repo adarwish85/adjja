@@ -5,6 +5,7 @@ export interface Coach {
   email: string;
   phone: string | null;
   belt: string;
+  branch: string;
   specialties: string[];
   status: "active" | "inactive";
   students_count: number;

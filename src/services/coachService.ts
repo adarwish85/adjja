@@ -51,12 +51,18 @@ export const coachService = {
       toast.success("Coach account created successfully");
     }
 
-    // Create the coach record (remove account-specific fields)
+    // Create the coach record (remove account-specific fields and add required branch field)
     const { username, password, createAccount, ...coachRecord } = coachData;
+    
+    // Add default branch if not provided (since it's required in the database)
+    const coachRecordWithBranch = {
+      ...coachRecord,
+      branch: coachRecord.branch || "Main Branch" // Default branch if not provided
+    };
     
     const { data, error } = await supabase
       .from("coaches")
-      .insert([coachRecord])
+      .insert([coachRecordWithBranch])
       .select()
       .single();
 
@@ -79,13 +85,10 @@ export const coachService = {
   async updateCoach(id: string, updates: CoachUpdate): Promise<Coach> {
     console.log("Updating coach with id:", id, "updates:", updates);
     
-    // Clean the update data - remove read-only and problematic fields
+    // Clean the update data - remove account-specific fields and undefined values
     const cleanUpdates = { ...updates };
     
-    // Remove read-only fields
-    delete cleanUpdates.id;
-    delete cleanUpdates.created_at;
-    delete cleanUpdates.updated_at;
+    // Remove account-specific fields that shouldn't be in database updates
     delete cleanUpdates.username;
     delete cleanUpdates.password;
     delete cleanUpdates.createAccount;
