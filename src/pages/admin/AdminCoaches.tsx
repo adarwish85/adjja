@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Button } from "@/components/ui/button";
@@ -37,7 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const AdminCoaches = () => {
-  const { coaches, loading, addCoach, updateCoach, deleteCoach } = useCoaches();
+  const { coaches, loading, addCoach, updateCoach, deleteCoach, recalculateAllCoachStudentCounts } = useCoaches();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCoach, setEditingCoach] = useState<Coach | null>(null);
@@ -60,10 +59,14 @@ const AdminCoaches = () => {
 
   const handleEditCoach = async (updatedCoach: Coach) => {
     try {
+      console.log("AdminCoaches: Editing coach:", updatedCoach);
+      // Remove read-only fields before update
       const { id, created_at, updated_at, ...updates } = updatedCoach;
+      console.log("AdminCoaches: Clean updates:", updates);
       await updateCoach(id, updates);
       setEditingCoach(null);
     } catch (error) {
+      console.error("AdminCoaches: Error updating coach:", error);
       // Error is already handled in the hook
     }
   };
@@ -77,6 +80,10 @@ const AdminCoaches = () => {
         // Error is already handled in the hook
       }
     }
+  };
+
+  const handleRecalculateStudentCounts = async () => {
+    await recalculateAllCoachStudentCounts();
   };
 
   const getBeltColor = (belt: string) => {
@@ -122,23 +129,33 @@ const AdminCoaches = () => {
             <p className="text-bjj-gray">Manage academy coaches and instructors</p>
           </div>
           
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-white">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Coach
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Add New Coach</DialogTitle>
-                <DialogDescription>
-                  Enter the coach's information using the multi-step wizard.
-                </DialogDescription>
-              </DialogHeader>
-              <MultiStepCoachForm onSubmit={handleAddCoach} />
-            </DialogContent>
-          </Dialog>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={handleRecalculateStudentCounts}
+              className="text-bjj-navy border-bjj-navy hover:bg-bjj-navy hover:text-white"
+            >
+              Refresh Student Counts
+            </Button>
+            
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-white">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Coach
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Add New Coach</DialogTitle>
+                  <DialogDescription>
+                    Enter the coach's information using the multi-step wizard.
+                  </DialogDescription>
+                </DialogHeader>
+                <MultiStepCoachForm onSubmit={handleAddCoach} />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -340,3 +357,5 @@ const AdminCoaches = () => {
 };
 
 export default AdminCoaches;
+
+}

@@ -51,16 +51,12 @@ export const coachService = {
       toast.success("Coach account created successfully");
     }
 
-    // Create the coach record (remove account-specific fields and add branch as empty for database compatibility)
+    // Create the coach record (remove account-specific fields)
     const { username, password, createAccount, ...coachRecord } = coachData;
-    const coachWithBranch = {
-      ...coachRecord,
-      branch: "", // Add empty branch for database compatibility
-    };
     
     const { data, error } = await supabase
       .from("coaches")
-      .insert([coachWithBranch])
+      .insert([coachRecord])
       .select()
       .single();
 
@@ -81,7 +77,32 @@ export const coachService = {
   },
 
   async updateCoach(id: string, updates: CoachUpdate): Promise<Coach> {
-    console.log("Updating coach with id:", id, "data:", updates);
+    console.log("Updating coach with id:", id, "updates:", updates);
+    
+    // Clean the update data - remove read-only and problematic fields
+    const cleanUpdates = { ...updates };
+    
+    // Remove read-only fields
+    delete cleanUpdates.id;
+    delete cleanUpdates.created_at;
+    delete cleanUpdates.updated_at;
+    delete cleanUpdates.username;
+    delete cleanUpdates.password;
+    delete cleanUpdates.createAccount;
+    
+    // Handle nullable fields properly
+    if ('phone' in cleanUpdates && (cleanUpdates.phone === "" || cleanUpdates.phone === undefined)) {
+      cleanUpdates.phone = null;
+    }
+    
+    // Remove undefined values
+    Object.keys(cleanUpdates).forEach(key => {
+      if (cleanUpdates[key as keyof CoachUpdate] === undefined) {
+        delete cleanUpdates[key as keyof CoachUpdate];
+      }
+    });
+    
+    console.log("Clean updates to send:", cleanUpdates);
     
     // If account creation is requested during update, create the user account first
     if (updates.createAccount && updates.username && updates.password) {
@@ -104,22 +125,20 @@ export const coachService = {
       console.log("Coach account created successfully during update:", accountData);
       toast.success("Coach account created successfully");
     }
-
-    // Remove account-specific fields before updating the coach record and add branch as empty for database compatibility
-    const { username, password, createAccount, ...coachUpdates } = updates;
-    const updatesWithBranch = {
-      ...coachUpdates,
-      branch: "", // Add empty branch for database compatibility if not present
-    };
     
     const { data, error } = await supabase
       .from("coaches")
-      .update(updatesWithBranch)
+      .update(cleanUpdates)
       .eq("id", id)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase update error:", error);
+      throw error;
+    }
+
+    console.log("Successfully updated coach:", data);
 
     const typedCoach: Coach = {
       ...data,
@@ -144,5 +163,36 @@ export const coachService = {
     if (error) throw error;
 
     toast.success("Coach deleted successfully");
+  },
+
+  async updateCoachStudentCount(coachName: string): Promise<void> {
+    console.log("Updating student count for coach:", coachName);
+    
+    // Count active students assigned to this coach
+    const { data: students, error: studentsError } = await supabase
+      .from("students")
+      .select("id")
+      .eq("coach", coachName)
+      .eq("status", "active");
+
+    if (studentsError) {
+      console.error("Error counting students:", studentsError);
+      return;
+    }
+
+    const studentCount = students?.length || 0;
+    console.log("Found", studentCount, "students for coach:", coachName);
+
+    // Update the coach's student count
+    const { error: updateError } = await supabase
+      .from("coaches")
+      .update({ students_count: studentCount })
+      .eq("name", coachName);
+
+    if (updateError) {
+      console.error("Error updating coach student count:", updateError);
+    } else {
+      console.log("Successfully updated coach student count");
+    }
   }
 };

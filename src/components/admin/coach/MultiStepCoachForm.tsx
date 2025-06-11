@@ -41,12 +41,58 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
   });
 
   const updateFormData = (updates: Partial<typeof formData>) => {
-    setFormData(prev => ({ ...prev, ...updates }));
+    console.log("MultiStepCoachForm: Updating form data:", updates);
+    setFormData(prev => {
+      const newData = { ...prev, ...updates };
+      
+      // Handle phone field properly
+      if ('phone' in updates) {
+        newData.phone = updates.phone === "" ? null : updates.phone;
+      }
+      
+      console.log("MultiStepCoachForm: Updated form data:", newData);
+      return newData;
+    });
+  };
+
+  const validateCurrentStep = () => {
+    console.log("Validating step:", currentStep);
+    console.log("Current form data:", formData);
+    
+    switch (currentStep) {
+      case 1:
+        const isStep1Valid = formData.name.trim() !== "" && formData.email.trim() !== "";
+        console.log("Step 1 validation - Name:", formData.name, "Email:", formData.email, "Valid:", isStep1Valid);
+        return isStep1Valid;
+      case 2:
+        const isStep2Valid = formData.belt.trim() !== "";
+        console.log("Step 2 validation - Belt:", formData.belt, "Valid:", isStep2Valid);
+        return isStep2Valid;
+      case 3:
+        return true; // Class assignment is optional
+      case 4:
+        const isStep4Valid = !formData.createAccount || (formData.username.trim() !== "" && formData.password.trim() !== "");
+        console.log("Step 4 validation - Create account:", formData.createAccount, "Username:", formData.username, "Password:", formData.password ? "***" : "", "Valid:", isStep4Valid);
+        return isStep4Valid;
+      default:
+        return false;
+    }
   };
 
   const nextStep = () => {
+    console.log("Next step button clicked");
+    const isValid = validateCurrentStep();
+    console.log("Is current step valid:", isValid);
+    
+    if (!isValid) {
+      console.log("Validation failed - cannot proceed to next step");
+      return;
+    }
+    
     if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1);
+      const newStep = currentStep + 1;
+      console.log("Proceeding to step:", newStep);
+      setCurrentStep(newStep);
     }
   };
 
@@ -57,25 +103,74 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
   };
 
   const handleSubmit = () => {
-    onSubmit(formData);
-  };
-
-  const isStepValid = () => {
-    switch (currentStep) {
-      case 1:
-        return formData.name && formData.email;
-      case 2:
-        return formData.belt;
-      case 3:
-        return true; // Class assignment is optional
-      case 4:
-        return !formData.createAccount || (formData.username && formData.password);
-      default:
-        return false;
+    console.log("MultiStepCoachForm: Form submission initiated");
+    console.log("MultiStepCoachForm: Final form data:", formData);
+    
+    if (!validateCurrentStep()) {
+      console.log("MultiStepCoachForm: Final validation failed");
+      return;
     }
+    
+    // Clean and prepare submission data
+    const submissionData = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone || null,
+      belt: formData.belt,
+      specialties: formData.specialties,
+      status: formData.status,
+      students_count: formData.students_count,
+      assigned_classes: formData.assigned_classes,
+      joined_date: formData.joined_date,
+      // Only include account fields if creating account
+      ...(formData.createAccount && {
+        username: formData.username,
+        password: formData.password,
+        createAccount: formData.createAccount,
+      }),
+    };
+    
+    console.log("MultiStepCoachForm: Submitting coach data:", submissionData);
+    onSubmit(submissionData);
   };
 
   const progress = (currentStep / steps.length) * 100;
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <CoachBasicInfoStep
+            formData={formData}
+            updateFormData={updateFormData}
+          />
+        );
+      case 2:
+        return (
+          <CoachProfessionalInfoStep
+            formData={formData}
+            updateFormData={updateFormData}
+          />
+        );
+      case 3:
+        return (
+          <CoachClassAssignmentStep
+            formData={formData}
+            updateFormData={updateFormData}
+          />
+        );
+      case 4:
+        return (
+          <CoachAccountStep
+            formData={formData}
+            updateFormData={updateFormData}
+            isEditing={isEditing}
+          />
+        );
+      default:
+        return <div>Error: Invalid step {currentStep}</div>;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -126,31 +221,7 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
           <CardTitle>{steps[currentStep - 1].title}</CardTitle>
         </CardHeader>
         <CardContent>
-          {currentStep === 1 && (
-            <CoachBasicInfoStep
-              formData={formData}
-              updateFormData={updateFormData}
-            />
-          )}
-          {currentStep === 2 && (
-            <CoachProfessionalInfoStep
-              formData={formData}
-              updateFormData={updateFormData}
-            />
-          )}
-          {currentStep === 3 && (
-            <CoachClassAssignmentStep
-              formData={formData}
-              updateFormData={updateFormData}
-            />
-          )}
-          {currentStep === 4 && (
-            <CoachAccountStep
-              formData={formData}
-              updateFormData={updateFormData}
-              isEditing={isEditing}
-            />
-          )}
+          {renderStepContent()}
         </CardContent>
       </Card>
 
@@ -168,7 +239,7 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
         {currentStep === steps.length ? (
           <Button
             onClick={handleSubmit}
-            disabled={!isStepValid()}
+            disabled={!validateCurrentStep()}
             className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
           >
             {isEditing ? "Update Coach" : "Add Coach"}
@@ -176,7 +247,7 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
         ) : (
           <Button
             onClick={nextStep}
-            disabled={!isStepValid()}
+            disabled={!validateCurrentStep()}
             className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
           >
             Next

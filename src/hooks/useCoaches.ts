@@ -25,6 +25,8 @@ export const useCoaches = () => {
     try {
       const newCoach = await coachService.createCoach(coachData);
       setCoaches(prev => [...prev, newCoach]);
+      // Update student count after adding coach
+      await coachService.updateCoachStudentCount(newCoach.name);
       return newCoach;
     } catch (error) {
       console.error("Error adding coach:", error);
@@ -35,12 +37,19 @@ export const useCoaches = () => {
 
   const updateCoach = async (id: string, updates: CoachUpdate) => {
     try {
+      console.log("useCoaches: Updating coach with id:", id, "updates:", updates);
       const updatedCoach = await coachService.updateCoach(id, updates);
       setCoaches(prev => prev.map(coach => coach.id === id ? updatedCoach : coach));
+      
+      // If the coach name changed, we need to update student assignments
+      if (updates.name) {
+        await coachService.updateCoachStudentCount(updates.name);
+      }
+      
       return updatedCoach;
     } catch (error) {
-      console.error("Error updating coach:", error);
-      toast.error("Failed to update coach");
+      console.error("useCoaches: Error updating coach:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update coach");
       throw error;
     }
   };
@@ -56,6 +65,21 @@ export const useCoaches = () => {
     }
   };
 
+  const recalculateAllCoachStudentCounts = async () => {
+    try {
+      console.log("Recalculating student counts for all coaches...");
+      for (const coach of coaches) {
+        await coachService.updateCoachStudentCount(coach.name);
+      }
+      // Refresh coaches data to get updated counts
+      await fetchCoaches();
+      toast.success("Coach student counts updated");
+    } catch (error) {
+      console.error("Error recalculating coach student counts:", error);
+      toast.error("Failed to update coach student counts");
+    }
+  };
+
   useEffect(() => {
     fetchCoaches();
   }, []);
@@ -67,6 +91,7 @@ export const useCoaches = () => {
     updateCoach,
     deleteCoach,
     refetch: fetchCoaches,
+    recalculateAllCoachStudentCounts,
   };
 };
 
