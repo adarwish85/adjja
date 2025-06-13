@@ -89,6 +89,17 @@ export const useCoaches = () => {
     }
   };
 
+  const syncAllCoachClassAssignments = async () => {
+    try {
+      await coachService.syncCoachClassAssignments();
+      // Refresh coaches data to get updated assignments
+      await fetchCoaches();
+    } catch (error) {
+      console.error("Error syncing coach class assignments:", error);
+      toast.error("Failed to sync coach class assignments");
+    }
+  };
+
   useEffect(() => {
     fetchCoaches();
   }, []);
@@ -101,6 +112,7 @@ export const useCoaches = () => {
     deleteCoach,
     refetch: fetchCoaches,
     recalculateAllCoachStudentCounts,
+    syncAllCoachClassAssignments,
   };
 };
 

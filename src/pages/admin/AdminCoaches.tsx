@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Button } from "@/components/ui/button";
@@ -37,7 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const AdminCoaches = () => {
-  const { coaches, loading, addCoach, updateCoach, deleteCoach, recalculateAllCoachStudentCounts } = useCoaches();
+  const { coaches, loading, addCoach, updateCoach, deleteCoach, recalculateAllCoachStudentCounts, syncAllCoachClassAssignments } = useCoaches();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCoach, setEditingCoach] = useState<Coach | null>(null);
@@ -92,6 +91,10 @@ const AdminCoaches = () => {
     await recalculateAllCoachStudentCounts();
   };
 
+  const handleSyncClassAssignments = async () => {
+    await syncAllCoachClassAssignments();
+  };
+
   const getBeltColor = (belt: string) => {
     switch (belt.toLowerCase()) {
       case "black belt":
@@ -142,6 +145,14 @@ const AdminCoaches = () => {
               className="text-bjj-navy border-bjj-navy hover:bg-bjj-navy hover:text-white"
             >
               Refresh Student Counts
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={handleSyncClassAssignments}
+              className="text-bjj-navy border-bjj-navy hover:bg-bjj-navy hover:text-white"
+            >
+              Sync Class Assignments
             </Button>
             
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

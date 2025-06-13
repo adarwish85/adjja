@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { coachService } from "@/services/coachService";
 
 export interface Class {
   id: string;
@@ -76,6 +76,12 @@ export const useClasses = () => {
       };
 
       setClasses(prev => [...prev, typedClass]);
+      
+      // Automatically assign class to coach
+      if (classData.instructor && classData.instructor !== "Various") {
+        await coachService.addClassToCoach(classData.instructor, classData.name);
+      }
+      
       toast.success("Class added successfully");
       return typedClass;
     } catch (error) {
@@ -88,6 +94,9 @@ export const useClasses = () => {
   const updateClass = async (id: string, updates: Partial<Omit<Class, "id" | "created_at" | "updated_at">>) => {
     try {
       console.log("Updating class with id:", id, "data:", updates);
+      
+      // Get the current class data to compare instructors
+      const currentClass = classes.find(cls => cls.id === id);
       
       const { data, error } = await supabase
         .from("classes")
@@ -109,6 +118,24 @@ export const useClasses = () => {
       };
 
       setClasses(prev => prev.map(classItem => classItem.id === id ? typedClass : classItem));
+      
+      // Handle instructor changes
+      if (currentClass && updates.instructor !== undefined) {
+        const oldInstructor = currentClass.instructor;
+        const newInstructor = updates.instructor;
+        const className = updates.name || currentClass.name;
+        
+        // Remove from old instructor if different
+        if (oldInstructor && oldInstructor !== newInstructor && oldInstructor !== "Various") {
+          await coachService.removeClassFromCoach(oldInstructor, className);
+        }
+        
+        // Add to new instructor
+        if (newInstructor && newInstructor !== "Various") {
+          await coachService.addClassToCoach(newInstructor, className);
+        }
+      }
+      
       toast.success("Class updated successfully");
       return typedClass;
     } catch (error) {
@@ -120,6 +147,9 @@ export const useClasses = () => {
 
   const deleteClass = async (id: string) => {
     try {
+      // Get the class data before deletion to remove from coach
+      const classToDelete = classes.find(cls => cls.id === id);
+      
       const { error } = await supabase
         .from("classes")
         .delete()
@@ -128,6 +158,12 @@ export const useClasses = () => {
       if (error) throw error;
 
       setClasses(prev => prev.filter(classItem => classItem.id !== id));
+      
+      // Remove class from coach's assigned_classes
+      if (classToDelete && classToDelete.instructor && classToDelete.instructor !== "Various") {
+        await coachService.removeClassFromCoach(classToDelete.instructor, classToDelete.name);
+      }
+      
       toast.success("Class deleted successfully");
     } catch (error) {
       console.error("Error deleting class:", error);
