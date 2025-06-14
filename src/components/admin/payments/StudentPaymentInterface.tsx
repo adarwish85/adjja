@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, Clock, CheckCircle, AlertCircle, DollarSign } from "lucide-react";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
-import { usePayments } from "@/hooks/usePayments";
+import { usePayPalPayments } from "@/hooks/usePayPalPayments";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentMethods } from "./PaymentMethods";
 import { useAppSettings } from "@/contexts/SettingsContext";
@@ -18,7 +18,7 @@ export const StudentPaymentInterface = ({ studentId }: StudentPaymentInterfacePr
   const { toast } = useToast();
   const { currency } = useAppSettings();
   const { subscriptionPlans, isLoading: plansLoading } = useSubscriptionPlans();
-  const { createPayPalOrder, isLoading: paymentLoading } = usePayments();
+  const { createPayPalOrder, isLoading: paymentLoading } = usePayPalPayments();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   // Get currency symbol for display
@@ -48,13 +48,13 @@ export const StudentPaymentInterface = ({ studentId }: StudentPaymentInterfacePr
       const selectedPlanData = subscriptionPlans?.find(plan => plan.id === planId);
       if (!selectedPlanData) return;
 
-      const result = await createPayPalOrder({
+      const result = await createPayPalOrder(
+        selectedPlanData.standard_price,
         studentId,
-        subscriptionPlanId: planId,
-        amount: selectedPlanData.standard_price
-      });
+        planId
+      );
 
-      if (result.success && result.approvalUrl) {
+      if (result.approvalUrl) {
         // Open PayPal checkout in a new tab
         window.open(result.approvalUrl, '_blank');
         
