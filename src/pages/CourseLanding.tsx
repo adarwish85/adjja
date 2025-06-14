@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import { YouTubePreviewPlayer } from "@/components/video/YouTubePreviewPlayer";
-import { extractYouTubeVideoId, getYouTubeThumbnail, isYouTubeUrl, getEmbeddableYouTubeUrl } from "@/utils/youtubeUtils";
+import { CleanYouTubePlayer } from "@/components/video/CleanYouTubePlayer";
+import { extractYouTubeVideoId, getYouTubeThumbnail, isYouTubeUrl } from "@/utils/youtubeUtils";
 import { useCourseEnrollment } from "@/hooks/useCourseEnrollment";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -144,7 +144,6 @@ const CourseLanding = () => {
     );
   }
 
-  // Calculate totals from course topics
   const allLessons = courseTopics.flatMap(topic => topic.course_lessons || []);
   const totalLessons = allLessons.length;
   const totalDuration = allLessons.reduce((sum, lesson) => sum + (lesson.duration_minutes || 10), 0);
@@ -152,7 +151,6 @@ const CourseLanding = () => {
   const totalMinutes = totalDuration % 60;
   const studentCount = enrollmentCount || course.total_students || 0;
 
-  // Use first lesson video as fallback for featured image and intro video
   const firstLesson = allLessons.find(lesson => lesson.video_url);
   const featuredImage = course.thumbnail_url || (firstLesson?.video_url ? getYouTubeThumbnail(firstLesson.video_url) : null);
   const introVideo = course.intro_video || firstLesson?.video_url;
@@ -177,8 +175,7 @@ const CourseLanding = () => {
     console.log("Opening video preview for:", videoUrl);
     
     if (isYouTubeUrl(videoUrl)) {
-      const cleanUrl = getEmbeddableYouTubeUrl(videoUrl);
-      setSelectedVideo(cleanUrl);
+      setSelectedVideo(videoUrl);
       setIsPlayerOpen(true);
     } else {
       toast({
@@ -205,7 +202,6 @@ const CourseLanding = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
       <CourseHeroSection
         course={course}
         totalHours={totalHours}
@@ -222,7 +218,6 @@ const CourseLanding = () => {
         onNavigateToCourse={() => navigate(`/course/${courseId}/learn`)}
       />
 
-      {/* Course Content */}
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
@@ -238,16 +233,14 @@ const CourseLanding = () => {
             <CourseDescription course={course} />
           </div>
 
-          {/* Instructor Info */}
           <div className="lg:col-span-1">
             <CourseInstructorCard course={course} studentCount={studentCount} />
           </div>
         </div>
       </div>
 
-      {/* YouTube Preview Player Modal */}
       {isPlayerOpen && selectedVideo && (
-        <YouTubePreviewPlayer
+        <CleanYouTubePlayer
           videoUrl={selectedVideo}
           isOpen={isPlayerOpen}
           onClose={() => {
