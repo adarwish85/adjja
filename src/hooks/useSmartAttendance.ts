@@ -22,6 +22,11 @@ interface CheckInResult {
   error?: string;
 }
 
+// Type guard function to validate CheckInResult
+const isCheckInResult = (data: any): data is CheckInResult => {
+  return data && typeof data === 'object' && typeof data.success === 'boolean';
+};
+
 export const useSmartAttendance = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -150,9 +155,9 @@ export const useSmartAttendance = () => {
 
       if (error) throw error;
 
-      // Type guard to ensure we have a valid CheckInResult
-      if (typeof data === 'object' && data !== null && 'success' in data) {
-        return data as CheckInResult;
+      // Use type guard to validate the response
+      if (isCheckInResult(data)) {
+        return data;
       }
       
       throw new Error('Invalid response format from check-in function');
@@ -191,9 +196,9 @@ export const useSmartAttendance = () => {
 
           if (error) throw error;
           
-          // Type guard to ensure we have a valid CheckInResult
-          if (typeof data === 'object' && data !== null && 'success' in data) {
-            results.push({ studentId, result: data as CheckInResult });
+          // Use type guard to validate the response
+          if (isCheckInResult(data)) {
+            results.push({ studentId, result: data });
           } else {
             results.push({ 
               studentId, 

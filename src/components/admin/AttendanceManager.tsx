@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +31,20 @@ export const AttendanceManager = () => {
   } : undefined;
   
   const { metrics, isLoading } = useAttendanceAnalytics(analyticsDateRange, classId, branchId);
+
+  // Handler for DatePicker that properly types the callback
+  const handleDateRangeChange = (date: Date | DateRange | undefined) => {
+    if (date && typeof date === 'object' && 'from' in date) {
+      // It's a DateRange
+      setDateRange(date as DateRange);
+    } else if (date instanceof Date) {
+      // It's a single Date, convert to DateRange
+      setDateRange({ from: date, to: date });
+    } else {
+      // It's undefined
+      setDateRange(undefined);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -133,7 +146,7 @@ export const AttendanceManager = () => {
             mode="range"
             defaultMonth={dateRange?.from}
             selected={dateRange}
-            onSelect={setDateRange}
+            onSelect={handleDateRangeChange}
           />
         </div>
         <div>
