@@ -33,6 +33,8 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     coach: student?.coach || "",
     status: student?.status || "active" as const,
     membership_type: student?.membership_type || "monthly" as const,
+    subscription_plan_id: student?.subscription_plan_id || "",
+    plan_start_date: student?.plan_start_date || new Date().toISOString().split('T')[0],
     attendance_rate: student?.attendance_rate || 0,
     joined_date: student?.joined_date || new Date().toISOString().split('T')[0],
     last_attended: student?.last_attended || new Date().toISOString().split('T')[0],
@@ -60,8 +62,8 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
         console.log("Step 1 validation - Name:", formData.name, "Email:", formData.email, "Valid:", isStep1Valid);
         return isStep1Valid;
       case 2:
-        const isStep2Valid = formData.belt.trim() !== "" && formData.coach.trim() !== "";
-        console.log("Step 2 validation - Belt:", formData.belt, "Coach:", formData.coach, "Valid:", isStep2Valid);
+        const isStep2Valid = formData.belt.trim() !== "" && formData.coach.trim() !== "" && formData.subscription_plan_id.trim() !== "";
+        console.log("Step 2 validation - Belt:", formData.belt, "Coach:", formData.coach, "Plan:", formData.subscription_plan_id, "Valid:", isStep2Valid);
         return isStep2Valid;
       case 3:
         const isStep3Valid = !formData.createAccount || (formData.username.trim() !== "" && formData.password.trim() !== "");
@@ -122,6 +124,10 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
       coach: formData.coach,
       status: formData.status,
       membership_type: formData.membership_type,
+      subscription_plan_id: formData.subscription_plan_id || null,
+      plan_start_date: formData.plan_start_date || null,
+      next_due_date: null,
+      payment_status: "unpaid" as const,
       attendance_rate: formData.attendance_rate,
       joined_date: formData.joined_date,
       last_attended: formData.last_attended || null,

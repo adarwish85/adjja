@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Student } from "@/hooks/useStudents";
 import { useCoaches } from "@/hooks/useCoaches";
+import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 
 interface AddStudentFormProps {
   student?: Student;
@@ -26,6 +27,7 @@ const statusOptions = ["active", "inactive", "on-hold"];
 
 export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStudentFormProps) => {
   const { coaches, loading: coachesLoading } = useCoaches();
+  const { activeSubscriptionPlans, isLoading: plansLoading } = useSubscriptionPlans();
   const [formData, setFormData] = useState({
     name: student?.name || "",
     email: student?.email || "",
@@ -36,6 +38,8 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
     coach: student?.coach || "",
     status: student?.status || "active" as const,
     membership_type: student?.membership_type || "monthly" as const,
+    subscription_plan_id: student?.subscription_plan_id || "",
+    plan_start_date: student?.plan_start_date || new Date().toISOString().split('T')[0],
     attendance_rate: student?.attendance_rate || 0,
     joined_date: student?.joined_date || new Date().toISOString().split('T')[0],
     last_attended: student?.last_attended || new Date().toISOString().split('T')[0],
@@ -57,6 +61,10 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
       onSubmit({
         ...student,
         ...formData,
+        subscription_plan_id: formData.subscription_plan_id || null,
+        plan_start_date: formData.plan_start_date || null,
+        next_due_date: student.next_due_date,
+        payment_status: student.payment_status,
       });
     } else {
       // Create the student object with proper typing
@@ -70,6 +78,10 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
         coach: formData.coach,
         status: formData.status,
         membership_type: formData.membership_type,
+        subscription_plan_id: formData.subscription_plan_id || null,
+        plan_start_date: formData.plan_start_date || null,
+        next_due_date: null,
+        payment_status: "unpaid",
         attendance_rate: formData.attendance_rate,
         joined_date: formData.joined_date,
         last_attended: formData.last_attended || null,
@@ -252,6 +264,38 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
               ))}
             </SelectContent>
           </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="subscription_plan">Subscription Plan</Label>
+          <Select
+            value={formData.subscription_plan_id}
+            onValueChange={(value) => handleChange("subscription_plan_id", value)}
+            disabled={plansLoading}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={plansLoading ? "Loading plans..." : "Select subscription plan"} />
+            </SelectTrigger>
+            <SelectContent>
+              {activeSubscriptionPlans?.map((plan) => (
+                <SelectItem key={plan.id} value={plan.id}>
+                  {plan.title} - ${plan.sale_price || plan.standard_price}/{plan.subscription_period}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="plan_start_date">Plan Start Date</Label>
+          <Input
+            id="plan_start_date"
+            type="date"
+            value={formData.plan_start_date}
+            onChange={(e) => handleChange("plan_start_date", e.target.value)}
+          />
         </div>
       </div>
 
