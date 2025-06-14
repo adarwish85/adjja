@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Login = () => {
   const { signIn, signUp, user, loading } = useAuth();
@@ -22,7 +24,9 @@ const Login = () => {
     password: "",
     confirmPassword: "",
   });
+  const [resetEmail, setResetEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showResetForm, setShowResetForm] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -53,7 +57,7 @@ const Login = () => {
     if (!signupData.name || !signupData.email || !signupData.password) return;
     
     if (signupData.password !== signupData.confirmPassword) {
-      alert("Passwords don't match");
+      toast.error("Passwords don't match");
       return;
     }
 
@@ -67,6 +71,34 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Signup error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast.error("Please enter your email address");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Password reset email sent! Check your inbox.");
+        setShowResetForm(false);
+        setResetEmail("");
+      }
+    } catch (error) {
+      console.error("Password reset error:", error);
+      toast.error("Failed to send reset email");
     } finally {
       setIsSubmitting(false);
     }
@@ -96,111 +128,155 @@ const Login = () => {
           <CardHeader>
             <CardTitle>Welcome</CardTitle>
             <CardDescription>
-              Sign in to your account or create a new one
+              {showResetForm ? "Reset your password" : "Sign in to your account or create a new one"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div>
-                    <Label htmlFor="emailOrUsername">Email or Username</Label>
-                    <Input
-                      id="emailOrUsername"
-                      type="text"
-                      value={loginData.emailOrUsername}
-                      onChange={(e) => setLoginData(prev => ({ ...prev, emailOrUsername: e.target.value }))}
-                      placeholder="Enter your email or username"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={loginData.password}
-                      onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
-                      placeholder="Enter your password"
-                      required
-                    />
-                  </div>
-                  
+            {showResetForm ? (
+              <form onSubmit={handlePasswordReset} className="space-y-4">
+                <div>
+                  <Label htmlFor="resetEmail">Email Address</Label>
+                  <Input
+                    id="resetEmail"
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    required
+                  />
+                </div>
+                
+                <div className="flex space-x-3">
                   <Button 
                     type="submit" 
-                    className="w-full bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+                    className="flex-1 bg-bjj-gold hover:bg-bjj-gold-dark text-white"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? "Signing in..." : "Sign In"}
+                    {isSubmitting ? "Sending..." : "Send Reset Email"}
                   </Button>
-                </form>
-              </TabsContent>
-              
-              <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      value={signupData.name}
-                      onChange={(e) => setSignupData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Enter your full name"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={signupData.email}
-                      onChange={(e) => setSignupData(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="Enter your email"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={signupData.password}
-                      onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
-                      placeholder="Enter your password"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="confirmPassword">Confirm Password</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      value={signupData.confirmPassword}
-                      onChange={(e) => setSignupData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                      placeholder="Confirm your password"
-                      required
-                    />
-                  </div>
-                  
                   <Button 
-                    type="submit" 
-                    className="w-full bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setShowResetForm(false)}
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? "Creating account..." : "Sign Up"}
+                    Back to Login
                   </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+                </div>
+              </form>
+            ) : (
+              <Tabs defaultValue="login" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="login">Sign In</TabsTrigger>
+                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="login">
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div>
+                      <Label htmlFor="emailOrUsername">Email or Username</Label>
+                      <Input
+                        id="emailOrUsername"
+                        type="text"
+                        value={loginData.emailOrUsername}
+                        onChange={(e) => setLoginData(prev => ({ ...prev, emailOrUsername: e.target.value }))}
+                        placeholder="Enter your email or username"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={loginData.password}
+                        onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+                        placeholder="Enter your password"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setShowResetForm(true)}
+                        className="text-sm text-bjj-gold hover:text-bjj-gold-dark underline"
+                      >
+                        Forgot your password?
+                      </button>
+                    </div>
+                    
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Signing in..." : "Sign In"}
+                    </Button>
+                  </form>
+                </TabsContent>
+                
+                <TabsContent value="signup">
+                  <form onSubmit={handleSignup} className="space-y-4">
+                    <div>
+                      <Label htmlFor="name">Full Name</Label>
+                      <Input
+                        id="name"
+                        value={signupData.name}
+                        onChange={(e) => setSignupData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Enter your full name"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={signupData.email}
+                        onChange={(e) => setSignupData(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="Enter your email"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={signupData.password}
+                        onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
+                        placeholder="Enter your password"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={signupData.confirmPassword}
+                        onChange={(e) => setSignupData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        placeholder="Confirm your password"
+                        required
+                      />
+                    </div>
+                    
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Creating account..." : "Sign Up"}
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            )}
           </CardContent>
         </Card>
       </div>
