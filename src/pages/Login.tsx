@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,20 +84,26 @@ const Login = () => {
 
     setIsSubmitting(true);
     try {
+      console.log("Attempting password reset for email:", resetEmail);
+      console.log("Current window location:", window.location.origin);
+      
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/reset-password`
       });
 
+      console.log("Password reset response:", { error });
+
       if (error) {
-        toast.error(error.message);
+        console.error("Password reset error:", error);
+        toast.error(`Failed to send reset email: ${error.message}`);
       } else {
-        toast.success("Password reset email sent! Check your inbox.");
+        toast.success("Password reset email sent! Check your inbox and spam folder.");
         setShowResetForm(false);
         setResetEmail("");
       }
     } catch (error) {
-      console.error("Password reset error:", error);
-      toast.error("Failed to send reset email");
+      console.error("Password reset exception:", error);
+      toast.error("Failed to send reset email. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -144,6 +149,9 @@ const Login = () => {
                     placeholder="Enter your email address"
                     required
                   />
+                  <p className="text-xs text-gray-600 mt-1">
+                    We'll send you a link to reset your password. Check your spam folder if you don't see it.
+                  </p>
                 </div>
                 
                 <div className="flex space-x-3">
