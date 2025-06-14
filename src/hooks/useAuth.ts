@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
@@ -21,6 +20,8 @@ export const useAuth = () => {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId);
+      
       const { data: profile, error } = await supabase
         .from('profiles')
         .select(`
@@ -36,17 +37,66 @@ export const useAuth = () => {
         .eq('id', userId)
         .single();
 
+      console.log('Profile query result:', { profile, error });
+
       if (error) {
         console.error('Error fetching user profile:', error);
+        
+        // If profile doesn't exist, try to create one with default role
+        if (error.code === 'PGRST116') {
+          console.log('Profile not found, creating default profile...');
+          
+          // Get default student role
+          const { data: studentRole } = await supabase
+            .from('user_roles')
+            .select('id')
+            .eq('name', 'Student')
+            .single();
+
+          if (studentRole) {
+            // Create profile with student role
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert({
+                id: userId,
+                name: user?.email?.split('@')[0] || 'User',
+                email: user?.email || '',
+                role_id: studentRole.id,
+                status: 'active'
+              })
+              .select(`
+                id,
+                name,
+                email,
+                role_id,
+                status,
+                user_roles:role_id (
+                  name
+                )
+              `)
+              .single();
+
+            if (!createError && newProfile) {
+              const userRole = Array.isArray(newProfile.user_roles) ? newProfile.user_roles[0] : newProfile.user_roles;
+              return {
+                ...newProfile,
+                role_name: userRole?.name || 'Student'
+              } as UserProfile;
+            }
+          }
+        }
         return null;
       }
 
       const userRole = Array.isArray(profile.user_roles) ? profile.user_roles[0] : profile.user_roles;
       
-      return {
+      const userProfile = {
         ...profile,
         role_name: userRole?.name || 'Student'
       } as UserProfile;
+
+      console.log('Final user profile:', userProfile);
+      return userProfile;
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
       return null;
@@ -57,13 +107,14 @@ export const useAuth = () => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed:", event, session);
+        console.log("Auth state changed:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           const profile = await fetchUserProfile(session.user.id);
           setUserProfile(profile);
+          console.log('Profile set:', profile);
         } else {
           setUserProfile(null);
         }
@@ -74,12 +125,14 @@ export const useAuth = () => {
 
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log("Initial session:", session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
         const profile = await fetchUserProfile(session.user.id);
         setUserProfile(profile);
+        console.log('Initial profile set:', profile);
       }
       
       setLoading(false);
@@ -90,6 +143,7 @@ export const useAuth = () => {
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
+      setLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -97,17 +151,21 @@ export const useAuth = () => {
 
       if (error) throw error;
 
+      console.log("Sign in successful, waiting for profile...");
       toast.success("Signed in successfully");
       return { data, error: null };
     } catch (error) {
       console.error("Error signing in:", error);
       toast.error(error instanceof Error ? error.message : "Failed to sign in");
       return { data: null, error };
+    } finally {
+      setLoading(false);
     }
   };
 
   const signInWithUsername = async (username: string, password: string) => {
     try {
+      setLoading(true);
       // First, find the user by username to get their email
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -125,6 +183,8 @@ export const useAuth = () => {
       console.error("Error signing in with username:", error);
       toast.error(error instanceof Error ? error.message : "Failed to sign in");
       return { data: null, error };
+    } finally {
+      setLoading(false);
     }
   };
 

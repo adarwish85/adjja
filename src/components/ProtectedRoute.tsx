@@ -12,8 +12,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('ProtectedRoute - loading:', loading, 'user:', !!user, 'userProfile:', userProfile);
+    
     if (!loading) {
       if (!user) {
+        console.log('No user, redirecting to login');
         navigate("/login");
         return;
       }
@@ -22,6 +25,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       // redirect them to their appropriate dashboard
       if (user && userProfile && window.location.pathname === "/protected") {
         const userRole = userProfile.role_name?.toLowerCase();
+        console.log('Redirecting user with role:', userRole);
         
         if (userRole === 'student') {
           navigate("/dashboard");

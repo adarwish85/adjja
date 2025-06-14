@@ -29,16 +29,23 @@ const Login = () => {
 
   // Redirect if already logged in - based on user role
   useEffect(() => {
+    console.log('Login page - user:', !!user, 'userProfile:', userProfile, 'loading:', loading);
+    
     if (user && userProfile && !loading) {
       const userRole = userProfile.role_name?.toLowerCase();
+      console.log('User logged in with role:', userRole, 'redirecting...');
       
       if (userRole === 'student') {
+        console.log('Redirecting to student dashboard');
         navigate("/dashboard");
       } else if (userRole === 'coach') {
+        console.log('Redirecting to coach dashboard');
         navigate("/coach");
       } else if (userRole === 'super admin' || userRole === 'admin') {
+        console.log('Redirecting to admin dashboard');
         navigate("/admin");
       } else {
+        console.log('Unknown role, redirecting to home');
         navigate("/");
       }
     }
@@ -50,10 +57,10 @@ const Login = () => {
 
     setIsSubmitting(true);
     try {
+      console.log('Attempting login...');
       const { data, error } = await signIn(loginData.emailOrUsername, loginData.password);
       if (data && !error) {
-        // Navigation will be handled by the useEffect above once userProfile is loaded
-        console.log("Login successful, waiting for profile to load...");
+        console.log("Login successful, waiting for profile to load and redirect...");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -77,7 +84,6 @@ const Login = () => {
         name: signupData.name
       });
       if (data && !error) {
-        // Navigation will be handled by the useEffect above once userProfile is loaded
         console.log("Signup successful, waiting for profile to load...");
       }
     } catch (error) {
