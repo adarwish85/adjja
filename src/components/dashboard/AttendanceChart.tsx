@@ -18,17 +18,15 @@ export const AttendanceChart = () => {
         <p className="text-sm text-bjj-gray">Monthly attendance across all branches</p>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[250px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <div className="flex items-center justify-center h-full text-bjj-gray">
-              <div className="text-center">
-                <div className="text-4xl mb-2">📊</div>
-                <p className="text-sm">No attendance data available</p>
-                <p className="text-xs">Data will appear when students start attending classes</p>
-              </div>
+        <div className="h-[250px] w-full">
+          <div className="flex items-center justify-center h-full text-bjj-gray">
+            <div className="text-center">
+              <div className="text-4xl mb-2">📊</div>
+              <p className="text-sm">No attendance data available</p>
+              <p className="text-xs">Data will appear when students start attending classes</p>
             </div>
-          </ResponsiveContainer>
-        </ChartContainer>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
