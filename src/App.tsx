@@ -17,6 +17,7 @@ import AdminBranches from "./pages/admin/AdminBranches";
 import AdminLMS from "./pages/admin/AdminLMS";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminAttendance from "./pages/admin/AdminAttendance";
 import AdminSettings from "./pages/admin/AdminSettings";
 import CourseLanding from "./pages/CourseLanding";
 import NotFound from "./pages/NotFound";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/admin/lms" element={<AdminLMS />} />
             <Route path="/admin/payments" element={<AdminPayments />} />
             <Route path="/admin/analytics" element={<AdminAnalytics />} />
+            <Route path="/admin/attendance" element={<AdminAttendance />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/coach/dashboard" element={<CoachDashboard />} />
             <Route 
