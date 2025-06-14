@@ -1,4 +1,3 @@
-
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { AttendanceChart } from "@/components/dashboard/AttendanceChart";
@@ -15,7 +14,7 @@ const SuperAdminDashboard = () => {
 
   return (
     <SuperAdminLayout>
-      <div className="space-y-6">
+      <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-bjj-navy">Dashboard</h1>
