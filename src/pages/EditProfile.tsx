@@ -10,10 +10,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBJJProfile } from "@/hooks/useBJJProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { User, Camera, Upload, ArrowLeft, Dumbbell, Users } from "lucide-react";
+import { User, Camera, ArrowLeft, Dumbbell, Users, Trophy, ExternalLink, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BJJProfileForm } from "@/components/profile/BJJProfileForm";
 import { GalleryManager } from "@/components/profile/GalleryManager";
+import { CompetitionStatsForm } from "@/components/profile/CompetitionStatsForm";
+import { ExternalLinksForm } from "@/components/profile/ExternalLinksForm";
+import { PrivacySettingsForm } from "@/components/profile/PrivacySettingsForm";
 
 export default function EditProfile() {
   const { user } = useAuth();
@@ -199,6 +202,12 @@ export default function EditProfile() {
     }
   };
 
+  const handlePreviewProfile = () => {
+    if (bjjProfile.profile_slug) {
+      window.open(`/athlete/${bjjProfile.profile_slug}`, '_blank');
+    }
+  };
+
   if (!user) {
     return <div>Please log in to edit your profile.</div>;
   }
@@ -282,14 +291,22 @@ export default function EditProfile() {
 
         {/* Tabbed Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="personal" className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              Personal Info
+              Personal
             </TabsTrigger>
             <TabsTrigger value="bjj" className="flex items-center gap-2">
               <Dumbbell className="h-4 w-4" />
               BJJ Details
+            </TabsTrigger>
+            <TabsTrigger value="competition" className="flex items-center gap-2">
+              <Trophy className="h-4 w-4" />
+              Competition
+            </TabsTrigger>
+            <TabsTrigger value="links" className="flex items-center gap-2">
+              <ExternalLink className="h-4 w-4" />
+              Links
             </TabsTrigger>
             <TabsTrigger value="gallery" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -359,22 +376,50 @@ export default function EditProfile() {
           </TabsContent>
 
           <TabsContent value="bjj" className="mt-6">
-            <form onSubmit={handleSubmitBJJ}>
+            <div className="space-y-6">
               <BJJProfileForm
                 data={bjjProfile}
                 onChange={setBjjProfile}
                 loading={bjjLoading}
               />
-              <div className="flex justify-end gap-4 pt-6">
-                <Button 
-                  type="submit" 
-                  disabled={bjjLoading}
-                  className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
-                >
-                  {bjjLoading ? "Saving..." : "Save BJJ Profile"}
-                </Button>
-              </div>
-            </form>
+              
+              <PrivacySettingsForm
+                data={{
+                  is_public: bjjProfile.is_public,
+                  profile_slug: bjjProfile.profile_slug,
+                  profile_views: bjjProfile.profile_views
+                }}
+                onChange={(privacyData) => setBjjProfile(prev => ({ ...prev, ...privacyData }))}
+                onPreview={handlePreviewProfile}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="competition" className="mt-6">
+            <CompetitionStatsForm
+              data={{
+                competitions_count: bjjProfile.competitions_count,
+                gold_medals: bjjProfile.gold_medals,
+                silver_medals: bjjProfile.silver_medals,
+                bronze_medals: bjjProfile.bronze_medals,
+                notable_wins: bjjProfile.notable_wins
+              }}
+              onChange={(competitionData) => setBjjProfile(prev => ({ ...prev, ...competitionData }))}
+            />
+          </TabsContent>
+
+          <TabsContent value="links" className="mt-6">
+            <ExternalLinksForm
+              data={{
+                smoothcomp_url: bjjProfile.smoothcomp_url,
+                bjj_heroes_url: bjjProfile.bjj_heroes_url,
+                other_link_1: bjjProfile.other_link_1,
+                other_link_1_name: bjjProfile.other_link_1_name,
+                other_link_2: bjjProfile.other_link_2,
+                other_link_2_name: bjjProfile.other_link_2_name
+              }}
+              onChange={(linksData) => setBjjProfile(prev => ({ ...prev, ...linksData }))}
+            />
           </TabsContent>
 
           <TabsContent value="gallery" className="mt-6">
@@ -383,15 +428,6 @@ export default function EditProfile() {
               onChange={(images) => setBjjProfile(prev => ({ ...prev, gallery_images: images }))}
               loading={bjjLoading}
             />
-            <div className="flex justify-end gap-4 pt-6">
-              <Button 
-                onClick={() => saveBJJProfile(bjjProfile)}
-                disabled={bjjLoading}
-                className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
-              >
-                {bjjLoading ? "Saving..." : "Save Gallery"}
-              </Button>
-            </div>
           </TabsContent>
         </Tabs>
 

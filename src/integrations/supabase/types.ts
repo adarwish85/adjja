@@ -76,14 +76,28 @@ export type Database = {
           about_me: string | null
           academy_team: string | null
           belt_rank: string | null
+          bjj_heroes_url: string | null
+          bronze_medals: number | null
+          competitions_count: number | null
           created_at: string | null
           facebook_url: string | null
           favorite_position: string | null
           favorite_submission: string | null
           gallery_images: Json | null
+          gold_medals: number | null
           height_cm: number | null
           id: string
           instagram_url: string | null
+          is_public: boolean | null
+          notable_wins: string | null
+          other_link_1: string | null
+          other_link_1_name: string | null
+          other_link_2: string | null
+          other_link_2_name: string | null
+          profile_slug: string | null
+          profile_views: number | null
+          silver_medals: number | null
+          smoothcomp_url: string | null
           updated_at: string | null
           user_id: string
           weight_kg: number | null
@@ -92,14 +106,28 @@ export type Database = {
           about_me?: string | null
           academy_team?: string | null
           belt_rank?: string | null
+          bjj_heroes_url?: string | null
+          bronze_medals?: number | null
+          competitions_count?: number | null
           created_at?: string | null
           facebook_url?: string | null
           favorite_position?: string | null
           favorite_submission?: string | null
           gallery_images?: Json | null
+          gold_medals?: number | null
           height_cm?: number | null
           id?: string
           instagram_url?: string | null
+          is_public?: boolean | null
+          notable_wins?: string | null
+          other_link_1?: string | null
+          other_link_1_name?: string | null
+          other_link_2?: string | null
+          other_link_2_name?: string | null
+          profile_slug?: string | null
+          profile_views?: number | null
+          silver_medals?: number | null
+          smoothcomp_url?: string | null
           updated_at?: string | null
           user_id: string
           weight_kg?: number | null
@@ -108,14 +136,28 @@ export type Database = {
           about_me?: string | null
           academy_team?: string | null
           belt_rank?: string | null
+          bjj_heroes_url?: string | null
+          bronze_medals?: number | null
+          competitions_count?: number | null
           created_at?: string | null
           facebook_url?: string | null
           favorite_position?: string | null
           favorite_submission?: string | null
           gallery_images?: Json | null
+          gold_medals?: number | null
           height_cm?: number | null
           id?: string
           instagram_url?: string | null
+          is_public?: boolean | null
+          notable_wins?: string | null
+          other_link_1?: string | null
+          other_link_1_name?: string | null
+          other_link_2?: string | null
+          other_link_2_name?: string | null
+          profile_slug?: string | null
+          profile_views?: number | null
+          silver_medals?: number | null
+          smoothcomp_url?: string | null
           updated_at?: string | null
           user_id?: string
           weight_kg?: number | null
@@ -1547,6 +1589,10 @@ export type Database = {
       }
       enroll_student_in_class: {
         Args: { p_student_id: string; p_class_id: string }
+        Returns: string
+      }
+      generate_profile_slug: {
+        Args: { p_user_id: string; p_name: string }
         Returns: string
       }
       get_attendance_heatmap: {

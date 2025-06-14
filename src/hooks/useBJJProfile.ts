@@ -15,6 +15,23 @@ interface BJJProfileData {
   facebook_url?: string;
   about_me?: string;
   gallery_images?: string[];
+  // Public profile settings
+  is_public?: boolean;
+  profile_slug?: string;
+  profile_views?: number;
+  // Competition stats
+  competitions_count?: number;
+  gold_medals?: number;
+  silver_medals?: number;
+  bronze_medals?: number;
+  notable_wins?: string;
+  // External links
+  smoothcomp_url?: string;
+  bjj_heroes_url?: string;
+  other_link_1?: string;
+  other_link_1_name?: string;
+  other_link_2?: string;
+  other_link_2_name?: string;
 }
 
 export const useBJJProfile = () => {
@@ -53,7 +70,24 @@ export const useBJJProfile = () => {
           instagram_url: data.instagram_url,
           facebook_url: data.facebook_url,
           about_me: data.about_me,
-          gallery_images: galleryImages
+          gallery_images: galleryImages,
+          // Public profile settings
+          is_public: data.is_public,
+          profile_slug: data.profile_slug,
+          profile_views: data.profile_views,
+          // Competition stats
+          competitions_count: data.competitions_count,
+          gold_medals: data.gold_medals,
+          silver_medals: data.silver_medals,
+          bronze_medals: data.bronze_medals,
+          notable_wins: data.notable_wins,
+          // External links
+          smoothcomp_url: data.smoothcomp_url,
+          bjj_heroes_url: data.bjj_heroes_url,
+          other_link_1: data.other_link_1,
+          other_link_1_name: data.other_link_1_name,
+          other_link_2: data.other_link_2,
+          other_link_2_name: data.other_link_2_name,
         });
       }
     } catch (error) {
@@ -82,7 +116,23 @@ export const useBJJProfile = () => {
           instagram_url: profileData.instagram_url,
           facebook_url: profileData.facebook_url,
           about_me: profileData.about_me,
-          gallery_images: profileData.gallery_images || []
+          gallery_images: profileData.gallery_images || [],
+          // Public profile settings
+          is_public: profileData.is_public || false,
+          profile_slug: profileData.profile_slug,
+          // Competition stats
+          competitions_count: profileData.competitions_count || 0,
+          gold_medals: profileData.gold_medals || 0,
+          silver_medals: profileData.silver_medals || 0,
+          bronze_medals: profileData.bronze_medals || 0,
+          notable_wins: profileData.notable_wins,
+          // External links
+          smoothcomp_url: profileData.smoothcomp_url,
+          bjj_heroes_url: profileData.bjj_heroes_url,
+          other_link_1: profileData.other_link_1,
+          other_link_1_name: profileData.other_link_1_name,
+          other_link_2: profileData.other_link_2,
+          other_link_2_name: profileData.other_link_2_name,
         }, {
           onConflict: 'user_id'
         });
@@ -102,6 +152,37 @@ export const useBJJProfile = () => {
     }
   };
 
+  const getPublicProfile = async (slug: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('bjj_profiles')
+        .select(`
+          *,
+          profiles!inner(name, profile_picture_url)
+        `)
+        .eq('profile_slug', slug)
+        .eq('is_public', true)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      // Increment profile views
+      if (data) {
+        await supabase
+          .from('bjj_profiles')
+          .update({ profile_views: (data.profile_views || 0) + 1 })
+          .eq('profile_slug', slug);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error loading public profile:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (user) {
       loadBJJProfile();
@@ -113,6 +194,7 @@ export const useBJJProfile = () => {
     setBjjProfile,
     loading,
     saveBJJProfile,
-    loadBJJProfile
+    loadBJJProfile,
+    getPublicProfile
   };
 };
