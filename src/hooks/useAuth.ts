@@ -32,7 +32,7 @@ export const useAuth = () => {
 
   const fetchUserProfile = async (userId: string, userEmail?: string) => {
     try {
-      console.log('Fetching profile for user:', userId);
+      console.log('Fetching profile for user:', userId, 'email:', userEmail);
       
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) => 
@@ -67,7 +67,13 @@ export const useAuth = () => {
             error.code === 'PGRST301' ||
             error.code === '42P17') {
           console.log('Database issue detected, using fallback profile');
-          // Don't default to Student - preserve any role info from auth metadata
+          
+          // Special handling for Ahmed's email - force Super Admin role
+          if (userEmail === 'ahmeddarwesh@gmail.com') {
+            console.log('Detected Ahmed\'s email, setting Super Admin role');
+            return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, 'Super Admin');
+          }
+          
           const suggestedRole = user?.user_metadata?.role || 'Student';
           return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, suggestedRole);
         }
@@ -77,19 +83,25 @@ export const useAuth = () => {
           try {
             console.log('Profile not found, attempting to create...');
             
-            // Get default student role with timeout
+            // Special handling for Ahmed's email
+            let roleToAssign = 'Student';
+            if (userEmail === 'ahmeddarwesh@gmail.com') {
+              roleToAssign = 'Super Admin';
+            }
+            
+            // Get the appropriate role with timeout
             const roleQuery = supabase
               .from('user_roles')
               .select('id')
-              .eq('name', 'Student')
+              .eq('name', roleToAssign)
               .single();
               
-            const { data: studentRole } = await Promise.race([
+            const { data: targetRole } = await Promise.race([
               roleQuery,
               new Promise((_, reject) => setTimeout(() => reject(new Error('Role fetch timeout')), 5000))
             ]) as any;
 
-            if (studentRole) {
+            if (targetRole) {
               const profileName = userEmail?.split('@')[0] || 'User';
               const profileEmail = userEmail || '';
 
@@ -99,7 +111,7 @@ export const useAuth = () => {
                   id: userId,
                   name: profileName,
                   email: profileEmail,
-                  role_id: studentRole.id,
+                  role_id: targetRole.id,
                   status: 'active'
                 })
                 .select(`
@@ -123,7 +135,7 @@ export const useAuth = () => {
                 const userRole = Array.isArray(newProfile.user_roles) ? newProfile.user_roles[0] : newProfile.user_roles;
                 return {
                   ...newProfile,
-                  role_name: userRole?.name || 'Student'
+                  role_name: userRole?.name || roleToAssign
                 } as UserProfile;
               }
             }
@@ -132,7 +144,13 @@ export const useAuth = () => {
           }
         }
         
-        // Return fallback profile if all else fails - don't always default to Student
+        // Return fallback profile if all else fails
+        // Special handling for Ahmed's email
+        if (userEmail === 'ahmeddarwesh@gmail.com') {
+          console.log('Fallback for Ahmed, setting Super Admin role');
+          return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, 'Super Admin');
+        }
+        
         const suggestedRole = user?.user_metadata?.role || 'Student';
         return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, suggestedRole);
       }
@@ -145,10 +163,23 @@ export const useAuth = () => {
       } as UserProfile;
 
       console.log('Successfully fetched profile:', userProfile);
+      
+      // Double check for Ahmed's email and override role if needed
+      if (userEmail === 'ahmeddarwesh@gmail.com' && userProfile.role_name !== 'Super Admin') {
+        console.log('Overriding role for Ahmed to Super Admin');
+        userProfile.role_name = 'Super Admin';
+      }
+      
       return userProfile;
     } catch (error) {
       console.error('Critical error in fetchUserProfile:', error);
-      // Always return a fallback to prevent infinite loading - but don't always default to Student
+      
+      // Special handling for Ahmed's email in catch block
+      if (userEmail === 'ahmeddarwesh@gmail.com') {
+        console.log('Critical error fallback for Ahmed, setting Super Admin role');
+        return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, 'Super Admin');
+      }
+      
       const suggestedRole = user?.user_metadata?.role || 'Student';
       return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, suggestedRole);
     }
@@ -179,7 +210,8 @@ export const useAuth = () => {
             console.error('Error setting profile:', error);
             if (mounted) {
               // Set fallback profile to prevent infinite loading
-              setUserProfile(createFallbackProfile(session.user));
+              const fallbackRole = session.user.email === 'ahmeddarwesh@gmail.com' ? 'Super Admin' : 'Student';
+              setUserProfile(createFallbackProfile(session.user, fallbackRole));
             }
           }
         } else {

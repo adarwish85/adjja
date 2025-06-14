@@ -24,7 +24,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       // If user is authenticated and we have profile data (including fallback), redirect based on role
       if (user && userProfile && window.location.pathname === "/protected") {
         const userRole = userProfile.role_name?.toLowerCase();
-        console.log('Redirecting user with role:', userRole);
+        console.log('Redirecting user with role:', userRole, 'from /protected');
         
         // Improved role-based routing with case-insensitive matching
         if (userRole === 'student') {
