@@ -48,7 +48,7 @@ export const useBJJProfile = () => {
           instagram_url: data.instagram_url,
           facebook_url: data.facebook_url,
           about_me: data.about_me,
-          gallery_images: data.gallery_images || []
+          gallery_images: Array.isArray(data.gallery_images) ? data.gallery_images : []
         });
       }
     } catch (error) {
