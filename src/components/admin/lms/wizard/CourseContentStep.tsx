@@ -15,13 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ChevronDown, Trash2, GripVertical, Video, HelpCircle, Loader2 } from "lucide-react";
+import { Plus, ChevronDown, Trash2, GripVertical, Video, HelpCircle, Loader2, Play, AlertCircle } from "lucide-react";
 import { CourseWizardData, Topic, Lesson, Quiz, Question } from "../CreateCourseWizard";
-import { extractYouTubeVideoId, fetchYouTubeVideoInfo } from "@/utils/youtubeUtils";
+import { extractYouTubeVideoId, fetchYouTubeVideoInfo, validateYouTubeUrl } from "@/utils/youtubeUtils";
 
 interface CourseContentStepProps {
   data: CourseWizardData;
   onUpdate: (updates: Partial<CourseWizardData>) => void;
+  onPreviewVideo: (videoUrl: string) => void;
 }
 
 // YouTube Video Preview Component
@@ -54,7 +55,7 @@ const YouTubePreview = ({ url }: { url: string }) => {
   );
 };
 
-export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) => {
+export const CourseContentStep = ({ data, onUpdate, onPreviewVideo }: CourseContentStepProps) => {
   const [openTopics, setOpenTopics] = useState<string[]>([]);
 
   // Calculate total course duration
@@ -291,6 +292,7 @@ export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) =>
                                     lesson={item as Lesson}
                                     onUpdate={(updates) => updateItem(topic.id, item.id, updates)}
                                     onDelete={() => deleteItem(topic.id, item.id)}
+                                    onPreviewVideo={onPreviewVideo}
                                   />
                                 ) : (
                                   <QuizEditor
@@ -343,23 +345,28 @@ export const CourseContentStep = ({ data, onUpdate }: CourseContentStepProps) =>
   );
 };
 
-// Enhanced Lesson Editor Component with fixed YouTube integration
-const LessonEditor = ({ lesson, onUpdate, onDelete }: {
+// Enhanced Lesson Editor Component with preview functionality
+const LessonEditor = ({ lesson, onUpdate, onDelete, onPreviewVideo }: {
   lesson: Lesson;
   onUpdate: (updates: Partial<Lesson>) => void;
   onDelete: () => void;
+  onPreviewVideo: (videoUrl: string) => void;
 }) => {
   const [isLoadingVideoInfo, setIsLoadingVideoInfo] = useState(false);
+  const [urlValidation, setUrlValidation] = useState<{ isValid: boolean; error?: string }>({ isValid: true });
 
   const handleVideoUrlChange = async (url: string) => {
     console.log('Video URL change:', url);
-    console.log('Current lesson videoUrl:', lesson.videoUrl);
+    
+    // Validate URL
+    const validation = validateYouTubeUrl(url);
+    setUrlValidation(validation);
     
     // First, immediately update the lesson with the new URL to ensure it persists
     onUpdate({ videoUrl: url });
     
     // Only try to fetch video info if it's a valid YouTube URL and we haven't processed this URL before
-    if (url && url.includes('youtube') && url !== lesson.videoUrl) {
+    if (url && validation.isValid && url !== lesson.videoUrl) {
       const videoId = extractYouTubeVideoId(url);
       if (videoId) {
         setIsLoadingVideoInfo(true);
@@ -388,6 +395,7 @@ const LessonEditor = ({ lesson, onUpdate, onDelete }: {
           }
         } catch (error) {
           console.error('Error fetching video info:', error);
+          setUrlValidation({ isValid: false, error: 'Failed to load video information' });
           // Even if there's an error, make sure the URL is preserved
           onUpdate({ videoUrl: url });
         } finally {
@@ -397,11 +405,23 @@ const LessonEditor = ({ lesson, onUpdate, onDelete }: {
     }
   };
 
+  const canPreview = lesson.videoUrl && urlValidation.isValid;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           {isLoadingVideoInfo && <Loader2 className="h-4 w-4 animate-spin" />}
+          {canPreview && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPreviewVideo(lesson.videoUrl)}
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Preview Video
+            </Button>
+          )}
         </div>
         <Button
           variant="ghost"
@@ -440,11 +460,18 @@ const LessonEditor = ({ lesson, onUpdate, onDelete }: {
           value={lesson.videoUrl || ""}
           onChange={(e) => handleVideoUrlChange(e.target.value)}
           placeholder="https://www.youtube.com/watch?v=..."
+          className={!urlValidation.isValid ? "border-red-300" : ""}
         />
+        {!urlValidation.isValid && urlValidation.error && (
+          <div className="flex items-center space-x-2 text-red-600 text-sm">
+            <AlertCircle className="h-4 w-4" />
+            <span>{urlValidation.error}</span>
+          </div>
+        )}
       </div>
 
       {/* YouTube Video Preview */}
-      {lesson.videoUrl && (
+      {lesson.videoUrl && urlValidation.isValid && (
         <YouTubePreview url={lesson.videoUrl} />
       )}
 

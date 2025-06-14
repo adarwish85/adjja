@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useSettings } from "@/hooks/useSettings";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 const menuItems = [
   { title: "Dashboard", icon: BarChart3, url: "/admin/dashboard" },
@@ -46,27 +46,29 @@ export const SuperAdminSidebar = () => {
     academyLogo: ""
   });
 
-  useEffect(() => {
+  const updateAcademyInfo = useCallback(() => {
     const settings = loadGeneralSettings();
     setAcademyInfo({
       academyName: settings.academyName,
       academyCode: settings.academyCode,
       academyLogo: settings.academyLogo
     });
+  }, [loadGeneralSettings]);
 
-    // Listen for settings changes
-    const handleStorageChange = () => {
-      const updatedSettings = loadGeneralSettings();
-      setAcademyInfo({
-        academyName: updatedSettings.academyName,
-        academyCode: updatedSettings.academyCode,
-        academyLogo: updatedSettings.academyLogo
-      });
+  useEffect(() => {
+    updateAcademyInfo();
+  }, [updateAcademyInfo]);
+
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.includes('academy')) {
+        updateAcademyInfo();
+      }
     };
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [loadGeneralSettings]);
+  }, [updateAcademyInfo]);
 
   return (
     <Sidebar className="border-r border-gray-200">
@@ -84,7 +86,7 @@ export const SuperAdminSidebar = () => {
             </div>
           )}
           <div>
-            <h2 className="text-xl font-bold text-bjj-navy">ADJJA</h2>
+            <h2 className="text-xl font-bold text-bjj-navy">{academyInfo.academyName}</h2>
             <p className="text-sm text-bjj-gray">Super Admin</p>
           </div>
         </div>

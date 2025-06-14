@@ -7,6 +7,7 @@ import { CourseDetailsStep } from "./wizard/CourseDetailsStep";
 import { CourseContentStep } from "./wizard/CourseContentStep";
 import { AdditionalInfoStep } from "./wizard/AdditionalInfoStep";
 import { CourseReviewStep } from "./wizard/CourseReviewStep";
+import { VideoPlayer } from "@/components/VideoPlayer";
 import { useCourses } from "@/hooks/useCourses";
 import { useToast } from "@/hooks/use-toast";
 import { generateCourseSlug } from "@/utils/youtubeUtils";
@@ -95,6 +96,10 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [createdCourseId, setCreatedCourseId] = useState<string | null>(null);
+  const [previewVideo, setPreviewVideo] = useState<{ url: string; isOpen: boolean }>({
+    url: "",
+    isOpen: false
+  });
   const { toast } = useToast();
   
   const [wizardData, setWizardData] = useState<CourseWizardData>({
@@ -135,6 +140,14 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
 
   const updateWizardData = (updates: Partial<CourseWizardData>) => {
     setWizardData(prev => ({ ...prev, ...updates }));
+  };
+
+  const openVideoPreview = (videoUrl: string) => {
+    setPreviewVideo({ url: videoUrl, isOpen: true });
+  };
+
+  const closeVideoPreview = () => {
+    setPreviewVideo({ url: "", isOpen: false });
   };
 
   const handleNext = () => {
@@ -391,6 +404,7 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
             data={wizardData}
             onUpdate={updateWizardData}
             courseId={isEditMode ? course?.id : createdCourseId}
+            onPreviewVideo={openVideoPreview}
           />
         );
       case 2:
@@ -398,6 +412,7 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
           <CourseContentStep
             data={wizardData}
             onUpdate={updateWizardData}
+            onPreviewVideo={openVideoPreview}
           />
         );
       case 3:
@@ -420,93 +435,101 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-bjj-navy">
-            {isEditMode ? "Edit Course" : "Create New Course"}
-          </CardTitle>
-          <div className="space-y-4">
-            <Progress value={progress} className="w-full" />
-            <div className="flex justify-between">
-              {steps.map((step) => (
-                <div
-                  key={step.id}
-                  className={`flex items-center space-x-2 ${
-                    step.id === currentStep
-                      ? "text-bjj-gold"
-                      : step.id < currentStep
-                      ? "text-green-600"
-                      : "text-gray-400"
-                  }`}
-                >
+    <>
+      <div className="max-w-6xl mx-auto p-6">
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-bjj-navy">
+              {isEditMode ? "Edit Course" : "Create New Course"}
+            </CardTitle>
+            <div className="space-y-4">
+              <Progress value={progress} className="w-full" />
+              <div className="flex justify-between">
+                {steps.map((step) => (
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    key={step.id}
+                    className={`flex items-center space-x-2 ${
                       step.id === currentStep
-                        ? "bg-bjj-gold text-white"
+                        ? "text-bjj-gold"
                         : step.id < currentStep
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-200 text-gray-400"
+                        ? "text-green-600"
+                        : "text-gray-400"
                     }`}
                   >
-                    {step.id < currentStep ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      step.id
-                    )}
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        step.id === currentStep
+                          ? "bg-bjj-gold text-white"
+                          : step.id < currentStep
+                          ? "bg-green-600 text-white"
+                          : "bg-gray-200 text-gray-400"
+                      }`}
+                    >
+                      {step.id < currentStep ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        step.id
+                      )}
+                    </div>
+                    <div className="hidden md:block">
+                      <div className="font-medium">{step.title}</div>
+                      <div className="text-sm">{step.description}</div>
+                    </div>
                   </div>
-                  <div className="hidden md:block">
-                    <div className="font-medium">{step.title}</div>
-                    <div className="text-sm">{step.description}</div>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        </CardHeader>
-      </Card>
+          </CardHeader>
+        </Card>
 
-      <Card>
-        <CardContent className="p-6">
-          {renderStepContent()}
-        </CardContent>
-      </Card>
+        <Card>
+          <CardContent className="p-6">
+            {renderStepContent()}
+          </CardContent>
+        </Card>
 
-      <div className="flex justify-between mt-6">
-        <Button
-          variant="outline"
-          onClick={currentStep === 1 ? onClose : handlePrevious}
-          disabled={currentStep === 1}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {currentStep === 1 ? "Cancel" : "Previous"}
-        </Button>
-
-        <div className="flex space-x-2">
+        <div className="flex justify-between mt-6">
           <Button
             variant="outline"
-            onClick={handleSaveAsDraft}
-            disabled={createCourse.isPending || updateCourse.isPending}
+            onClick={currentStep === 1 ? onClose : handlePrevious}
+            disabled={currentStep === 1}
           >
-            <Save className="h-4 w-4 mr-2" />
-            Save as Draft
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {currentStep === 1 ? "Cancel" : "Previous"}
           </Button>
-          
-          <Button
-            onClick={currentStep === steps.length ? handleSubmit : handleNext}
-            className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
-            disabled={createCourse.isPending || updateCourse.isPending}
-          >
-            {createCourse.isPending || updateCourse.isPending 
-              ? (isEditMode ? "Updating..." : "Creating...") 
-              : currentStep === steps.length 
-                ? (isEditMode ? "Update Course" : "Create Course") 
-                : "Next"
-            }
-            {currentStep < steps.length && <ArrowRight className="h-4 w-4 ml-2" />}
-          </Button>
+
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              onClick={handleSaveAsDraft}
+              disabled={createCourse.isPending || updateCourse.isPending}
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Save as Draft
+            </Button>
+            
+            <Button
+              onClick={currentStep === steps.length ? handleSubmit : handleNext}
+              className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+              disabled={createCourse.isPending || updateCourse.isPending}
+            >
+              {createCourse.isPending || updateCourse.isPending 
+                ? (isEditMode ? "Updating..." : "Creating...") 
+                : currentStep === steps.length 
+                  ? (isEditMode ? "Update Course" : "Create Course") 
+                  : "Next"
+              }
+              {currentStep < steps.length && <ArrowRight className="h-4 w-4 ml-2" />}
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+
+      <VideoPlayer
+        videoUrl={previewVideo.url}
+        isOpen={previewVideo.isOpen}
+        onClose={closeVideoPreview}
+      />
+    </>
   );
 };
