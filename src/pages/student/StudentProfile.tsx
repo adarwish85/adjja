@@ -83,6 +83,23 @@ const StudentProfile = () => {
     enabled: !!user
   });
 
+  // Fetch full profile with phone and profile picture
+  const { data: fullProfile } = useQuery({
+    queryKey: ['full-profile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      return data;
+    },
+    enabled: !!user
+  });
+
   const handleSave = async () => {
     // Implementation for saving profile changes
     setIsEditing(false);
@@ -116,7 +133,7 @@ const StudentProfile = () => {
               <CardHeader className="text-center">
                 <div className="relative mx-auto">
                   <Avatar className="h-24 w-24 mx-auto">
-                    <AvatarImage src={userProfile?.profile_picture_url} />
+                    <AvatarImage src={fullProfile?.profile_picture_url} />
                     <AvatarFallback className="text-2xl">
                       {userProfile?.name?.charAt(0) || 'S'}
                     </AvatarFallback>
@@ -218,7 +235,7 @@ const StudentProfile = () => {
                           onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
                         />
                       ) : (
-                        <div className="p-2 bg-gray-50 rounded">{userProfile?.phone || 'Not provided'}</div>
+                        <div className="p-2 bg-gray-50 rounded">{fullProfile?.phone || 'Not provided'}</div>
                       )}
                     </div>
                     <div>
