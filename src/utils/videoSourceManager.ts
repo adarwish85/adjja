@@ -1,7 +1,7 @@
 
 interface VideoSource {
   url: string;
-  type: 'youtube' | 'mp4' | 'hls' | 'dash';
+  type: 'mp4' | 'hls' | 'dash' | 'youtube';
   quality?: string;
 }
 
@@ -18,7 +18,16 @@ export class VideoSourceManager {
   private currentRetries = 0;
 
   constructor(private config: VideoSourceConfig) {
-    this.sources = [config.primary, ...config.fallbacks];
+    // Prioritize MP4 sources over YouTube
+    this.sources = this.prioritizeSources([config.primary, ...config.fallbacks]);
+  }
+
+  private prioritizeSources(sources: VideoSource[]): VideoSource[] {
+    // Sort sources to prioritize MP4, then HLS/DASH, then YouTube as last resort
+    return sources.sort((a, b) => {
+      const priority = { mp4: 0, hls: 1, dash: 2, youtube: 3 };
+      return priority[a.type] - priority[b.type];
+    });
   }
 
   getCurrentSource(): VideoSource | null {
@@ -51,15 +60,35 @@ export class VideoSourceManager {
     this.currentRetries = 0;
   }
 
-  // Obfuscate YouTube URLs to remove branding
-  private obfuscateYouTubeUrl(url: string): string {
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      const videoId = this.extractVideoId(url);
-      if (videoId) {
-        // Use nocookie domain and disable all YouTube UI
-        return `https://www.youtube-nocookie.com/embed/${videoId}?modestbranding=1&rel=0&showinfo=0&controls=0&disablekb=1&fs=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&origin=${window.location.origin}&enablejsapi=0`;
-      }
+  // Generate CDN URLs for video sources
+  private generateCDNUrl(originalUrl: string, quality?: string): string {
+    // In a real implementation, this would generate your CDN URLs
+    // For now, return the original URL
+    return originalUrl;
+  }
+
+  // Obfuscate video URLs to remove external branding
+  private obfuscateVideoUrl(url: string): string {
+    const current = this.getCurrentSource();
+    if (!current) return url;
+
+    switch (current.type) {
+      case 'youtube':
+        // For YouTube sources, use nocookie embed with minimal UI
+        const videoId = this.extractVideoId(url);
+        if (videoId) {
+          return `https://www.youtube-nocookie.com/embed/${videoId}?modestbranding=1&rel=0&showinfo=0&controls=1&disablekb=1&fs=1&iv_load_policy=3&cc_load_policy=0&playsinline=1&origin=${window.location.origin}`;
+        }
+        break;
+      case 'mp4':
+      case 'hls':
+      case 'dash':
+        // For direct video files, return as-is or apply CDN transformation
+        return this.generateCDNUrl(url, current.quality);
+      default:
+        break;
     }
+    
     return url;
   }
 
@@ -83,10 +112,23 @@ export class VideoSourceManager {
     const current = this.getCurrentSource();
     if (!current) return '';
     
-    if (current.type === 'youtube') {
-      return this.obfuscateYouTubeUrl(current.url);
-    }
-    return current.url;
+    return this.obfuscateVideoUrl(current.url);
+  }
+
+  // Check if current source is a YouTube source
+  isYouTubeSource(): boolean {
+    const current = this.getCurrentSource();
+    return current?.type === 'youtube';
+  }
+
+  // Get preferred player type for current source
+  getPreferredPlayerType(): 'react-player' | 'videojs' {
+    const current = this.getCurrentSource();
+    if (!current) return 'videojs';
+    
+    // Use Video.js for MP4, HLS, DASH sources
+    // Use ReactPlayer only for YouTube as fallback
+    return current.type === 'youtube' ? 'react-player' : 'videojs';
   }
 }
 
@@ -95,19 +137,31 @@ export const createVideoSourceConfig = (
   fallbackUrls: string[] = [],
   mp4Urls: string[] = []
 ): VideoSourceConfig => {
-  const primary: VideoSource = {
-    url: primaryUrl,
-    type: primaryUrl.includes('youtube') ? 'youtube' : 'mp4'
+  // Determine primary source type
+  const getPrimaryType = (url: string): VideoSource['type'] => {
+    if (url.includes('youtube') || url.includes('youtu.be')) return 'youtube';
+    if (url.includes('.m3u8')) return 'hls';
+    if (url.includes('.mpd')) return 'dash';
+    return 'mp4';
   };
 
+  const primary: VideoSource = {
+    url: primaryUrl,
+    type: getPrimaryType(primaryUrl)
+  };
+
+  // Create fallback sources, prioritizing MP4s
   const fallbacks: VideoSource[] = [
-    ...fallbackUrls.map(url => ({
-      url,
-      type: url.includes('youtube') ? 'youtube' as const : 'mp4' as const
-    })),
+    // Add MP4 URLs first (highest priority)
     ...mp4Urls.map(url => ({
       url,
-      type: 'mp4' as const
+      type: 'mp4' as const,
+      quality: url.includes('720p') ? '720p' : url.includes('480p') ? '480p' : 'auto'
+    })),
+    // Then add other fallback URLs
+    ...fallbackUrls.map(url => ({
+      url,
+      type: getPrimaryType(url)
     }))
   ];
 

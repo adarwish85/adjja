@@ -34,6 +34,12 @@ export const CustomLoadingState = ({
             />
           </div>
         )}
+
+        {progress > 80 && (
+          <p className="text-sm text-gray-400">
+            This is taking longer than usual. You can try refreshing if needed.
+          </p>
+        )}
       </div>
 
       {showRetry && onRetry && (
@@ -43,7 +49,7 @@ export const CustomLoadingState = ({
           className="text-white border-white hover:bg-white hover:text-black"
         >
           <RefreshCw className="h-4 w-4 mr-2" />
-          Try Again
+          Refresh Player
         </Button>
       )}
     </div>

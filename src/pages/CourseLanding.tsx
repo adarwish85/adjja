@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,7 +26,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { useState } from "react";
-import { VideoPlayer } from "@/components/VideoPlayer";
+import { EnhancedVideoPlayer } from "@/components/EnhancedVideoPlayer";
 import { extractYouTubeVideoId, getYouTubeThumbnail } from "@/utils/youtubeUtils";
 import { useCourseEnrollment } from "@/hooks/useCourseEnrollment";
 import { useAuth } from "@/hooks/useAuth";
@@ -210,6 +209,24 @@ const CourseLanding = () => {
   };
 
   const isEnrolled = !!userEnrollment;
+
+  // Generate fallback MP4 URLs for enhanced video player
+  const generateFallbackUrls = (videoUrl: string) => {
+    const fallbacks: string[] = [];
+    const mp4Urls: string[] = [];
+    
+    // Add example MP4 fallbacks (these would be your actual video URLs)
+    if (videoUrl) {
+      // Example: convert YouTube URLs to your hosted MP4s
+      const videoId = extractYouTubeVideoId(videoUrl);
+      if (videoId) {
+        mp4Urls.push(`https://your-cdn.com/videos/${videoId}-720p.mp4`);
+        mp4Urls.push(`https://your-cdn.com/videos/${videoId}-480p.mp4`);
+      }
+    }
+    
+    return { fallbacks, mp4Urls };
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -505,10 +522,11 @@ const CourseLanding = () => {
         </div>
       </div>
 
-      {/* Video Player Modal */}
+      {/* Enhanced Video Player Modal */}
       {isPlayerOpen && selectedVideo && (
-        <VideoPlayer
-          videoUrl={selectedVideo}
+        <EnhancedVideoPlayer
+          primaryUrl={selectedVideo}
+          {...generateFallbackUrls(selectedVideo)}
           isOpen={isPlayerOpen}
           onClose={() => {
             setIsPlayerOpen(false);

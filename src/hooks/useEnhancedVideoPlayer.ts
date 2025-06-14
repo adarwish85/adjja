@@ -19,7 +19,7 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [playerReady, setPlayerReady] = useState(false);
-  const [currentPlayerType, setCurrentPlayerType] = useState<'react-player' | 'videojs'>('react-player');
+  const [currentPlayerType, setCurrentPlayerType] = useState<'react-player' | 'videojs'>('videojs');
   const [loadingProgress, setLoadingProgress] = useState(0);
   
   const sourceManagerRef = useRef<VideoSourceManager | null>(null);
@@ -33,6 +33,11 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
       config.mp4Urls || []
     );
     sourceManagerRef.current = new VideoSourceManager(sourceConfig);
+    
+    // Set initial player type based on preferred source
+    if (sourceManagerRef.current) {
+      setCurrentPlayerType(sourceManagerRef.current.getPreferredPlayerType());
+    }
   }, [config.primaryUrl, config.fallbackUrls, config.mp4Urls]);
 
   const startLoadingTimeout = useCallback(() => {
@@ -49,7 +54,7 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
     timeoutRef.current = setTimeout(() => {
       console.log('⏰ Loading timeout - trying next source');
       tryNextSource();
-    }, config.timeoutDuration || 5000);
+    }, config.timeoutDuration || 8000); // Increased timeout for better user experience
   }, [config.timeoutDuration]);
 
   const clearLoadingTimeout = useCallback(() => {
@@ -74,15 +79,13 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
       setError(null);
       setPlayerReady(false);
       
-      // Switch to Video.js for MP4 files
-      if (nextSource.type === 'mp4') {
-        setCurrentPlayerType('videojs');
-      }
+      // Update player type based on source
+      setCurrentPlayerType(sourceManagerRef.current.getPreferredPlayerType());
       
       startLoadingTimeout();
     } else {
       // All sources exhausted
-      setError('Video temporarily unavailable. Please try again later.');
+      setError('Video content is temporarily unavailable. Please try again later or contact support if the issue persists.');
       setLoading(false);
       clearLoadingTimeout();
     }
@@ -97,6 +100,7 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
       setLoading(true);
       setError(null);
       setPlayerReady(false);
+      setCurrentPlayerType(sourceManagerRef.current.getPreferredPlayerType());
       startLoadingTimeout();
     } else {
       tryNextSource();
@@ -109,7 +113,7 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
     setLoading(true);
     setError(null);
     setPlayerReady(false);
-    setCurrentPlayerType('react-player');
+    setCurrentPlayerType('videojs'); // Default to Video.js
     setLoadingProgress(0);
     clearLoadingTimeout();
     
@@ -134,10 +138,10 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
     console.error('❌ Player error:', error);
     clearLoadingTimeout();
     
-    // Try to recover with next source
+    // Try to recover with next source after a short delay
     setTimeout(() => {
       retryCurrentSource();
-    }, 500);
+    }, 1000);
   }, [clearLoadingTimeout, retryCurrentSource]);
 
   // Initialize when dialog opens
