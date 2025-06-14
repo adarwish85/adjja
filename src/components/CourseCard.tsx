@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Play, Clock, Users, Star } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface CourseCardProps {
   id: string;
@@ -32,8 +32,14 @@ export const CourseCard = ({
   duration = "2h 30m",
   thumbnailUrl,
 }: CourseCardProps) => {
+  const navigate = useNavigate();
+
+  const handleViewCourse = () => {
+    navigate(`/course/${id}`);
+  };
+
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={handleViewCourse}>
       <div className="relative aspect-video bg-gray-200">
         {thumbnailUrl ? (
           <img 
@@ -84,11 +90,15 @@ export const CourseCard = ({
             <div className="text-xl font-bold text-bjj-navy">
               {price > 0 ? `$${price}` : "Free"}
             </div>
-            <Link to={`/course/${id}`}>
-              <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-white">
-                View Course
-              </Button>
-            </Link>
+            <Button 
+              className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewCourse();
+              }}
+            >
+              View Course
+            </Button>
           </div>
         </div>
       </CardContent>

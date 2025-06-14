@@ -14,9 +14,7 @@ interface VideoPlayerProps {
 
 export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => {
   const [showControls, setShowControls] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const playerContainerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
 
   const isYouTubeVideo = (url: string) => {
@@ -40,6 +38,7 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     seekTo: youTubeSeekTo,
     setVolume: youTubeSetVolume,
     toggleMute: youTubeToggleMute,
+    retryLoad: youTubeRetryLoad,
   } = useYouTubePlayer(youTubeVideoId, 'youtube-player');
 
   // HTML5 video state for direct videos
@@ -108,18 +107,6 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     }
   };
 
-  const handleFullscreen = () => {
-    if (playerContainerRef.current) {
-      if (!isFullscreen) {
-        playerContainerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      } else {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    }
-  };
-
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
@@ -134,6 +121,16 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     controlsTimeoutRef.current = setTimeout(() => {
       setShowControls(false);
     }, 3000);
+  };
+
+  const retryLoad = () => {
+    if (youTubeVideoId) {
+      youTubeRetryLoad();
+    } else if (videoRef.current) {
+      setHtmlLoading(true);
+      setHtmlError(null);
+      videoRef.current.load();
+    }
   };
 
   // HTML5 video event handlers
@@ -162,82 +159,19 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     setHtmlError(null);
   };
 
-  const retryLoad = () => {
-    if (youTubeVideoId) {
-      // For YouTube videos, we can't easily retry, but we can close and reopen
-      onClose();
-    } else if (videoRef.current) {
-      setHtmlLoading(true);
-      setHtmlError(null);
-      videoRef.current.load();
-    }
-  };
-
   useEffect(() => {
     if (!isOpen) {
       setHtmlIsPlaying(false);
       setHtmlCurrentTime(0);
       setHtmlLoading(true);
       setHtmlError(null);
-      setIsFullscreen(false);
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, []);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl h-[80vh] p-0 bg-black">
-        <style>{`
-          /* Hide YouTube branding and controls */
-          iframe {
-            pointer-events: none !important;
-          }
-          
-          .ytp-chrome-top,
-          .ytp-chrome-bottom,
-          .ytp-watermark,
-          .ytp-gradient-top,
-          .ytp-gradient-bottom,
-          .ytp-title,
-          .ytp-show-cards-title,
-          .ytp-pause-overlay,
-          .ytp-related-on-error-overlay,
-          .ytp-endscreen-element,
-          .ytp-ce-element,
-          .ytp-cards-teaser,
-          .ytp-suggested-action,
-          .iv-branding,
-          .branding-img,
-          .annotation,
-          .video-annotations {
-            display: none !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
-          }
-          
-          /* Ensure iframe fills container */
-          #youtube-player iframe {
-            width: 100% !important;
-            height: 100% !important;
-            border: none !important;
-            background: transparent !important;
-          }
-        `}</style>
-        
-        <div 
-          ref={playerContainerRef}
-          className="relative w-full h-full flex items-center justify-center"
-        >
+        <div className="relative w-full h-full flex items-center justify-center">
           <Button
             variant="ghost"
             size="sm"
@@ -271,13 +205,6 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                   <div 
                     id="youtube-player" 
                     className="w-full h-full"
-                    style={{ pointerEvents: 'none' }}
-                  />
-                  {/* Complete overlay to block YouTube interaction */}
-                  <div 
-                    className="absolute inset-0 z-20 bg-transparent"
-                    onClick={togglePlay}
-                    style={{ pointerEvents: 'auto' }}
                   />
                 </div>
               ) : (
@@ -297,7 +224,7 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                 />
               )}
 
-              {/* Enhanced Custom Video Controls */}
+              {/* Custom Video Controls */}
               {playerReady && (
                 <div
                   className={`absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 transition-opacity duration-300 ${
@@ -359,7 +286,12 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={handleFullscreen}
+                      onClick={() => {
+                        const elem = document.documentElement;
+                        if (elem.requestFullscreen) {
+                          elem.requestFullscreen();
+                        }
+                      }}
                       className="text-white hover:bg-gray-700 p-2"
                     >
                       <Maximize className="h-5 w-5" />

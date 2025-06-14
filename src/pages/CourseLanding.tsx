@@ -1,5 +1,5 @@
 
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,20 +23,30 @@ import {
   Globe,
   Smartphone,
   Monitor,
-  Eye
+  Eye,
+  ArrowLeft
 } from "lucide-react";
 import { useState } from "react";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { extractYouTubeVideoId, getYouTubeThumbnail } from "@/utils/youtubeUtils";
+import { useCourseEnrollment } from "@/hooks/useCourseEnrollment";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 const CourseLanding = () => {
   const { courseId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
+  const { enrollInCourse } = useCourseEnrollment();
 
-  const { data: course, isLoading } = useQuery({
+  const { data: course, isLoading, error } = useQuery({
     queryKey: ["course", courseId],
     queryFn: async () => {
+      if (!courseId) throw new Error("No course ID provided");
+      
       const { data, error } = await supabase
         .from("courses")
         .select("*")
@@ -46,6 +56,7 @@ const CourseLanding = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !!courseId,
   });
 
   // Fetch course topics with lessons and quizzes
@@ -85,6 +96,46 @@ const CourseLanding = () => {
     enabled: !!courseId,
   });
 
+  const { data: userEnrollment } = useQuery({
+    queryKey: ["user-enrollment", courseId, user?.id],
+    queryFn: async () => {
+      if (!courseId || !user?.id) return null;
+      const { data, error } = await supabase
+        .from("course_enrollments")
+        .select("*")
+        .eq("course_id", courseId)
+        .eq("student_id", user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!courseId && !!user?.id,
+  });
+
+  const handleEnrollment = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to enroll in courses.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    if (!courseId) return;
+
+    try {
+      await enrollInCourse.mutateAsync({
+        courseId,
+        studentId: user.id,
+      });
+    } catch (error) {
+      console.error("Enrollment failed:", error);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -96,12 +147,16 @@ const CourseLanding = () => {
     );
   }
 
-  if (!course) {
+  if (error || !course) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Course Not Found</h1>
-          <p className="text-gray-600">The course you're looking for doesn't exist.</p>
+          <p className="text-gray-600 mb-4">The course you're looking for doesn't exist.</p>
+          <Button onClick={() => navigate("/")} className="bg-bjj-gold hover:bg-bjj-gold-dark">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Go Back
+          </Button>
         </div>
       </div>
     );
@@ -137,6 +192,7 @@ const CourseLanding = () => {
   ];
 
   const handleVideoPreview = (videoUrl: string) => {
+    console.log("Opening video preview for:", videoUrl);
     setSelectedVideo(videoUrl);
     setIsPlayerOpen(true);
   };
@@ -144,14 +200,33 @@ const CourseLanding = () => {
   const handlePreviewCourse = () => {
     if (introVideo) {
       handleVideoPreview(introVideo);
+    } else {
+      toast({
+        title: "No Preview Available",
+        description: "This course doesn't have a preview video yet.",
+        variant: "destructive",
+      });
     }
   };
+
+  const isEnrolled = !!userEnrollment;
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <div className="bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="mb-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate("/")}
+              className="text-white hover:bg-gray-800"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Courses
+            </Button>
+          </div>
+          
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Course Info */}
             <div className="lg:col-span-2 space-y-6">
@@ -232,9 +307,22 @@ const CourseLanding = () => {
                       </div>
                     </div>
 
-                    <Button className="w-full bg-bjj-gold hover:bg-bjj-gold-dark text-white">
-                      Enroll Now
-                    </Button>
+                    {isEnrolled ? (
+                      <Button 
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => navigate(`/course/${courseId}/learn`)}
+                      >
+                        Continue Learning
+                      </Button>
+                    ) : (
+                      <Button 
+                        className="w-full bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+                        onClick={handleEnrollment}
+                        disabled={enrollInCourse.isPending}
+                      >
+                        {enrollInCourse.isPending ? "Enrolling..." : "Enroll Now"}
+                      </Button>
+                    )}
 
                     <p className="text-xs text-center text-gray-600">
                       30-Day Money-Back Guarantee
@@ -325,11 +413,11 @@ const CourseLanding = () => {
                                   <div className="flex items-center gap-2 flex-1">
                                     <Play className="h-3 w-3 text-gray-400" />
                                     <span className="flex-1">{lesson.title}</span>
-                                    {lesson.is_preview && (
+                                    {lesson.is_preview && lesson.video_url && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => handleVideoPreview(lesson.video_url || "")}
+                                        onClick={() => handleVideoPreview(lesson.video_url)}
                                         className="text-bjj-gold hover:text-bjj-gold-dark h-6 px-2"
                                       >
                                         <Eye className="h-3 w-3 mr-1" />
