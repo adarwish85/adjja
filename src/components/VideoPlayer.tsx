@@ -14,8 +14,10 @@ interface VideoPlayerProps {
 export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => {
   const [showControls, setShowControls] = useState(true);
   const [videoAvailable, setVideoAvailable] = useState<boolean | null>(null);
+  const [containerMounted, setContainerMounted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const isYouTubeVideo = (url: string) => {
     return url.includes('youtube.com') || url.includes('youtu.be');
@@ -23,7 +25,7 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
 
   const youTubeVideoId = isYouTubeVideo(videoUrl) ? extractYouTubeVideoId(videoUrl) : null;
   
-  // YouTube player for YouTube videos
+  // YouTube player for YouTube videos - only initialize after container is mounted
   const {
     isReady: youTubeReady,
     isPlaying: youTubePlaying,
@@ -39,7 +41,7 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     setVolume: youTubeSetVolume,
     toggleMute: youTubeToggleMute,
     retryLoad: youTubeRetryLoad,
-  } = useYouTubePlayer(youTubeVideoId, 'youtube-player');
+  } = useYouTubePlayer(containerMounted ? youTubeVideoId : null, 'youtube-player');
 
   // HTML5 video state for direct videos
   const [htmlIsPlaying, setHtmlIsPlaying] = useState(false);
@@ -49,6 +51,36 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   const [htmlIsMuted, setHtmlIsMuted] = useState(false);
   const [htmlLoading, setHtmlLoading] = useState(true);
   const [htmlError, setHtmlError] = useState<string | null>(null);
+
+  // Ensure container is mounted before initializing YouTube player
+  useEffect(() => {
+    if (isOpen && youTubeVideoId) {
+      // Small delay to ensure the dialog is fully rendered
+      const timer = setTimeout(() => {
+        const container = document.getElementById('youtube-player');
+        if (container) {
+          console.log('YouTube container mounted successfully');
+          setContainerMounted(true);
+        } else {
+          console.warn('YouTube container not found, retrying...');
+          // Retry after another delay
+          setTimeout(() => {
+            const retryContainer = document.getElementById('youtube-player');
+            if (retryContainer) {
+              setContainerMounted(true);
+            }
+          }, 200);
+        }
+      }, 100);
+
+      return () => {
+        clearTimeout(timer);
+        setContainerMounted(false);
+      };
+    } else {
+      setContainerMounted(false);
+    }
+  }, [isOpen, youTubeVideoId]);
 
   // Check video availability for YouTube videos
   useEffect(() => {
@@ -143,7 +175,12 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     console.log('Retrying video load');
     if (youTubeVideoId) {
       setVideoAvailable(null);
-      youTubeRetryLoad();
+      setContainerMounted(false);
+      // Re-mount the container
+      setTimeout(() => {
+        setContainerMounted(true);
+        youTubeRetryLoad();
+      }, 100);
     } else if (videoRef.current) {
       setHtmlLoading(true);
       setHtmlError(null);
@@ -206,38 +243,15 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     </div>
   );
 
-  // HTML5 video event handlers
-  const handleHtmlTimeUpdate = () => {
-    if (videoRef.current) {
-      setHtmlCurrentTime(videoRef.current.currentTime);
-    }
-  };
-
-  const handleHtmlLoadedMetadata = () => {
-    if (videoRef.current) {
-      setHtmlDuration(videoRef.current.duration);
-      setHtmlLoading(false);
-      setHtmlError(null);
-    }
-  };
-
-  const handleHtmlError = () => {
-    console.error('HTML5 video error');
-    setHtmlError('Failed to load video. Please check the video URL.');
-    setHtmlLoading(false);
-  };
-
-  const handleHtmlCanPlay = () => {
-    setHtmlLoading(false);
-    setHtmlError(null);
-  };
-
+  // Reset states when dialog closes
   useEffect(() => {
     if (!isOpen) {
       setHtmlIsPlaying(false);
       setHtmlCurrentTime(0);
       setHtmlLoading(true);
       setHtmlError(null);
+      setContainerMounted(false);
+      setVideoAvailable(null);
     }
   }, [isOpen]);
 
@@ -256,27 +270,20 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
 
           {error || (youTubeVideoId && videoAvailable === false) ? (
             renderErrorState()
-          ) : isLoading || (youTubeVideoId && videoAvailable === null) ? (
+          ) : isLoading || (youTubeVideoId && (videoAvailable === null || !containerMounted)) ? (
             renderLoadingState()
           ) : (
             <div
               className="relative w-full h-full cursor-pointer"
-              onMouseMove={() => {
-                setShowControls(true);
-                if (controlsTimeoutRef.current) {
-                  clearTimeout(controlsTimeoutRef.current);
-                }
-                controlsTimeoutRef.current = setTimeout(() => {
-                  setShowControls(false);
-                }, 3000);
-              }}
+              onMouseMove={handleMouseMove}
               onMouseLeave={() => setShowControls(false)}
             >
               {youTubeVideoId ? (
                 <div className="relative w-full h-full">
                   <div 
+                    ref={containerRef}
                     id="youtube-player" 
-                    className="w-full h-full"
+                    className="w-full h-full bg-black"
                     style={{ minHeight: '360px' }}
                   />
                 </div>
@@ -308,15 +315,7 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                   }}
                   onPlay={() => setHtmlIsPlaying(true)}
                   onPause={() => setHtmlIsPlaying(false)}
-                  onClick={() => {
-                    if (videoRef.current) {
-                      if (htmlIsPlaying) {
-                        videoRef.current.pause();
-                      } else {
-                        videoRef.current.play();
-                      }
-                    }
-                  }}
+                  onClick={togglePlay}
                   crossOrigin="anonymous"
                   preload="metadata"
                 />
@@ -336,15 +335,7 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                       min="0"
                       max={duration || 0}
                       value={currentTime}
-                      onChange={(e) => {
-                        const time = parseFloat(e.target.value);
-                        if (youTubeVideoId) {
-                          youTubeSeekTo(time);
-                        } else if (videoRef.current) {
-                          videoRef.current.currentTime = time;
-                          setHtmlCurrentTime(time);
-                        }
-                      }}
+                      onChange={handleSeek}
                       className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider accent-white"
                       style={{
                         background: `linear-gradient(to right, white 0%, white ${(currentTime / (duration || 1)) * 100}%, #4B5563 ${(currentTime / (duration || 1)) * 100}%, #4B5563 100%)`
@@ -358,21 +349,7 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                       <Button
                         variant="ghost"
                         size="lg"
-                        onClick={() => {
-                          if (youTubeVideoId) {
-                            if (youTubePlaying) {
-                              youTubePause();
-                            } else {
-                              youTubePlay();
-                            }
-                          } else if (videoRef.current) {
-                            if (htmlIsPlaying) {
-                              videoRef.current.pause();
-                            } else {
-                              videoRef.current.play();
-                            }
-                          }
-                        }}
+                        onClick={togglePlay}
                         className="text-white hover:bg-gray-700 p-3"
                       >
                         {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
@@ -382,15 +359,7 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            if (youTubeVideoId) {
-                              youTubeToggleMute();
-                            } else if (videoRef.current) {
-                              const newMuted = !htmlIsMuted;
-                              videoRef.current.muted = newMuted;
-                              setHtmlIsMuted(newMuted);
-                            }
-                          }}
+                          onClick={toggleMute}
                           className="text-white hover:bg-gray-700 p-2"
                         >
                           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
@@ -401,22 +370,13 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                           max="1"
                           step="0.1"
                           value={volume}
-                          onChange={(e) => {
-                            const vol = parseFloat(e.target.value);
-                            if (youTubeVideoId) {
-                              youTubeSetVolume(vol * 100);
-                            } else if (videoRef.current) {
-                              videoRef.current.volume = vol;
-                              setHtmlVolume(vol);
-                              setHtmlIsMuted(vol === 0);
-                            }
-                          }}
+                          onChange={handleVolumeChange}
                           className="w-24 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-white"
                         />
                       </div>
 
                       <span className="text-white text-base font-medium">
-                        {Math.floor(currentTime / 60)}:{Math.floor(currentTime % 60).toString().padStart(2, '0')} / {Math.floor(duration / 60)}:{Math.floor(duration % 60).toString().padStart(2, '0')}
+                        {formatTime(currentTime)} / {formatTime(duration)}
                       </span>
                     </div>
 

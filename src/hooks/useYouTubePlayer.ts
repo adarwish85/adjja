@@ -36,6 +36,7 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
   const [isLoading, setIsLoading] = useState(false);
   const timeTrackingRef = useRef<number>();
   const initTimeoutRef = useRef<NodeJS.Timeout>();
+  const retryCountRef = useRef(0);
 
   const startTimeTracking = useCallback(() => {
     if (timeTrackingRef.current) {
@@ -64,7 +65,32 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
     }
   }, []);
 
-  const createPlayer = useCallback(() => {
+  const waitForElement = useCallback((elementId: string, maxAttempts: number = 20): Promise<HTMLElement> => {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      
+      const checkElement = () => {
+        const element = document.getElementById(elementId);
+        if (element) {
+          console.log('Found container element:', elementId);
+          resolve(element);
+          return;
+        }
+        
+        attempts++;
+        if (attempts >= maxAttempts) {
+          reject(new Error(`Element with ID "${elementId}" not found after ${maxAttempts} attempts`));
+          return;
+        }
+        
+        setTimeout(checkElement, 100);
+      };
+      
+      checkElement();
+    });
+  }, []);
+
+  const createPlayer = useCallback(async () => {
     if (!videoId || !window.YT || !window.YT.Player) {
       console.error('YouTube API not loaded or no video ID');
       setError('YouTube player not available');
@@ -72,15 +98,11 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
       return;
     }
 
-    const element = document.getElementById(containerId);
-    if (!element) {
-      console.error('Container element not found:', containerId);
-      setError('Player container not found');
-      setIsLoading(false);
-      return;
-    }
-
     try {
+      // Wait for the container element to be available
+      console.log('Waiting for container element:', containerId);
+      const element = await waitForElement(containerId);
+      
       // Clear any existing player
       if (playerRef.current) {
         try {
@@ -107,7 +129,7 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
           setError('Video loading timeout. Please try again.');
           setIsLoading(false);
         }
-      }, 15000); // 15 second timeout
+      }, 15000);
 
       playerRef.current = new window.YT.Player(containerId, {
         height: '100%',
@@ -136,6 +158,7 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
             setIsReady(true);
             setIsLoading(false);
             setError(null);
+            retryCountRef.current = 0;
             
             try {
               const player = event.target;
@@ -194,28 +217,30 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
       if (initTimeoutRef.current) {
         clearTimeout(initTimeoutRef.current);
       }
-      setError('Failed to initialize video player');
+      
+      if (err instanceof Error && err.message.includes('not found')) {
+        setError('Player container not found');
+      } else {
+        setError('Failed to initialize video player');
+      }
       setIsLoading(false);
     }
-  }, [videoId, containerId, startTimeTracking, stopTimeTracking, isReady]);
+  }, [videoId, containerId, startTimeTracking, stopTimeTracking, isReady, waitForElement]);
 
   const loadYouTubeAPI = useCallback(() => {
     return new Promise<void>((resolve, reject) => {
-      // Check if API is already loaded
       if (window.YT && window.YT.Player) {
         console.log('YouTube API already loaded');
         resolve();
         return;
       }
 
-      // Check if API is loading
       if (window.youTubeAPIReady) {
         console.log('YouTube API loading in progress');
         resolve();
         return;
       }
 
-      // Set up the callback
       const originalCallback = window.onYouTubeIframeAPIReady;
       window.onYouTubeIframeAPIReady = () => {
         console.log('YouTube API loaded successfully');
@@ -224,20 +249,17 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
         resolve();
       };
 
-      // Set a timeout for API loading
       const apiTimeout = setTimeout(() => {
         console.error('YouTube API loading timeout');
         reject(new Error('YouTube API loading timeout'));
       }, 10000);
 
-      // Clear timeout when API loads
       const originalOnReady = window.onYouTubeIframeAPIReady;
       window.onYouTubeIframeAPIReady = () => {
         clearTimeout(apiTimeout);
         originalOnReady();
       };
 
-      // Load the API script if not already present
       if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
         console.log('Loading YouTube API script');
         const tag = document.createElement('script');
@@ -272,13 +294,14 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
     setIsLoading(true);
     setError(null);
     setIsReady(false);
+    retryCountRef.current = 0;
 
     loadYouTubeAPI()
       .then(() => {
-        // Small delay to ensure DOM is ready
+        // Wait a bit longer to ensure DOM is ready
         setTimeout(() => {
           createPlayer();
-        }, 100);
+        }, 250);
       })
       .catch((err) => {
         console.error('Failed to load YouTube API:', err);
@@ -302,72 +325,20 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
     };
   }, [videoId, containerId, loadYouTubeAPI, createPlayer, stopTimeTracking]);
 
-  const play = useCallback(() => {
-    if (playerRef.current && isReady) {
-      try {
-        playerRef.current.playVideo();
-      } catch (err) {
-        console.error('Error playing video:', err);
-      }
-    }
-  }, [isReady]);
-
-  const pause = useCallback(() => {
-    if (playerRef.current && isReady) {
-      try {
-        playerRef.current.pauseVideo();
-      } catch (err) {
-        console.error('Error pausing video:', err);
-      }
-    }
-  }, [isReady]);
-
-  const seekTo = useCallback((seconds: number) => {
-    if (playerRef.current && isReady) {
-      try {
-        playerRef.current.seekTo(seconds);
-        setCurrentTime(seconds);
-      } catch (err) {
-        console.error('Error seeking video:', err);
-      }
-    }
-  }, [isReady]);
-
-  const setVolume = useCallback((vol: number) => {
-    if (playerRef.current && isReady) {
-      try {
-        playerRef.current.setVolume(vol);
-        setVolumeState(vol);
-        setIsMuted(vol === 0);
-      } catch (err) {
-        console.error('Error setting volume:', err);
-      }
-    }
-  }, [isReady]);
-
-  const toggleMute = useCallback(() => {
-    if (playerRef.current && isReady) {
-      try {
-        if (isMuted) {
-          playerRef.current.unMute();
-          setIsMuted(false);
-        } else {
-          playerRef.current.mute();
-          setIsMuted(true);
-        }
-      } catch (err) {
-        console.error('Error toggling mute:', err);
-      }
-    }
-  }, [isReady, isMuted]);
-
   const retryLoad = useCallback(() => {
-    console.log('Retrying video load');
+    console.log('Retrying video load, attempt:', retryCountRef.current + 1);
+    retryCountRef.current++;
+    
+    if (retryCountRef.current > 3) {
+      setError('Failed to load video after multiple attempts. Please refresh the page.');
+      setIsLoading(false);
+      return;
+    }
+    
     setError(null);
     setIsLoading(true);
     setIsReady(false);
     
-    // Small delay before retry
     setTimeout(() => {
       createPlayer();
     }, 500);
