@@ -17,7 +17,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     if (!loading) {
       if (!user) {
         console.log('No user, redirecting to login');
-        navigate("/login");
+        navigate("/login", { replace: true });
         return;
       }
 
@@ -27,13 +27,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         console.log('Redirecting user with role:', userRole);
         
         if (userRole === 'student') {
-          navigate("/dashboard");
+          navigate("/dashboard", { replace: true });
         } else if (userRole === 'coach') {
-          navigate("/coach");
+          navigate("/coach", { replace: true });
         } else if (userRole === 'super admin' || userRole === 'admin') {
-          navigate("/admin");
+          navigate("/admin", { replace: true });
         } else {
-          navigate("/");
+          navigate("/", { replace: true });
         }
       }
     }
