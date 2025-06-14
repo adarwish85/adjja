@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Settings,
   Users,
@@ -19,14 +19,20 @@ import {
   Mail,
   Save,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  BookOpen,
+  Video
 } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { useSettings } from "@/hooks/useSettings";
+import { useAppSettings } from "@/contexts/SettingsContext";
+import { useToast } from "@/hooks/use-toast";
 
 export const CentralizedSettings = () => {
   const { settingsByCategory, isLoading, updateSetting } = useSystemSettings();
   const { worldTimezones, worldCurrencies } = useSettings();
+  const { currency, academyName } = useAppSettings();
+  const { toast } = useToast();
   const [pendingChanges, setPendingChanges] = useState<Record<string, any>>({});
   const [activeTab, setActiveTab] = useState("general");
 
@@ -56,14 +62,36 @@ export const CentralizedSettings = () => {
         await updateSetting(category, key, value);
       }
       setPendingChanges({});
+      toast({
+        title: "Success",
+        description: "All settings saved successfully",
+      });
     } catch (error) {
       console.error('Error saving settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save settings",
+        variant: "destructive",
+      });
     }
   };
 
   // Reset pending changes
   const resetChanges = () => {
     setPendingChanges({});
+  };
+
+  // Get currency display name
+  const getCurrencyDisplay = (currencyCode: string) => {
+    const currencyMap: Record<string, string> = {
+      'egp': 'EGP (Egyptian Pound)',
+      'usd': 'USD (US Dollar)',
+      'eur': 'EUR (Euro)',
+      'gbp': 'GBP (British Pound)',
+      'aed': 'AED (UAE Dirham)',
+      'sar': 'SAR (Saudi Riyal)',
+    };
+    return currencyMap[currencyCode.toLowerCase()] || currencyCode.toUpperCase();
   };
 
   const hasPendingChanges = Object.keys(pendingChanges).length > 0;
@@ -107,7 +135,7 @@ export const CentralizedSettings = () => {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="general">
             <Settings className="h-4 w-4 mr-2" />
             General
@@ -123,6 +151,10 @@ export const CentralizedSettings = () => {
           <TabsTrigger value="payments">
             <DollarSign className="h-4 w-4 mr-2" />
             Payments
+          </TabsTrigger>
+          <TabsTrigger value="lms">
+            <BookOpen className="h-4 w-4 mr-2" />
+            LMS
           </TabsTrigger>
           <TabsTrigger value="analytics">
             <BarChart className="h-4 w-4 mr-2" />
@@ -346,6 +378,259 @@ export const CentralizedSettings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* LMS Settings */}
+        <TabsContent value="lms">
+          <div className="space-y-6">
+            {/* Currency Display Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-bjj-navy flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Current Configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Academy Currency</Label>
+                    <div className="p-3 bg-muted rounded-md">
+                      <span className="font-medium text-bjj-navy">{getCurrencyDisplay(currency)}</span>
+                      <p className="text-sm text-muted-foreground">
+                        All course prices will be displayed in {currency.toUpperCase()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Academy Name</Label>
+                    <div className="p-3 bg-muted rounded-md">
+                      <span className="font-medium text-bjj-navy">{academyName}</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mt-4">
+                  Currency and academy settings are managed in the General tab. Changes there will automatically reflect across all modules.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* General LMS Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-bjj-navy flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  General LMS Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="platformName">Platform Name</Label>
+                    <Input
+                      id="platformName"
+                      value={getCurrentValue('lms', 'platform_name', 'ADJJA LMS')}
+                      onChange={(e) => updatePendingValue('lms', 'platform_name', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="contactEmail">Contact Email</Label>
+                    <Input
+                      id="contactEmail"
+                      type="email"
+                      value={getCurrentValue('lms', 'contact_email', 'admin@adjja.com')}
+                      onChange={(e) => updatePendingValue('lms', 'contact_email', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="platformDescription">Platform Description</Label>
+                  <Textarea
+                    id="platformDescription"
+                    value={getCurrentValue('lms', 'platform_description', 'Brazilian Jiu-Jitsu Learning Management System')}
+                    onChange={(e) => updatePendingValue('lms', 'platform_description', e.target.value)}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Allow New Registrations</Label>
+                      <p className="text-sm text-bjj-gray">Allow new students to register for courses</p>
+                    </div>
+                    <Switch
+                      checked={getCurrentValue('lms', 'allow_registration', true)}
+                      onCheckedChange={(checked) => updatePendingValue('lms', 'allow_registration', checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Require Approval</Label>
+                      <p className="text-sm text-bjj-gray">Require admin approval for new enrollments</p>
+                    </div>
+                    <Switch
+                      checked={getCurrentValue('lms', 'require_approval', false)}
+                      onCheckedChange={(checked) => updatePendingValue('lms', 'require_approval', checked)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="defaultAccess">Default Course Access</Label>
+                  <Select
+                    value={getCurrentValue('lms', 'default_course_access', 'immediate')}
+                    onValueChange={(value) => updatePendingValue('lms', 'default_course_access', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="immediate">Immediate</SelectItem>
+                      <SelectItem value="approval">Requires Approval</SelectItem>
+                      <SelectItem value="payment">After Payment</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Course Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-bjj-navy flex items-center gap-2">
+                  <Video className="h-5 w-5" />
+                  Course Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="maxCourseSize">Max Course Size (MB)</Label>
+                    <Input
+                      id="maxCourseSize"
+                      type="number"
+                      value={getCurrentValue('lms', 'max_course_size', 100)}
+                      onChange={(e) => updatePendingValue('lms', 'max_course_size', parseInt(e.target.value))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="videoQuality">Default Video Quality</Label>
+                    <Select
+                      value={getCurrentValue('lms', 'video_quality', '720p')}
+                      onValueChange={(value) => updatePendingValue('lms', 'video_quality', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="480p">480p</SelectItem>
+                        <SelectItem value="720p">720p</SelectItem>
+                        <SelectItem value="1080p">1080p</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="passGrade">Passing Grade (%)</Label>
+                    <Input
+                      id="passGrade"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={getCurrentValue('lms', 'pass_grade', 80)}
+                      onChange={(e) => updatePendingValue('lms', 'pass_grade', parseInt(e.target.value))}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Allow Content Downloads</Label>
+                      <p className="text-sm text-bjj-gray">Allow students to download course materials</p>
+                    </div>
+                    <Switch
+                      checked={getCurrentValue('lms', 'allow_downloads', false)}
+                      onCheckedChange={(checked) => updatePendingValue('lms', 'allow_downloads', checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Enable Certificates</Label>
+                      <p className="text-sm text-bjj-gray">Generate certificates upon course completion</p>
+                    </div>
+                    <Switch
+                      checked={getCurrentValue('lms', 'certificate_enabled', true)}
+                      onCheckedChange={(checked) => updatePendingValue('lms', 'certificate_enabled', checked)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* LMS Notification Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-bjj-navy flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  LMS Notification Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Enrollment Notifications</Label>
+                      <p className="text-sm text-bjj-gray">Notify when students enroll in courses</p>
+                    </div>
+                    <Switch
+                      checked={getCurrentValue('lms', 'enrollment_notifications', true)}
+                      onCheckedChange={(checked) => updatePendingValue('lms', 'enrollment_notifications', checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Progress Notifications</Label>
+                      <p className="text-sm text-bjj-gray">Notify about student progress milestones</p>
+                    </div>
+                    <Switch
+                      checked={getCurrentValue('lms', 'progress_notifications', true)}
+                      onCheckedChange={(checked) => updatePendingValue('lms', 'progress_notifications', checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Completion Notifications</Label>
+                      <p className="text-sm text-bjj-gray">Notify when students complete courses</p>
+                    </div>
+                    <Switch
+                      checked={getCurrentValue('lms', 'completion_notifications', true)}
+                      onCheckedChange={(checked) => updatePendingValue('lms', 'completion_notifications', checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Reminder Notifications</Label>
+                      <p className="text-sm text-bjj-gray">Send reminder notifications to students</p>
+                    </div>
+                    <Switch
+                      checked={getCurrentValue('lms', 'reminder_notifications', true)}
+                      onCheckedChange={(checked) => updatePendingValue('lms', 'reminder_notifications', checked)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Analytics Settings */}
