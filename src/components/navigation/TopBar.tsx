@@ -3,8 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, ChevronDown } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { NotificationDropdown } from "./NotificationDropdown";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useState } from "react";
 
 export const TopBar = () => {
+  const { unreadCount } = useNotifications();
+  const [showNotifications, setShowNotifications] = useState(false);
+
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -13,12 +19,25 @@ export const TopBar = () => {
         </div>
         
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5 text-bjj-gray" />
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 text-white text-xs flex items-center justify-center">
-              3
-            </Badge>
-          </Button>
+          <div className="relative">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="relative"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              <Bell className="h-5 w-5 text-bjj-gray" />
+              {unreadCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 text-white text-xs flex items-center justify-center">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Badge>
+              )}
+            </Button>
+            
+            {showNotifications && (
+              <NotificationDropdown onClose={() => setShowNotifications(false)} />
+            )}
+          </div>
           
           <div className="flex items-center space-x-3 cursor-pointer">
             <div className="h-8 w-8 bg-bjj-gold rounded-full flex items-center justify-center">
