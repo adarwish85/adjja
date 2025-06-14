@@ -7,6 +7,7 @@ import { Plus, Edit, Trash2, DollarSign } from "lucide-react";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { AddSubscriptionPlanForm } from "./AddSubscriptionPlanForm";
 import { EditSubscriptionPlanForm } from "./EditSubscriptionPlanForm";
+import { useAppSettings } from "@/contexts/SettingsContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,13 +24,25 @@ export const SubscriptionPlanManager = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingPlan, setEditingPlan] = useState<string | null>(null);
   const { subscriptionPlans, isLoading, deletePlan } = useSubscriptionPlans();
+  const { currency } = useAppSettings();
 
   const formatPeriod = (period: string) => {
     return period.charAt(0).toUpperCase() + period.slice(1);
   };
 
+  const getCurrencySymbol = () => {
+    switch (currency?.toLowerCase()) {
+      case 'usd': return '$';
+      case 'eur': return '€';
+      case 'gbp': return '£';
+      case 'egp': return 'LE';
+      default: return '$';
+    }
+  };
+
   const formatPrice = (price: number) => {
-    return `$${price.toFixed(2)}`;
+    const symbol = getCurrencySymbol();
+    return `${symbol}${price.toFixed(2)}`;
   };
 
   const getClassesDisplay = (classes: number) => {

@@ -9,12 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { X } from "lucide-react";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
+import { useAppSettings } from "@/contexts/SettingsContext";
 
 interface AddSubscriptionPlanFormProps {
   onClose: () => void;
 }
 
 export const AddSubscriptionPlanForm = ({ onClose }: AddSubscriptionPlanFormProps) => {
+  const { currency } = useAppSettings();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -30,19 +32,64 @@ export const AddSubscriptionPlanForm = ({ onClose }: AddSubscriptionPlanFormProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate required fields
+    if (!formData.title.trim()) {
+      console.error("Title is required");
+      return;
+    }
+    
+    if (!formData.subscription_period) {
+      console.error("Subscription period is required");
+      return;
+    }
+    
+    if (!formData.number_of_classes || parseInt(formData.number_of_classes) < 1) {
+      console.error("Number of classes must be at least 1");
+      return;
+    }
+    
+    if (!formData.standard_price || parseFloat(formData.standard_price) <= 0) {
+      console.error("Standard price must be greater than 0");
+      return;
+    }
+    
     try {
+      console.log("Creating subscription plan with data:", formData);
+      
       await createPlan.mutateAsync({
-        title: formData.title,
-        description: formData.description || null,
+        title: formData.title.trim(),
+        description: formData.description.trim() || null,
         number_of_classes: parseInt(formData.number_of_classes),
-        subscription_period: formData.subscription_period as any,
+        subscription_period: formData.subscription_period as "weekly" | "monthly" | "quarterly" | "yearly",
         standard_price: parseFloat(formData.standard_price),
         sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
         is_active: formData.is_active,
       });
+      
+      console.log("Subscription plan created successfully");
       onClose();
     } catch (error) {
-      console.error("Error creating plan:", error);
+      console.error("Error creating subscription plan:", error);
+    }
+  };
+
+  const getCurrencySymbol = () => {
+    switch (currency?.toLowerCase()) {
+      case 'usd': return '$';
+      case 'eur': return '€';
+      case 'gbp': return '£';
+      case 'egp': return 'LE';
+      default: return '$';
+    }
+  };
+
+  const getCurrencyName = () => {
+    switch (currency?.toLowerCase()) {
+      case 'usd': return 'USD';
+      case 'eur': return 'EUR';
+      case 'gbp': return 'GBP';
+      case 'egp': return 'EGP';
+      default: return 'USD';
     }
   };
 
@@ -60,7 +107,7 @@ export const AddSubscriptionPlanForm = ({ onClose }: AddSubscriptionPlanFormProp
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Plan Title</Label>
+              <Label htmlFor="title">Plan Title *</Label>
               <Input
                 id="title"
                 value={formData.title}
@@ -70,7 +117,7 @@ export const AddSubscriptionPlanForm = ({ onClose }: AddSubscriptionPlanFormProp
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="period">Billing Period</Label>
+              <Label htmlFor="period">Billing Period *</Label>
               <Select 
                 value={formData.subscription_period} 
                 onValueChange={(value) => setFormData({ ...formData, subscription_period: value })}
@@ -102,7 +149,7 @@ export const AddSubscriptionPlanForm = ({ onClose }: AddSubscriptionPlanFormProp
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="classes">Number of Classes</Label>
+              <Label htmlFor="classes">Number of Classes *</Label>
               <Input
                 id="classes"
                 type="number"
@@ -114,7 +161,7 @@ export const AddSubscriptionPlanForm = ({ onClose }: AddSubscriptionPlanFormProp
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="standard_price">Standard Price ($)</Label>
+              <Label htmlFor="standard_price">Standard Price ({getCurrencySymbol()}) *</Label>
               <Input
                 id="standard_price"
                 type="number"
@@ -123,11 +170,12 @@ export const AddSubscriptionPlanForm = ({ onClose }: AddSubscriptionPlanFormProp
                 onChange={(e) => setFormData({ ...formData, standard_price: e.target.value })}
                 placeholder="89.99"
                 required
-                min="0"
+                min="0.01"
               />
+              <p className="text-xs text-gray-500">Currency: {getCurrencyName()}</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sale_price">Sale Price ($) - Optional</Label>
+              <Label htmlFor="sale_price">Sale Price ({getCurrencySymbol()}) - Optional</Label>
               <Input
                 id="sale_price"
                 type="number"
