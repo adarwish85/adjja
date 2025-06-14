@@ -36,7 +36,6 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
   const [isLoading, setIsLoading] = useState(false);
   const timeTrackingRef = useRef<number>();
   const initTimeoutRef = useRef<NodeJS.Timeout>();
-  const retryCountRef = useRef(0);
 
   const startTimeTracking = useCallback(() => {
     if (timeTrackingRef.current) {
@@ -65,45 +64,83 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
     }
   }, []);
 
-  const waitForElement = useCallback((elementId: string, maxAttempts: number = 20): Promise<HTMLElement> => {
+  const waitForContainer = useCallback((): Promise<HTMLElement> => {
     return new Promise((resolve, reject) => {
       let attempts = 0;
+      const maxAttempts = 50; // 5 seconds max
       
-      const checkElement = () => {
-        const element = document.getElementById(elementId);
-        if (element) {
-          console.log('Found container element:', elementId);
-          resolve(element);
+      const checkContainer = () => {
+        const container = document.getElementById(containerId);
+        if (container) {
+          console.log('✅ Container found:', containerId);
+          resolve(container);
           return;
         }
         
         attempts++;
         if (attempts >= maxAttempts) {
-          reject(new Error(`Element with ID "${elementId}" not found after ${maxAttempts} attempts`));
+          console.error('❌ Container not found after', maxAttempts, 'attempts');
+          reject(new Error(`Container ${containerId} not found`));
           return;
         }
         
-        setTimeout(checkElement, 100);
+        setTimeout(checkContainer, 100);
       };
       
-      checkElement();
+      checkContainer();
+    });
+  }, [containerId]);
+
+  const loadYouTubeAPI = useCallback((): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (window.YT && window.YT.Player) {
+        console.log('✅ YouTube API already loaded');
+        resolve();
+        return;
+      }
+
+      console.log('🔄 Loading YouTube API...');
+      
+      const timeout = setTimeout(() => {
+        console.error('❌ YouTube API loading timeout');
+        reject(new Error('YouTube API loading timeout'));
+      }, 10000);
+
+      window.onYouTubeIframeAPIReady = () => {
+        clearTimeout(timeout);
+        console.log('✅ YouTube API loaded successfully');
+        resolve();
+      };
+
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        const script = document.createElement('script');
+        script.src = 'https://www.youtube.com/iframe_api';
+        script.async = true;
+        script.onerror = () => {
+          clearTimeout(timeout);
+          reject(new Error('Failed to load YouTube API script'));
+        };
+        document.head.appendChild(script);
+      }
     });
   }, []);
 
   const createPlayer = useCallback(async () => {
-    if (!videoId || !window.YT || !window.YT.Player) {
-      console.error('YouTube API not loaded or no video ID');
-      setError('YouTube player not available');
-      setIsLoading(false);
+    if (!videoId) {
+      console.log('❌ No video ID provided');
       return;
     }
 
+    console.log('🎬 Creating player for video:', videoId);
+    setIsLoading(true);
+    setError(null);
+
     try {
-      // Wait for the container element to be available
-      console.log('Waiting for container element:', containerId);
-      const element = await waitForElement(containerId);
-      
-      // Clear any existing player
+      // Wait for API and container
+      await loadYouTubeAPI();
+      const container = await waitForContainer();
+
+      // Clear existing player
       if (playerRef.current) {
         try {
           playerRef.current.destroy();
@@ -113,24 +150,22 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
         playerRef.current = null;
       }
 
-      // Clear the container
-      element.innerHTML = '';
+      // Clear container
+      container.innerHTML = '';
 
-      console.log('Creating YouTube player for video:', videoId);
-      
-      // Set a timeout for player initialization
+      // Set initialization timeout
       if (initTimeoutRef.current) {
         clearTimeout(initTimeoutRef.current);
       }
       
       initTimeoutRef.current = setTimeout(() => {
-        if (!isReady) {
-          console.error('Player initialization timeout');
-          setError('Video loading timeout. Please try again.');
-          setIsLoading(false);
-        }
+        console.error('❌ Player initialization timeout');
+        setError('Video loading timeout. Please try again.');
+        setIsLoading(false);
       }, 15000);
 
+      console.log('🔧 Initializing YouTube player...');
+      
       playerRef.current = new window.YT.Player(containerId, {
         height: '100%',
         width: '100%',
@@ -151,14 +186,13 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
         },
         events: {
           onReady: (event: any) => {
-            console.log('YouTube player ready');
+            console.log('✅ YouTube player ready');
             if (initTimeoutRef.current) {
               clearTimeout(initTimeoutRef.current);
             }
             setIsReady(true);
             setIsLoading(false);
             setError(null);
-            retryCountRef.current = 0;
             
             try {
               const player = event.target;
@@ -181,7 +215,7 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
             }
           },
           onError: (event: any) => {
-            console.error('YouTube player error:', event.data);
+            console.error('❌ YouTube player error:', event.data);
             if (initTimeoutRef.current) {
               clearTimeout(initTimeoutRef.current);
             }
@@ -213,103 +247,36 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
         },
       });
     } catch (err) {
-      console.error('Error creating YouTube player:', err);
+      console.error('❌ Error creating player:', err);
       if (initTimeoutRef.current) {
         clearTimeout(initTimeoutRef.current);
       }
-      
-      if (err instanceof Error && err.message.includes('not found')) {
-        setError('Player container not found');
-      } else {
-        setError('Failed to initialize video player');
-      }
+      setError('Failed to initialize video player');
       setIsLoading(false);
     }
-  }, [videoId, containerId, startTimeTracking, stopTimeTracking, isReady, waitForElement]);
+  }, [videoId, containerId, loadYouTubeAPI, waitForContainer, startTimeTracking, stopTimeTracking]);
 
-  const loadYouTubeAPI = useCallback(() => {
-    return new Promise<void>((resolve, reject) => {
-      if (window.YT && window.YT.Player) {
-        console.log('YouTube API already loaded');
-        resolve();
-        return;
-      }
-
-      if (window.youTubeAPIReady) {
-        console.log('YouTube API loading in progress');
-        resolve();
-        return;
-      }
-
-      const originalCallback = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        console.log('YouTube API loaded successfully');
-        window.youTubeAPIReady = true;
-        if (originalCallback) originalCallback();
-        resolve();
-      };
-
-      const apiTimeout = setTimeout(() => {
-        console.error('YouTube API loading timeout');
-        reject(new Error('YouTube API loading timeout'));
-      }, 10000);
-
-      const originalOnReady = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        clearTimeout(apiTimeout);
-        originalOnReady();
-      };
-
-      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
-        console.log('Loading YouTube API script');
-        const tag = document.createElement('script');
-        tag.src = 'https://www.youtube.com/iframe_api';
-        tag.async = true;
-        tag.onload = () => console.log('YouTube API script loaded');
-        tag.onerror = () => {
-          clearTimeout(apiTimeout);
-          reject(new Error('Failed to load YouTube API script'));
-        };
-        
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        if (firstScriptTag && firstScriptTag.parentNode) {
-          firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        } else {
-          document.head.appendChild(tag);
-        }
-      }
-    });
-  }, []);
+  const retryLoad = useCallback(() => {
+    console.log('🔄 Retrying video load...');
+    setError(null);
+    setIsReady(false);
+    createPlayer();
+  }, [createPlayer]);
 
   useEffect(() => {
     if (!videoId) {
-      console.log('No video ID provided');
+      console.log('No video ID, clearing player state');
       setIsReady(false);
       setError(null);
       setIsLoading(false);
       return;
     }
 
-    console.log('Initializing player for video ID:', videoId);
-    setIsLoading(true);
-    setError(null);
-    setIsReady(false);
-    retryCountRef.current = 0;
-
-    loadYouTubeAPI()
-      .then(() => {
-        // Wait a bit longer to ensure DOM is ready
-        setTimeout(() => {
-          createPlayer();
-        }, 250);
-      })
-      .catch((err) => {
-        console.error('Failed to load YouTube API:', err);
-        setError('Failed to load video player. Please refresh the page.');
-        setIsLoading(false);
-      });
+    console.log('🚀 Initializing player for video:', videoId);
+    createPlayer();
 
     return () => {
+      console.log('🧹 Cleaning up player');
       stopTimeTracking();
       if (initTimeoutRef.current) {
         clearTimeout(initTimeoutRef.current);
@@ -323,26 +290,7 @@ export const useYouTubePlayer = (videoId: string | null, containerId: string) =>
         playerRef.current = null;
       }
     };
-  }, [videoId, containerId, loadYouTubeAPI, createPlayer, stopTimeTracking]);
-
-  const retryLoad = useCallback(() => {
-    console.log('Retrying video load, attempt:', retryCountRef.current + 1);
-    retryCountRef.current++;
-    
-    if (retryCountRef.current > 3) {
-      setError('Failed to load video after multiple attempts. Please refresh the page.');
-      setIsLoading(false);
-      return;
-    }
-    
-    setError(null);
-    setIsLoading(true);
-    setIsReady(false);
-    
-    setTimeout(() => {
-      createPlayer();
-    }, 500);
-  }, [createPlayer]);
+  }, [videoId, createPlayer, stopTimeTracking]);
 
   return {
     isReady,

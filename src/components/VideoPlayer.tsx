@@ -1,8 +1,9 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Volume2, VolumeX, Maximize, X, AlertCircle, RefreshCw } from "lucide-react";
-import { extractYouTubeVideoId, checkVideoAvailability } from "@/utils/youtubeUtils";
+import { extractYouTubeVideoId } from "@/utils/youtubeUtils";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 
 interface VideoPlayerProps {
@@ -13,11 +14,8 @@ interface VideoPlayerProps {
 
 export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => {
   const [showControls, setShowControls] = useState(true);
-  const [videoAvailable, setVideoAvailable] = useState<boolean | null>(null);
-  const [containerMounted, setContainerMounted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const isYouTubeVideo = (url: string) => {
     return url.includes('youtube.com') || url.includes('youtu.be');
@@ -25,7 +23,9 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
 
   const youTubeVideoId = isYouTubeVideo(videoUrl) ? extractYouTubeVideoId(videoUrl) : null;
   
-  // YouTube player for YouTube videos - only initialize after container is mounted
+  console.log('VideoPlayer opened:', { videoUrl, youTubeVideoId, isOpen });
+  
+  // YouTube player for YouTube videos
   const {
     isReady: youTubeReady,
     isPlaying: youTubePlaying,
@@ -41,7 +41,7 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     setVolume: youTubeSetVolume,
     toggleMute: youTubeToggleMute,
     retryLoad: youTubeRetryLoad,
-  } = useYouTubePlayer(containerMounted ? youTubeVideoId : null, 'youtube-player');
+  } = useYouTubePlayer(isOpen ? youTubeVideoId : null, 'youtube-player');
 
   // HTML5 video state for direct videos
   const [htmlIsPlaying, setHtmlIsPlaying] = useState(false);
@@ -51,52 +51,6 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   const [htmlIsMuted, setHtmlIsMuted] = useState(false);
   const [htmlLoading, setHtmlLoading] = useState(true);
   const [htmlError, setHtmlError] = useState<string | null>(null);
-
-  // Ensure container is mounted before initializing YouTube player
-  useEffect(() => {
-    if (isOpen && youTubeVideoId) {
-      // Small delay to ensure the dialog is fully rendered
-      const timer = setTimeout(() => {
-        const container = document.getElementById('youtube-player');
-        if (container) {
-          console.log('YouTube container mounted successfully');
-          setContainerMounted(true);
-        } else {
-          console.warn('YouTube container not found, retrying...');
-          // Retry after another delay
-          setTimeout(() => {
-            const retryContainer = document.getElementById('youtube-player');
-            if (retryContainer) {
-              setContainerMounted(true);
-            }
-          }, 200);
-        }
-      }, 100);
-
-      return () => {
-        clearTimeout(timer);
-        setContainerMounted(false);
-      };
-    } else {
-      setContainerMounted(false);
-    }
-  }, [isOpen, youTubeVideoId]);
-
-  // Check video availability for YouTube videos
-  useEffect(() => {
-    if (youTubeVideoId && isOpen) {
-      console.log('Checking video availability for:', youTubeVideoId);
-      checkVideoAvailability(youTubeVideoId)
-        .then(available => {
-          console.log('Video availability:', available);
-          setVideoAvailable(available);
-        })
-        .catch(err => {
-          console.error('Error checking video availability:', err);
-          setVideoAvailable(false);
-        });
-    }
-  }, [youTubeVideoId, isOpen]);
 
   // Unified state based on video type
   const isPlaying = youTubeVideoId ? youTubePlaying : htmlIsPlaying;
@@ -172,15 +126,9 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   };
 
   const retryLoad = () => {
-    console.log('Retrying video load');
+    console.log('🔄 Retrying video load');
     if (youTubeVideoId) {
-      setVideoAvailable(null);
-      setContainerMounted(false);
-      // Re-mount the container
-      setTimeout(() => {
-        setContainerMounted(true);
-        youTubeRetryLoad();
-      }, 100);
+      youTubeRetryLoad();
     } else if (videoRef.current) {
       setHtmlLoading(true);
       setHtmlError(null);
@@ -188,48 +136,38 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     }
   };
 
-  const renderErrorState = () => {
-    const errorTitle = youTubeVideoId && videoAvailable === false 
-      ? "Video Not Available" 
-      : "Video Loading Error";
-    
-    const errorMessage = youTubeVideoId && videoAvailable === false
-      ? "This video cannot be embedded or is not available in your region."
-      : error || "Failed to load video. Please check your internet connection.";
-
-    return (
-      <div className="flex flex-col items-center justify-center text-white space-y-4 p-8">
-        <AlertCircle className="h-16 w-16 text-red-500" />
-        <div className="text-center space-y-2">
-          <h3 className="text-xl font-semibold">{errorTitle}</h3>
-          <p className="text-gray-300 max-w-md">{errorMessage}</p>
-          {youTubeVideoId && (
-            <p className="text-sm text-gray-400">Video ID: {youTubeVideoId}</p>
-          )}
-        </div>
-        <div className="flex gap-3">
-          <Button 
-            onClick={retryLoad} 
-            variant="outline" 
-            className="text-white border-white hover:bg-white hover:text-black"
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Loading...' : 'Try Again'}
-          </Button>
-          {youTubeVideoId && (
-            <Button 
-              onClick={() => window.open(`https://www.youtube.com/watch?v=${youTubeVideoId}`, '_blank')}
-              variant="outline"
-              className="text-white border-white hover:bg-white hover:text-black"
-            >
-              Open on YouTube
-            </Button>
-          )}
-        </div>
+  const renderErrorState = () => (
+    <div className="flex flex-col items-center justify-center text-white space-y-4 p-8">
+      <AlertCircle className="h-16 w-16 text-red-500" />
+      <div className="text-center space-y-2">
+        <h3 className="text-xl font-semibold">Video Loading Error</h3>
+        <p className="text-gray-300 max-w-md">{error || "Failed to load video. Please check your internet connection."}</p>
+        {youTubeVideoId && (
+          <p className="text-sm text-gray-400">Video ID: {youTubeVideoId}</p>
+        )}
       </div>
-    );
-  };
+      <div className="flex gap-3">
+        <Button 
+          onClick={retryLoad} 
+          variant="outline" 
+          className="text-white border-white hover:bg-white hover:text-black"
+          disabled={isLoading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          {isLoading ? 'Loading...' : 'Try Again'}
+        </Button>
+        {youTubeVideoId && (
+          <Button 
+            onClick={() => window.open(`https://www.youtube.com/watch?v=${youTubeVideoId}`, '_blank')}
+            variant="outline"
+            className="text-white border-white hover:bg-white hover:text-black"
+          >
+            Open on YouTube
+          </Button>
+        )}
+      </div>
+    </div>
+  );
 
   const renderLoadingState = () => (
     <div className="flex flex-col items-center justify-center text-white space-y-4 p-8">
@@ -250,8 +188,6 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
       setHtmlCurrentTime(0);
       setHtmlLoading(true);
       setHtmlError(null);
-      setContainerMounted(false);
-      setVideoAvailable(null);
     }
   }, [isOpen]);
 
@@ -268,9 +204,9 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
             <X className="h-4 w-4" />
           </Button>
 
-          {error || (youTubeVideoId && videoAvailable === false) ? (
+          {error ? (
             renderErrorState()
-          ) : isLoading || (youTubeVideoId && (videoAvailable === null || !containerMounted)) ? (
+          ) : isLoading ? (
             renderLoadingState()
           ) : (
             <div
@@ -281,7 +217,6 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
               {youTubeVideoId ? (
                 <div className="relative w-full h-full">
                   <div 
-                    ref={containerRef}
                     id="youtube-player" 
                     className="w-full h-full bg-black"
                     style={{ minHeight: '360px' }}
