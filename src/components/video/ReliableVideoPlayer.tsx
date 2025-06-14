@@ -47,6 +47,23 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
     }
   }, [isOpen]);
 
+  // Disable right-click context menu to prevent "Open in YouTube"
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+  };
+
+  // Disable keyboard shortcuts that could reveal source
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Disable common shortcuts that might open YouTube
+    if (
+      (e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U') || // View source
+      (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.key === 'I') || // Dev tools
+      e.key === 'F12' // Dev tools
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const renderFallbackContent = () => (
     <div className="flex flex-col items-center justify-center text-white space-y-6 p-8 min-h-[400px]">
       <AlertCircle className="h-16 w-16 text-orange-500" />
@@ -78,7 +95,12 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
     }
 
     return (
-      <div className="relative w-full h-full min-h-[400px] bg-black">
+      <div 
+        className="relative w-full h-full min-h-[400px] bg-black"
+        onContextMenu={handleContextMenu}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+      >
         <ReactPlayer
           url={cleanVideoUrl}
           playing={true}
@@ -89,23 +111,40 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
           onError={handleError}
           onReady={handleReady}
           config={{
-            playerVars: {
-              modestbranding: 1,
-              rel: 0,
-              showinfo: 0,
-              iv_load_policy: 3,
-              cc_load_policy: 0,
-              playsinline: 1,
-              origin: window.location.origin,
-              enablejsapi: 1,
-              fs: 1,
-              controls: 1
+            youtube: {
+              playerVars: {
+                // Maximum branding minimization within legal limits
+                modestbranding: 1,        // Minimize YouTube branding
+                rel: 0,                   // Don't show related videos at end
+                showinfo: 0,              // Don't show video title/uploader
+                iv_load_policy: 3,        // Don't show video annotations
+                cc_load_policy: 0,        // Don't show captions by default
+                playsinline: 1,           // Play inline on mobile
+                origin: window.location.origin,
+                enablejsapi: 1,
+                fs: 1,                    // Allow fullscreen
+                controls: 1,              // Show player controls
+                disablekb: 0,             // Keep keyboard controls for accessibility
+                autoplay: 0,              // Don't autoplay
+                start: 0,                 // Start from beginning
+                end: 0,                   // Play full video
+                loop: 0,                  // Don't loop
+                playlist: '',             // No playlist
+                color: 'white',           // Use white progress bar
+                hl: 'en',                 // Set language to English
+                widget_referrer: window.location.origin
+              },
+              embedOptions: {
+                // Additional embed options to minimize branding
+                host: 'https://www.youtube-nocookie.com'
+              }
             }
           }}
           style={{
             position: 'absolute',
             top: 0,
-            left: 0
+            left: 0,
+            pointerEvents: 'auto'
           }}
         />
         {!isReady && !showFallback && (
@@ -113,13 +152,19 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
             {renderLoadingContent()}
           </div>
         )}
+        
+        {/* Custom overlay to prevent some user interactions */}
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{ zIndex: 1 }}
+        />
       </div>
     );
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[70vh] p-0 bg-black">
+      <DialogContent className="max-w-4xl h-[70vh] p-0 bg-black overflow-hidden">
         <div className="relative w-full h-full flex items-center justify-center">
           <Button
             variant="ghost"
@@ -129,6 +174,12 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
           >
             <X className="h-4 w-4" />
           </Button>
+          
+          {/* Custom header with your branding */}
+          <div className="absolute top-4 left-4 z-50 text-white">
+            <h3 className="text-lg font-semibold">{title}</h3>
+          </div>
+          
           {showFallback ? renderFallbackContent() : renderVideoPlayer()}
         </div>
       </DialogContent>
