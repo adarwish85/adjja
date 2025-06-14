@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import RoleGuard from "@/components/RoleGuard";
 
 // Import pages
 import Index from "@/pages/Index";
@@ -15,6 +16,7 @@ import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
 import EditProfile from "@/pages/EditProfile";
 import PublicProfile from "@/pages/PublicProfile";
 import NotFound from "@/pages/NotFound";
+import AccessDenied from "@/pages/AccessDenied";
 
 // Import admin pages
 import AdminStudents from "@/pages/admin/AdminStudents";
@@ -48,45 +50,16 @@ function App() {
                 <Route path="/athlete/:slug" element={<PublicProfile />} />
                 <Route path="/course/:courseId" element={<CourseLanding />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
+                <Route path="/access-denied" element={<AccessDenied />} />
 
-                {/* Protected routes */}
+                {/* Student routes */}
                 <Route
                   path="/dashboard"
                   element={
                     <ProtectedRoute>
-                      <StudentDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/coach"
-                  element={
-                    <ProtectedRoute>
-                      <CoachDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedRoute>
-                      <SuperAdminDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <SuperAdminDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/edit-profile"
-                  element={
-                    <ProtectedRoute>
-                      <EditProfile />
+                      <RoleGuard allowedRoles={['Student']}>
+                        <StudentDashboard />
+                      </RoleGuard>
                     </ProtectedRoute>
                   }
                 />
@@ -94,17 +67,53 @@ function App() {
                   path="/payments"
                   element={
                     <ProtectedRoute>
-                      <StudentPayments />
+                      <RoleGuard allowedRoles={['Student']}>
+                        <StudentPayments />
+                      </RoleGuard>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Coach routes */}
+                <Route
+                  path="/coach"
+                  element={
+                    <ProtectedRoute>
+                      <RoleGuard allowedRoles={['Coach']}>
+                        <CoachDashboard />
+                      </RoleGuard>
                     </ProtectedRoute>
                   }
                 />
 
                 {/* Admin routes */}
                 <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute>
+                      <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
+                        <SuperAdminDashboard />
+                      </RoleGuard>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
+                        <SuperAdminDashboard />
+                      </RoleGuard>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/admin/students"
                   element={
                     <ProtectedRoute>
-                      <AdminStudents />
+                      <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
+                        <AdminStudents />
+                      </RoleGuard>
                     </ProtectedRoute>
                   }
                 />
@@ -112,7 +121,9 @@ function App() {
                   path="/admin/classes"
                   element={
                     <ProtectedRoute>
-                      <AdminClasses />
+                      <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
+                        <AdminClasses />
+                      </RoleGuard>
                     </ProtectedRoute>
                   }
                 />
@@ -120,7 +131,9 @@ function App() {
                   path="/admin/coaches"
                   element={
                     <ProtectedRoute>
-                      <AdminCoaches />
+                      <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
+                        <AdminCoaches />
+                      </RoleGuard>
                     </ProtectedRoute>
                   }
                 />
@@ -128,7 +141,9 @@ function App() {
                   path="/admin/branches"
                   element={
                     <ProtectedRoute>
-                      <AdminBranches />
+                      <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
+                        <AdminBranches />
+                      </RoleGuard>
                     </ProtectedRoute>
                   }
                 />
@@ -136,7 +151,9 @@ function App() {
                   path="/admin/attendance"
                   element={
                     <ProtectedRoute>
-                      <AdminAttendance />
+                      <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
+                        <AdminAttendance />
+                      </RoleGuard>
                     </ProtectedRoute>
                   }
                 />
@@ -144,7 +161,9 @@ function App() {
                   path="/admin/payments"
                   element={
                     <ProtectedRoute>
-                      <AdminPayments />
+                      <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
+                        <AdminPayments />
+                      </RoleGuard>
                     </ProtectedRoute>
                   }
                 />
@@ -152,7 +171,9 @@ function App() {
                   path="/admin/lms"
                   element={
                     <ProtectedRoute>
-                      <AdminLMS />
+                      <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
+                        <AdminLMS />
+                      </RoleGuard>
                     </ProtectedRoute>
                   }
                 />
@@ -160,7 +181,9 @@ function App() {
                   path="/admin/analytics"
                   element={
                     <ProtectedRoute>
-                      <AdminAnalytics />
+                      <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
+                        <AdminAnalytics />
+                      </RoleGuard>
                     </ProtectedRoute>
                   }
                 />
@@ -168,7 +191,19 @@ function App() {
                   path="/admin/settings"
                   element={
                     <ProtectedRoute>
-                      <AdminSettings />
+                      <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
+                        <AdminSettings />
+                      </RoleGuard>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Shared protected routes */}
+                <Route
+                  path="/edit-profile"
+                  element={
+                    <ProtectedRoute>
+                      <EditProfile />
                     </ProtectedRoute>
                   }
                 />

@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Login = () => {
-  const { signIn, signUp, user, loading } = useAuth();
+  const { signIn, signUp, user, userProfile, loading } = useAuth();
   const navigate = useNavigate();
   const [loginData, setLoginData] = useState({
     emailOrUsername: "",
@@ -27,12 +27,22 @@ const Login = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
 
-  // Redirect if already logged in
+  // Redirect if already logged in - based on user role
   useEffect(() => {
-    if (user && !loading) {
-      navigate("/");
+    if (user && userProfile && !loading) {
+      const userRole = userProfile.role_name?.toLowerCase();
+      
+      if (userRole === 'student') {
+        navigate("/dashboard");
+      } else if (userRole === 'coach') {
+        navigate("/coach");
+      } else if (userRole === 'super admin' || userRole === 'admin') {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, userProfile, loading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +52,8 @@ const Login = () => {
     try {
       const { data, error } = await signIn(loginData.emailOrUsername, loginData.password);
       if (data && !error) {
-        navigate("/");
+        // Navigation will be handled by the useEffect above once userProfile is loaded
+        console.log("Login successful, waiting for profile to load...");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -66,7 +77,8 @@ const Login = () => {
         name: signupData.name
       });
       if (data && !error) {
-        navigate("/");
+        // Navigation will be handled by the useEffect above once userProfile is loaded
+        console.log("Signup successful, waiting for profile to load...");
       }
     } catch (error) {
       console.error("Signup error:", error);

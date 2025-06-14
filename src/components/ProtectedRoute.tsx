@@ -8,14 +8,33 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/login");
+    if (!loading) {
+      if (!user) {
+        navigate("/login");
+        return;
+      }
+
+      // If user is authenticated but we're on a generic protected route,
+      // redirect them to their appropriate dashboard
+      if (user && userProfile && window.location.pathname === "/protected") {
+        const userRole = userProfile.role_name?.toLowerCase();
+        
+        if (userRole === 'student') {
+          navigate("/dashboard");
+        } else if (userRole === 'coach') {
+          navigate("/coach");
+        } else if (userRole === 'super admin' || userRole === 'admin') {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, userProfile, loading, navigate]);
 
   if (loading) {
     return (
