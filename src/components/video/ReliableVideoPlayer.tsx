@@ -40,25 +40,21 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
     setIsReady(false);
   };
 
-  // Reset state when dialog opens/closes
   React.useEffect(() => {
     if (isOpen) {
       resetState();
     }
   }, [isOpen]);
 
-  // Disable right-click context menu to prevent "Open in YouTube"
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
   };
 
-  // Disable keyboard shortcuts that could reveal source
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Disable common shortcuts that might open YouTube
     if (
-      (e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U') || // View source
-      (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.key === 'I') || // Dev tools
-      e.key === 'F12' // Dev tools
+      (e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U') ||
+      (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.key === 'I') ||
+      e.key === 'F12'
     ) {
       e.preventDefault();
     }
@@ -112,29 +108,27 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
           onReady={handleReady}
           config={{
             playerVars: {
-              // Maximum branding minimization within legal limits
-              modestbranding: 1,        // Minimize YouTube branding
-              rel: 0,                   // Don't show related videos at end
-              showinfo: 0,              // Don't show video title/uploader
-              iv_load_policy: 3,        // Don't show video annotations
-              cc_load_policy: 0,        // Don't show captions by default
-              playsinline: 1,           // Play inline on mobile
+              modestbranding: 1,
+              rel: 0,
+              showinfo: 0,
+              iv_load_policy: 3,
+              cc_load_policy: 0,
+              playsinline: 1,
               origin: window.location.origin,
               enablejsapi: 1,
-              fs: 1,                    // Allow fullscreen
-              controls: 1,              // Show player controls
-              disablekb: 0,             // Keep keyboard controls for accessibility
-              autoplay: 0,              // Don't autoplay
-              start: 0,                 // Start from beginning
-              end: 0,                   // Play full video
-              loop: 0,                  // Don't loop
-              playlist: '',             // No playlist
-              color: 'white',           // Use white progress bar
-              hl: 'en',                 // Set language to English
+              fs: 1,
+              controls: 1,
+              disablekb: 0,
+              autoplay: 0,
+              start: 0,
+              end: 0,
+              loop: 0,
+              playlist: '',
+              color: 'white',
+              hl: 'en',
               widget_referrer: window.location.origin
             },
             embedOptions: {
-              // Additional embed options to minimize branding
               host: 'https://www.youtube-nocookie.com'
             }
           }}
@@ -151,7 +145,6 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
           </div>
         )}
         
-        {/* Custom overlay to prevent some user interactions */}
         <div 
           className="absolute inset-0 pointer-events-none"
           style={{ zIndex: 1 }}
@@ -173,7 +166,6 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
             <X className="h-4 w-4" />
           </Button>
           
-          {/* Custom header with your branding */}
           <div className="absolute top-4 left-4 z-50 text-white">
             <h3 className="text-lg font-semibold">{title}</h3>
           </div>

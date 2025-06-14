@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { SelfHostedVideoPlayer } from './SelfHostedVideoPlayer';
 import { ReliableVideoPlayer } from './ReliableVideoPlayer';
 import { isYouTubeUrl } from '@/utils/youtubeUtils';
 
@@ -19,7 +18,7 @@ export const UniversalVideoPlayer: React.FC<UniversalVideoPlayerProps> = ({
   title,
   poster
 }) => {
-  // Determine which player to use based on the video URL
+  // For now, we'll primarily use YouTube player since that's what we're focusing on
   const useYouTubePlayer = isYouTubeUrl(videoUrl);
 
   if (useYouTubePlayer) {
@@ -33,13 +32,13 @@ export const UniversalVideoPlayer: React.FC<UniversalVideoPlayerProps> = ({
     );
   }
 
+  // For non-YouTube URLs, show a message or fallback
   return (
-    <SelfHostedVideoPlayer
+    <ReliableVideoPlayer
       videoUrl={videoUrl}
       isOpen={isOpen}
       onClose={onClose}
       title={title}
-      poster={poster}
     />
   );
 };
