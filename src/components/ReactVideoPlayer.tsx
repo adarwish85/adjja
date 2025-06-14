@@ -5,13 +5,13 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Volume2, VolumeX, Maximize, X, AlertCircle, RefreshCw } from "lucide-react";
 
-interface VideoPlayerProps {
+interface ReactVideoPlayerProps {
   videoUrl: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => {
+export const ReactVideoPlayer = ({ videoUrl, isOpen, onClose }: ReactVideoPlayerProps) => {
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(0.8);
   const [muted, setMuted] = useState(false);
@@ -25,8 +25,6 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   const playerRef = useRef<ReactPlayer>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
 
-  console.log('VideoPlayer opened:', { videoUrl, isOpen });
-
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
@@ -38,20 +36,19 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   };
 
   const handleDuration = (duration: number) => {
-    console.log('Video duration:', duration);
     setDuration(duration);
   };
 
   const handleReady = () => {
-    console.log('✅ React Player ready for:', videoUrl);
+    console.log('✅ React Player ready');
     setPlayerReady(true);
     setLoading(false);
     setError(null);
   };
 
   const handleError = (error: any) => {
-    console.error('❌ React Player error for:', videoUrl, error);
-    setError('Failed to load video. Please check the video URL or try again.');
+    console.error('❌ React Player error:', error);
+    setError('Failed to load video. Please check your internet connection or try again.');
     setLoading(false);
     setPlayerReady(false);
   };
@@ -88,13 +85,13 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   };
 
   const retryLoad = () => {
-    console.log('🔄 Retrying video load for:', videoUrl);
+    console.log('🔄 Retrying video load');
     setError(null);
     setLoading(true);
     setPlayerReady(false);
   };
 
-  // Reset states when dialog closes or video changes
+  // Reset states when dialog closes
   useEffect(() => {
     if (!isOpen) {
       setPlaying(false);
@@ -105,23 +102,12 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (videoUrl && isOpen) {
-      console.log('Video URL changed:', videoUrl);
-      setLoading(true);
-      setError(null);
-      setPlayerReady(false);
-      setPlaying(false);
-    }
-  }, [videoUrl, isOpen]);
-
   const renderErrorState = () => (
     <div className="flex flex-col items-center justify-center text-white space-y-4 p-8">
       <AlertCircle className="h-16 w-16 text-red-500" />
       <div className="text-center space-y-2">
         <h3 className="text-xl font-semibold">Video Loading Error</h3>
         <p className="text-gray-300 max-w-md">{error}</p>
-        <p className="text-sm text-gray-400">URL: {videoUrl}</p>
       </div>
       <div className="flex gap-3">
         <Button 
@@ -133,13 +119,15 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Loading...' : 'Try Again'}
         </Button>
-        <Button 
-          onClick={() => window.open(videoUrl, '_blank')}
-          variant="outline"
-          className="text-white border-white hover:bg-white hover:text-black"
-        >
-          Open Externally
-        </Button>
+        {ReactPlayer.canPlay(videoUrl) && (
+          <Button 
+            onClick={() => window.open(videoUrl, '_blank')}
+            variant="outline"
+            className="text-white border-white hover:bg-white hover:text-black"
+          >
+            Open Externally
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -149,17 +137,9 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
       <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white"></div>
       <div className="text-center space-y-2">
         <p className="text-lg">Loading video...</p>
-        <p className="text-sm text-gray-400">Preparing player...</p>
       </div>
     </div>
   );
-
-  // Check if the URL is supported by React Player
-  const isSupported = ReactPlayer.canPlay(videoUrl);
-  
-  if (!isSupported && isOpen) {
-    console.warn('Video URL not supported by React Player:', videoUrl);
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -174,22 +154,7 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
             <X className="h-4 w-4" />
           </Button>
 
-          {!isSupported ? (
-            <div className="flex flex-col items-center justify-center text-white space-y-4 p-8">
-              <AlertCircle className="h-16 w-16 text-red-500" />
-              <div className="text-center space-y-2">
-                <h3 className="text-xl font-semibold">Unsupported Video Format</h3>
-                <p className="text-gray-300 max-w-md">This video format is not supported by the player.</p>
-              </div>
-              <Button 
-                onClick={() => window.open(videoUrl, '_blank')}
-                variant="outline"
-                className="text-white border-white hover:bg-white hover:text-black"
-              >
-                Open Externally
-              </Button>
-            </div>
-          ) : error ? (
+          {error ? (
             renderErrorState()
           ) : loading ? (
             renderLoadingState()
@@ -211,10 +176,7 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                 onError={handleError}
                 onProgress={handleProgress}
                 onDuration={handleDuration}
-                onStart={() => {
-                  console.log('Video started playing');
-                  setLoading(false);
-                }}
+                onStart={() => setLoading(false)}
                 controls={false}
                 config={{
                   youtube: {
@@ -228,12 +190,6 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                       iv_load_policy: 3,
                       cc_load_policy: 0,
                       playsinline: 1,
-                    }
-                  },
-                  file: {
-                    attributes: {
-                      crossOrigin: 'anonymous',
-                      preload: 'metadata'
                     }
                   }
                 }}
