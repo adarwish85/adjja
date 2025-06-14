@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
-import ReactPlayer from 'react-player/youtube';
+import ReactPlayer from 'react-player';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { X, Play, AlertCircle } from "lucide-react";
@@ -31,6 +31,7 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
   }, [videoUrl]);
 
   const handleReady = useCallback(() => {
+    console.log('Video player ready');
     setIsReady(true);
     setShowFallback(false);
   }, []);
@@ -44,21 +45,7 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
     if (isOpen) {
       resetState();
     }
-  }, [isOpen]);
-
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (
-      (e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U') ||
-      (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.key === 'I') ||
-      e.key === 'F12'
-    ) {
-      e.preventDefault();
-    }
-  };
+  }, [isOpen, videoUrl]);
 
   const renderFallbackContent = () => (
     <div className="flex flex-col items-center justify-center text-white space-y-6 p-8 min-h-[400px]">
@@ -91,15 +78,10 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
     }
 
     return (
-      <div 
-        className="relative w-full h-full min-h-[400px] bg-black"
-        onContextMenu={handleContextMenu}
-        onKeyDown={handleKeyDown}
-        tabIndex={0}
-      >
+      <div className="relative w-full h-full min-h-[400px] bg-black">
         <ReactPlayer
           url={cleanVideoUrl}
-          playing={true}
+          playing={false}
           controls={true}
           width="100%"
           height="100%"
@@ -107,36 +89,30 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
           onError={handleError}
           onReady={handleReady}
           config={{
-            playerVars: {
-              modestbranding: 1,
-              rel: 0,
-              showinfo: 0,
-              iv_load_policy: 3,
-              cc_load_policy: 0,
-              playsinline: 1,
-              origin: window.location.origin,
-              enablejsapi: 1,
-              fs: 1,
-              controls: 1,
-              disablekb: 0,
-              autoplay: 0,
-              start: 0,
-              end: 0,
-              loop: 0,
-              playlist: '',
-              color: 'white',
-              hl: 'en',
-              widget_referrer: window.location.origin
-            },
-            embedOptions: {
-              host: 'https://www.youtube-nocookie.com'
+            youtube: {
+              playerVars: {
+                modestbranding: 1,
+                rel: 0,
+                showinfo: 0,
+                iv_load_policy: 3,
+                cc_load_policy: 0,
+                playsinline: 1,
+                origin: window.location.origin,
+                enablejsapi: 1,
+                fs: 1,
+                controls: 1,
+                disablekb: 0,
+                autoplay: 0,
+                start: 0,
+                end: 0,
+                loop: 0,
+                color: 'white',
+                hl: 'en'
+              },
+              embedOptions: {
+                host: 'https://www.youtube-nocookie.com'
+              }
             }
-          }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            pointerEvents: 'auto'
           }}
         />
         {!isReady && !showFallback && (
@@ -144,11 +120,6 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
             {renderLoadingContent()}
           </div>
         )}
-        
-        <div 
-          className="absolute inset-0 pointer-events-none"
-          style={{ zIndex: 1 }}
-        />
       </div>
     );
   };
