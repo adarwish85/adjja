@@ -75,6 +75,14 @@ function App() {
                   }
                 />
                 <Route
+                  path="/admin/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <SuperAdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/edit-profile"
                   element={
                     <ProtectedRoute>
