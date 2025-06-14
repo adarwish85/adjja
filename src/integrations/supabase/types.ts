@@ -71,6 +71,65 @@ export type Database = {
           },
         ]
       }
+      bjj_profiles: {
+        Row: {
+          about_me: string | null
+          academy_team: string | null
+          belt_rank: string | null
+          created_at: string | null
+          facebook_url: string | null
+          favorite_position: string | null
+          favorite_submission: string | null
+          gallery_images: Json | null
+          height_cm: number | null
+          id: string
+          instagram_url: string | null
+          updated_at: string | null
+          user_id: string
+          weight_kg: number | null
+        }
+        Insert: {
+          about_me?: string | null
+          academy_team?: string | null
+          belt_rank?: string | null
+          created_at?: string | null
+          facebook_url?: string | null
+          favorite_position?: string | null
+          favorite_submission?: string | null
+          gallery_images?: Json | null
+          height_cm?: number | null
+          id?: string
+          instagram_url?: string | null
+          updated_at?: string | null
+          user_id: string
+          weight_kg?: number | null
+        }
+        Update: {
+          about_me?: string | null
+          academy_team?: string | null
+          belt_rank?: string | null
+          created_at?: string | null
+          facebook_url?: string | null
+          favorite_position?: string | null
+          favorite_submission?: string | null
+          gallery_images?: Json | null
+          height_cm?: number | null
+          id?: string
+          instagram_url?: string | null
+          updated_at?: string | null
+          user_id?: string
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bjj_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branches: {
         Row: {
           active_classes: number | null

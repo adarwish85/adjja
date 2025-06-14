@@ -5,18 +5,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
+import { useBJJProfile } from "@/hooks/useBJJProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { User, Camera, Upload, ArrowLeft } from "lucide-react";
+import { User, Camera, Upload, ArrowLeft, Dumbbell, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { BJJProfileForm } from "@/components/profile/BJJProfileForm";
+import { GalleryManager } from "@/components/profile/GalleryManager";
 
 export default function EditProfile() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { bjjProfile, setBjjProfile, loading: bjjLoading, saveBJJProfile } = useBJJProfile();
+  
   const [loading, setLoading] = useState(false);
   const [uploadingProfilePic, setUploadingProfilePic] = useState(false);
   const [uploadingCoverPhoto, setUploadingCoverPhoto] = useState(false);
+  const [activeTab, setActiveTab] = useState("personal");
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -27,7 +35,6 @@ export default function EditProfile() {
 
   useEffect(() => {
     if (user) {
-      // Load existing profile data
       loadProfile();
     }
   }, [user]);
@@ -51,7 +58,6 @@ export default function EditProfile() {
           cover_photo_url: profile.cover_photo_url || ""
         });
       } else {
-        // Fallback to user metadata if no profile exists
         setFormData({
           name: user.user_metadata?.name || "",
           email: user.email || "",
@@ -124,13 +130,12 @@ export default function EditProfile() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitPersonal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
     setLoading(true);
     try {
-      // Update auth user metadata and email
       const { error: authError } = await supabase.auth.updateUser({
         email: formData.email,
         data: {
@@ -141,7 +146,6 @@ export default function EditProfile() {
 
       if (authError) throw authError;
 
-      // Update or insert profile table
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
@@ -159,11 +163,37 @@ export default function EditProfile() {
         throw profileError;
       }
 
-      toast.success("Profile updated successfully");
-      navigate(-1); // Go back to previous page
+      toast.success("Personal information updated successfully");
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error("Failed to update profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitBJJ = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const success = await saveBJJProfile(bjjProfile);
+    if (success) {
+      toast.success("BJJ profile updated successfully");
+    }
+  };
+
+  const handleSaveAll = async () => {
+    setLoading(true);
+    try {
+      // Save personal info
+      await handleSubmitPersonal(new Event('submit') as any);
+      // Save BJJ info
+      await handleSubmitBJJ(new Event('submit') as any);
+      
+      toast.success("All profile information saved successfully");
+      navigate(-1);
+    } catch (error) {
+      console.error('Error saving all profile data:', error);
+      toast.error("Failed to save all profile information");
     } finally {
       setLoading(false);
     }
@@ -250,73 +280,138 @@ export default function EditProfile() {
           </div>
         </Card>
 
-        {/* Profile Information Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Personal Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="Enter your email address"
-                    required
-                  />
-                  <p className="text-xs text-gray-500">You may need to verify your new email address</p>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  placeholder="Enter your phone number"
-                />
-              </div>
-              
+        {/* Tabbed Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="personal" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Personal Info
+            </TabsTrigger>
+            <TabsTrigger value="bjj" className="flex items-center gap-2">
+              <Dumbbell className="h-4 w-4" />
+              BJJ Details
+            </TabsTrigger>
+            <TabsTrigger value="gallery" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Gallery
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="personal" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Personal Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmitPersonal} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Full Name</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Enter your full name"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="Enter your email address"
+                        required
+                      />
+                      <p className="text-xs text-gray-500">You may need to verify your new email address</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="Enter your phone number"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end gap-4 pt-6">
+                    <Button 
+                      type="submit" 
+                      disabled={loading || uploadingProfilePic || uploadingCoverPhoto}
+                      className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+                    >
+                      {loading ? "Saving..." : "Save Personal Info"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="bjj" className="mt-6">
+            <form onSubmit={handleSubmitBJJ}>
+              <BJJProfileForm
+                data={bjjProfile}
+                onChange={setBjjProfile}
+                loading={bjjLoading}
+              />
               <div className="flex justify-end gap-4 pt-6">
                 <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => navigate(-1)}
-                  disabled={loading}
-                >
-                  Cancel
-                </Button>
-                <Button 
                   type="submit" 
-                  disabled={loading || uploadingProfilePic || uploadingCoverPhoto}
+                  disabled={bjjLoading}
                   className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
                 >
-                  {loading ? "Updating..." : "Save Changes"}
+                  {bjjLoading ? "Saving..." : "Save BJJ Profile"}
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+          </TabsContent>
+
+          <TabsContent value="gallery" className="mt-6">
+            <GalleryManager
+              images={bjjProfile.gallery_images || []}
+              onChange={(images) => setBjjProfile(prev => ({ ...prev, gallery_images: images }))}
+              loading={bjjLoading}
+            />
+            <div className="flex justify-end gap-4 pt-6">
+              <Button 
+                onClick={() => saveBJJProfile(bjjProfile)}
+                disabled={bjjLoading}
+                className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+              >
+                {bjjLoading ? "Saving..." : "Save Gallery"}
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Save All Button */}
+        <div className="flex justify-end gap-4 pt-8 border-t">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate(-1)}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSaveAll}
+            disabled={loading || uploadingProfilePic || uploadingCoverPhoto || bjjLoading}
+            className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+          >
+            {loading ? "Saving All..." : "Save All Changes"}
+          </Button>
+        </div>
       </div>
     </div>
   );
