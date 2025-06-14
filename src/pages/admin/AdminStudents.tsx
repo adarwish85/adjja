@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Button } from "@/components/ui/button";
@@ -40,7 +39,7 @@ import { useClasses } from "@/hooks/useClasses";
 
 const AdminStudents = () => {
   const { students, loading, addStudent, updateStudent, deleteStudent } = useStudents();
-  const { enrollments } = useClassEnrollments();
+  const { enrollments, enrollStudent, unenrollStudent } = useClassEnrollments();
   const { classes } = useClasses();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -75,12 +74,13 @@ const AdminStudents = () => {
     }
   };
 
-  const handleEditStudent = async (updatedStudent: Omit<Student, "id" | "created_at" | "updated_at">) => {
+  const handleEditStudent = async (updatedStudent: Omit<Student, "id" | "created_at" | "updated_at">, classIds?: string[]) => {
     if (!editingStudent) return;
     
     try {
       console.log("AdminStudents: Preparing update for student:", editingStudent.id);
       console.log("AdminStudents: Update data:", updatedStudent);
+      console.log("AdminStudents: Class IDs:", classIds);
       
       // Remove read-only fields and ensure proper data types
       const updateData = {
@@ -98,7 +98,51 @@ const AdminStudents = () => {
       
       console.log("AdminStudents: Clean update data:", updateData);
       
+      // Update the student data
       await updateStudent(editingStudent.id, updateData);
+      
+      // Handle class enrollment changes if provided
+      if (classIds !== undefined) {
+        console.log("AdminStudents: Handling class enrollment updates");
+        
+        // Get current enrollments
+        const currentEnrollments = enrollments.filter(
+          enrollment => enrollment.student_id === editingStudent.id && enrollment.status === "active"
+        );
+        const currentClassIds = currentEnrollments.map(e => e.class_id);
+        
+        // Find classes to enroll and unenroll
+        const classesToEnroll = classIds.filter(id => !currentClassIds.includes(id));
+        const classesToUnenroll = currentClassIds.filter(id => !classIds.includes(id));
+        
+        console.log("AdminStudents: Classes to enroll:", classesToEnroll);
+        console.log("AdminStudents: Classes to unenroll:", classesToUnenroll);
+        
+        // Enroll in new classes
+        for (const classId of classesToEnroll) {
+          try {
+            await enrollStudent.mutateAsync({
+              studentId: editingStudent.id,
+              classId: classId
+            });
+          } catch (error) {
+            console.error("AdminStudents: Error enrolling in class:", classId, error);
+          }
+        }
+        
+        // Unenroll from removed classes
+        for (const classId of classesToUnenroll) {
+          try {
+            await unenrollStudent.mutateAsync({
+              studentId: editingStudent.id,
+              classId: classId
+            });
+          } catch (error) {
+            console.error("AdminStudents: Error unenrolling from class:", classId, error);
+          }
+        }
+      }
+      
       setEditingStudent(null);
     } catch (error) {
       console.error("AdminStudents: Update error:", error);

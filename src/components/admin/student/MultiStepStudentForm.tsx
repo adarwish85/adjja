@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -9,6 +8,7 @@ import { StudentClassInfoStep } from "./StudentClassInfoStep";
 import { StudentClassEnrollmentStep } from "./StudentClassEnrollmentStep";
 import { StudentAccountStep } from "./StudentAccountStep";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useClassEnrollments } from "@/hooks/useClassEnrollments";
 
 interface MultiStepStudentFormProps {
   student?: Student;
@@ -25,6 +25,14 @@ const steps = [
 
 export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: MultiStepStudentFormProps) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const { enrollments } = useClassEnrollments();
+  
+  // Get current enrollments for editing student
+  const currentEnrollments = isEditing && student ? 
+    enrollments.filter(enrollment => 
+      enrollment.student_id === student.id && enrollment.status === "active"
+    ).map(enrollment => enrollment.class_id) : [];
+
   const [formData, setFormData] = useState({
     name: student?.name || "",
     email: student?.email || "",
@@ -38,11 +46,25 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     attendance_rate: student?.attendance_rate || 0,
     joined_date: student?.joined_date || new Date().toISOString().split('T')[0],
     last_attended: student?.last_attended || new Date().toISOString().split('T')[0],
-    selectedClassIds: [] as string[],
+    selectedClassIds: currentEnrollments,
     username: "",
     password: "",
     createAccount: !isEditing,
   });
+
+  // Update selectedClassIds when enrollments change for editing student
+  useEffect(() => {
+    if (isEditing && student && enrollments.length > 0) {
+      const studentEnrollments = enrollments.filter(enrollment => 
+        enrollment.student_id === student.id && enrollment.status === "active"
+      ).map(enrollment => enrollment.class_id);
+      
+      setFormData(prev => ({
+        ...prev,
+        selectedClassIds: studentEnrollments
+      }));
+    }
+  }, [isEditing, student, enrollments]);
 
   const updateFormData = (updates: Partial<typeof formData>) => {
     console.log("MultiStepStudentForm: Updating form data:", updates);
