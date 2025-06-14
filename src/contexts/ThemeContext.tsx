@@ -1,5 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ThemeContextType {
   theme: 'light' | 'dark' | 'auto';
@@ -7,6 +9,8 @@ interface ThemeContextType {
   setTheme: (theme: 'light' | 'dark' | 'auto') => void;
   setColorScheme: (scheme: 'bjj-gold' | 'blue' | 'green' | 'purple' | 'black') => void;
   applyTheme: () => void;
+  isLoading: boolean;
+  canModifyTheme: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -21,17 +25,28 @@ export const useTheme = () => {
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<'light' | 'dark' | 'auto'>('light');
-  const [colorScheme, setColorSchemeState] = useState<'bjj-gold' | 'blue' | 'green' | 'purple' | 'black'>('black');
+  const [colorScheme, setColorSchemeState] = useState<'bjj-gold' | 'blue' | 'green' | 'purple' | 'black'>('bjj-gold');
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  const { settingsByCategory, isLoading, updateSetting } = useSystemSettings('appearance');
+  const { userProfile, isAdmin } = useAuth();
 
-  // Load theme from settings
+  // Only Super Admins can modify the system theme
+  const canModifyTheme = isAdmin();
+
+  // Load theme from database settings
   useEffect(() => {
-    const savedSettings = localStorage.getItem('adjja_general_settings');
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      setThemeState(settings.theme || 'light');
-      setColorSchemeState(settings.colorScheme || 'black');
+    if (!isLoading && settingsByCategory.appearance && !isInitialized) {
+      const dbTheme = settingsByCategory.appearance.theme_mode || 'light';
+      const dbColorScheme = settingsByCategory.appearance.color_scheme || 'bjj-gold';
+      
+      console.log('Loading theme from database:', { dbTheme, dbColorScheme });
+      
+      setThemeState(dbTheme);
+      setColorSchemeState(dbColorScheme);
+      setIsInitialized(true);
     }
-  }, []);
+  }, [isLoading, settingsByCategory, isInitialized]);
 
   const applyTheme = () => {
     const root = document.documentElement;
@@ -49,9 +64,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Define comprehensive color scheme CSS variables
     const colorSchemes = {
       'bjj-gold': {
-        '--primary': '39 100% 56%', // BJJ Gold
+        '--primary': '39 100% 56%',
         '--primary-foreground': '222.2 47.4% 11.2%',
-        '--accent': '39 100% 64%', // Lighter gold for accents
+        '--accent': '39 100% 64%',
         '--accent-foreground': '222.2 47.4% 11.2%',
         '--destructive': '0 84.2% 60.2%',
         '--destructive-foreground': '210 40% 98%',
@@ -64,9 +79,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         '--bjj-gold-light': '#fed7aa',
       },
       'blue': {
-        '--primary': '221.2 83.2% 53.3%', // Blue
+        '--primary': '221.2 83.2% 53.3%',
         '--primary-foreground': '210 40% 98%',
-        '--accent': '221.2 83.2% 63.3%', // Lighter blue for accents
+        '--accent': '221.2 83.2% 63.3%',
         '--accent-foreground': '210 40% 98%',
         '--destructive': '0 84.2% 60.2%',
         '--destructive-foreground': '210 40% 98%',
@@ -79,9 +94,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         '--bjj-gold-light': '#93c5fd',
       },
       'green': {
-        '--primary': '142.1 76.2% 36.3%', // Green
+        '--primary': '142.1 76.2% 36.3%',
         '--primary-foreground': '210 40% 98%',
-        '--accent': '142.1 76.2% 46.3%', // Lighter green for accents
+        '--accent': '142.1 76.2% 46.3%',
         '--accent-foreground': '210 40% 98%',
         '--destructive': '0 84.2% 60.2%',
         '--destructive-foreground': '210 40% 98%',
@@ -94,9 +109,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         '--bjj-gold-light': '#86efac',
       },
       'purple': {
-        '--primary': '262.1 83.3% 57.8%', // Purple
+        '--primary': '262.1 83.3% 57.8%',
         '--primary-foreground': '210 40% 98%',
-        '--accent': '262.1 83.3% 67.8%', // Lighter purple for accents
+        '--accent': '262.1 83.3% 67.8%',
         '--accent-foreground': '210 40% 98%',
         '--destructive': '0 84.2% 60.2%',
         '--destructive-foreground': '210 40% 98%',
@@ -109,9 +124,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         '--bjj-gold-light': '#c4b5fd',
       },
       'black': {
-        '--primary': '0 0% 9%', // Black
+        '--primary': '0 0% 9%',
         '--primary-foreground': '210 40% 98%',
-        '--accent': '0 0% 15%', // Lighter black for accents
+        '--accent': '0 0% 15%',
         '--accent-foreground': '210 40% 98%',
         '--destructive': '0 84.2% 60.2%',
         '--destructive-foreground': '210 40% 98%',
@@ -134,39 +149,57 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.style.setProperty('--theme-updated', Date.now().toString());
   };
 
-  const setTheme = (newTheme: 'light' | 'dark' | 'auto') => {
+  const setTheme = async (newTheme: 'light' | 'dark' | 'auto') => {
+    if (!canModifyTheme) {
+      console.warn('Only Super Admins can modify the system theme');
+      return;
+    }
+
+    console.log('Updating system theme to:', newTheme);
     setThemeState(newTheme);
-    // Update localStorage immediately
-    const savedSettings = localStorage.getItem('adjja_general_settings');
-    const settings = savedSettings ? JSON.parse(savedSettings) : {};
-    settings.theme = newTheme;
-    localStorage.setItem('adjja_general_settings', JSON.stringify(settings));
+    
+    try {
+      await updateSetting('appearance', 'theme_mode', newTheme);
+      console.log('Theme saved to database');
+    } catch (error) {
+      console.error('Failed to save theme to database:', error);
+    }
   };
 
-  const setColorScheme = (newScheme: 'bjj-gold' | 'blue' | 'green' | 'purple' | 'black') => {
+  const setColorScheme = async (newScheme: 'bjj-gold' | 'blue' | 'green' | 'purple' | 'black') => {
+    if (!canModifyTheme) {
+      console.warn('Only Super Admins can modify the system color scheme');
+      return;
+    }
+
+    console.log('Updating system color scheme to:', newScheme);
     setColorSchemeState(newScheme);
-    // Update localStorage immediately
-    const savedSettings = localStorage.getItem('adjja_general_settings');
-    const settings = savedSettings ? JSON.parse(savedSettings) : {};
-    settings.colorScheme = newScheme;
-    localStorage.setItem('adjja_general_settings', JSON.stringify(settings));
+    
+    try {
+      await updateSetting('appearance', 'color_scheme', newScheme);
+      console.log('Color scheme saved to database');
+    } catch (error) {
+      console.error('Failed to save color scheme to database:', error);
+    }
   };
 
   // Apply theme whenever theme or colorScheme changes
   useEffect(() => {
-    applyTheme();
-  }, [theme, colorScheme]);
+    if (isInitialized) {
+      applyTheme();
+    }
+  }, [theme, colorScheme, isInitialized]);
 
   // Listen for system theme changes when auto is selected
   useEffect(() => {
-    if (theme === 'auto') {
+    if (theme === 'auto' && isInitialized) {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handleChange = () => applyTheme();
       
       mediaQuery.addEventListener('change', handleChange);
       return () => mediaQuery.removeEventListener('change', handleChange);
     }
-  }, [theme]);
+  }, [theme, isInitialized]);
 
   return (
     <ThemeContext.Provider
@@ -176,6 +209,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setTheme,
         setColorScheme,
         applyTheme,
+        isLoading: isLoading || !isInitialized,
+        canModifyTheme,
       }}
     >
       {children}

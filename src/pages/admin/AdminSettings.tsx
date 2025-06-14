@@ -9,6 +9,7 @@ import { IntegrationSettings } from "@/components/admin/settings/IntegrationSett
 import { NotificationSettings } from "@/components/admin/settings/NotificationSettings";
 import { BackupSettings } from "@/components/admin/settings/BackupSettings";
 import { CentralizedSettings } from "@/components/admin/settings/CentralizedSettings";
+import AppearanceSettings from "@/components/admin/settings/AppearanceSettings";
 
 const AdminSettings = () => {
   return (
@@ -20,8 +21,9 @@ const AdminSettings = () => {
         </div>
 
         <Tabs defaultValue="centralized" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="centralized">Centralized</TabsTrigger>
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="system">System</TabsTrigger>
@@ -33,6 +35,10 @@ const AdminSettings = () => {
 
           <TabsContent value="centralized">
             <CentralizedSettings />
+          </TabsContent>
+
+          <TabsContent value="appearance">
+            <AppearanceSettings />
           </TabsContent>
 
           <TabsContent value="general">
