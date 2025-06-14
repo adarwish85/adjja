@@ -7,12 +7,23 @@ import { StudentLMS } from "@/components/dashboard/StudentLMS";
 import { StudentSchedule } from "@/components/dashboard/StudentSchedule";
 import { StudentAchievements } from "@/components/dashboard/StudentAchievements";
 import { LMSPurchase } from "@/components/dashboard/LMSPurchase";
+import { StudentCheckInButton } from "@/components/attendance/StudentCheckInButton";
+import { QuotaDisplay } from "@/components/attendance/QuotaDisplay";
+import { useSmartAttendance } from "@/hooks/useSmartAttendance";
 
 const StudentDashboard = () => {
+  const { studentQuota } = useSmartAttendance();
+
   return (
     <StudentLayout>
       <div className="p-4 lg:p-6 space-y-6">
-        <StudentWelcome />
+        <div className="flex items-center justify-between">
+          <StudentWelcome />
+          <div className="flex items-center gap-4">
+            <QuotaDisplay quota={studentQuota} compact />
+            <StudentCheckInButton />
+          </div>
+        </div>
         
         <StudentAnalytics />
         

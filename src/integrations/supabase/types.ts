@@ -12,35 +12,51 @@ export type Database = {
       attendance_records: {
         Row: {
           attendance_date: string
+          checked_in_by: string | null
           class_id: string
+          counted_against_quota: boolean | null
           created_at: string
           id: string
           marked_at: string
           marked_by: string | null
+          source: string | null
           status: string
           student_id: string
         }
         Insert: {
           attendance_date?: string
+          checked_in_by?: string | null
           class_id: string
+          counted_against_quota?: boolean | null
           created_at?: string
           id?: string
           marked_at?: string
           marked_by?: string | null
+          source?: string | null
           status?: string
           student_id: string
         }
         Update: {
           attendance_date?: string
+          checked_in_by?: string | null
           class_id?: string
+          counted_against_quota?: boolean | null
           created_at?: string
           id?: string
           marked_at?: string
           marked_by?: string | null
+          source?: string | null
           status?: string
           student_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "attendance_records_checked_in_by_fkey"
+            columns: ["checked_in_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "attendance_records_class_id_fkey"
             columns: ["class_id"]
@@ -1603,8 +1619,28 @@ export type Database = {
           attendance_count: number
         }[]
       }
+      get_available_classes_for_student: {
+        Args: { p_student_id: string }
+        Returns: {
+          class_id: string
+          class_name: string
+          instructor: string
+          schedule: string
+          already_checked_in: boolean
+          is_enrolled: boolean
+        }[]
+      }
       get_setting_value: {
         Args: { p_category: string; p_key: string; p_branch_id?: string }
+        Returns: Json
+      }
+      process_attendance_checkin: {
+        Args: {
+          p_student_id: string
+          p_class_id: string
+          p_checked_in_by: string
+          p_source?: string
+        }
         Returns: Json
       }
       refresh_analytics_views: {
