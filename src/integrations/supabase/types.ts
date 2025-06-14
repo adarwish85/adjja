@@ -681,6 +681,95 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          next_reminder_date: string | null
+          reminder_type: string
+          sent_date: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          next_reminder_date?: string | null
+          reminder_type: string
+          sent_date?: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          next_reminder_date?: string | null
+          reminder_type?: string
+          sent_date?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_reminders_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          paypal_order_id: string | null
+          paypal_transaction_id: string | null
+          status: string
+          student_id: string
+          subscription_plan_id: string | null
+          transaction_date: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          paypal_order_id?: string | null
+          paypal_transaction_id?: string | null
+          status?: string
+          student_id: string
+          subscription_plan_id?: string | null
+          transaction_date?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          paypal_order_id?: string | null
+          paypal_transaction_id?: string | null
+          status?: string
+          student_id?: string
+          subscription_plan_id?: string | null
+          transaction_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_subscription_plan_id_fkey"
+            columns: ["subscription_plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -772,6 +861,57 @@ export type Database = {
           },
         ]
       }
+      student_subscriptions: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          next_due_date: string | null
+          payment_status: string
+          start_date: string
+          student_id: string
+          subscription_plan_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          next_due_date?: string | null
+          payment_status?: string
+          start_date?: string
+          student_id: string
+          subscription_plan_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          next_due_date?: string | null
+          payment_status?: string
+          start_date?: string
+          student_id?: string
+          subscription_plan_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_subscriptions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_subscriptions_subscription_plan_id_fkey"
+            columns: ["subscription_plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           attendance_rate: number
@@ -785,9 +925,12 @@ export type Database = {
           last_attended: string | null
           membership_type: string
           name: string
+          next_due_date: string | null
+          payment_status: string | null
           phone: string | null
           status: string
           stripes: number
+          subscription_plan_id: string | null
           updated_at: string
         }
         Insert: {
@@ -802,9 +945,12 @@ export type Database = {
           last_attended?: string | null
           membership_type?: string
           name: string
+          next_due_date?: string | null
+          payment_status?: string | null
           phone?: string | null
           status?: string
           stripes?: number
+          subscription_plan_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -819,12 +965,23 @@ export type Database = {
           last_attended?: string | null
           membership_type?: string
           name?: string
+          next_due_date?: string | null
+          payment_status?: string | null
           phone?: string | null
           status?: string
           stripes?: number
+          subscription_plan_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_subscription_plan_id_fkey"
+            columns: ["subscription_plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscribers: {
         Row: {
@@ -862,6 +1019,45 @@ export type Database = {
           subscription_tier?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          number_of_classes: number
+          sale_price: number | null
+          standard_price: number
+          subscription_period: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          number_of_classes: number
+          sale_price?: number | null
+          standard_price: number
+          subscription_period: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          number_of_classes?: number
+          sale_price?: number | null
+          standard_price?: number
+          subscription_period?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1020,6 +1216,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_next_due_date: {
+        Args: { period_type: string; from_date?: string }
+        Returns: string
+      }
       create_student_account: {
         Args: {
           p_email: string
