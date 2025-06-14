@@ -3,15 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
 
-const chartData = [
-  { month: "Jan", attendance: 186 },
-  { month: "Feb", attendance: 205 },
-  { month: "Mar", attendance: 237 },
-  { month: "Apr", attendance: 203 },
-  { month: "May", attendance: 248 },
-  { month: "Jun", attendance: 264 },
-];
-
 const chartConfig = {
   attendance: {
     label: "Attendance",
@@ -29,28 +20,13 @@ export const AttendanceChart = () => {
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[250px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <XAxis 
-                dataKey="month" 
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 12, fill: '#4a5568' }}
-              />
-              <YAxis 
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 12, fill: '#4a5568' }}
-              />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Line 
-                type="monotone" 
-                dataKey="attendance" 
-                stroke="#f6ad24" 
-                strokeWidth={3}
-                dot={{ fill: "#f6ad24", strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, stroke: "#f6ad24", strokeWidth: 2 }}
-              />
-            </LineChart>
+            <div className="flex items-center justify-center h-full text-bjj-gray">
+              <div className="text-center">
+                <div className="text-4xl mb-2">📊</div>
+                <p className="text-sm">No attendance data available</p>
+                <p className="text-xs">Data will appear when students start attending classes</p>
+              </div>
+            </div>
           </ResponsiveContainer>
         </ChartContainer>
       </CardContent>
