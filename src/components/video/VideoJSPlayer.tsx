@@ -2,7 +2,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
-import '@videojs/themes/dist/sea-green/index.css';
 
 interface VideoJSPlayerProps {
   src: string;
@@ -112,7 +111,7 @@ export const VideoJSPlayer: React.FC<VideoJSPlayerProps> = ({
     <div className={`video-js-container ${className}`}>
       <video
         ref={videoRef}
-        className="video-js vjs-theme-sea-green vjs-big-play-centered"
+        className="video-js vjs-big-play-centered"
         data-setup="{}"
         style={{ width: '100%', height: '100%' }}
       />
