@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,11 +40,14 @@ const popularSubmissions = [
 ];
 
 export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps) => {
-  const [formData, setFormData] = useState<BJJProfileData>(data);
+  // Initialize form data from props
+  useEffect(() => {
+    console.log('BJJProfileForm received data:', data);
+  }, [data]);
 
   const handleChange = (field: keyof BJJProfileData, value: string | number) => {
-    const updatedData = { ...formData, [field]: value };
-    setFormData(updatedData);
+    console.log(`BJJProfileForm updating ${field} to:`, value);
+    const updatedData = { ...data, [field]: value };
     onChange(updatedData);
   };
 
@@ -74,7 +77,7 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
               step="0.1"
               min="30"
               max="200"
-              value={formData.weight_kg || ''}
+              value={data.weight_kg || ''}
               onChange={(e) => handleChange('weight_kg', parseFloat(e.target.value) || 0)}
               placeholder="e.g., 72.5"
             />
@@ -88,7 +91,7 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
               step="0.1"
               min="120"
               max="250"
-              value={formData.height_cm || ''}
+              value={data.height_cm || ''}
               onChange={(e) => handleChange('height_cm', parseFloat(e.target.value) || 0)}
               placeholder="e.g., 175"
             />
@@ -100,7 +103,7 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
           <div className="space-y-2">
             <Label htmlFor="belt">BJJ Belt Rank</Label>
             <Select
-              value={formData.belt_rank || ''}
+              value={data.belt_rank || ''}
               onValueChange={(value) => handleChange('belt_rank', value)}
             >
               <SelectTrigger>
@@ -120,7 +123,7 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
             <Label htmlFor="academy">Academy / Team</Label>
             <Input
               id="academy"
-              value={formData.academy_team || ''}
+              value={data.academy_team || ''}
               onChange={(e) => handleChange('academy_team', e.target.value)}
               placeholder="e.g., Gracie Barra, Alliance, etc."
             />
@@ -132,7 +135,7 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
           <div className="space-y-2">
             <Label htmlFor="position">Favorite Position</Label>
             <Select
-              value={formData.favorite_position || ''}
+              value={data.favorite_position || ''}
               onValueChange={(value) => handleChange('favorite_position', value)}
             >
               <SelectTrigger>
@@ -152,7 +155,7 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
           <div className="space-y-2">
             <Label htmlFor="submission">Favorite Submission</Label>
             <Select
-              value={formData.favorite_submission || ''}
+              value={data.favorite_submission || ''}
               onValueChange={(value) => handleChange('favorite_submission', value)}
             >
               <SelectTrigger>
@@ -177,12 +180,12 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
             <Input
               id="instagram"
               type="url"
-              value={formData.instagram_url || ''}
+              value={data.instagram_url || ''}
               onChange={(e) => handleChange('instagram_url', e.target.value)}
               placeholder="https://instagram.com/username"
-              className={!validateUrl(formData.instagram_url || '') ? 'border-red-500' : ''}
+              className={!validateUrl(data.instagram_url || '') ? 'border-red-500' : ''}
             />
-            {formData.instagram_url && !validateUrl(formData.instagram_url) && (
+            {data.instagram_url && !validateUrl(data.instagram_url) && (
               <p className="text-xs text-red-500">Please enter a valid URL</p>
             )}
           </div>
@@ -192,12 +195,12 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
             <Input
               id="facebook"
               type="url"
-              value={formData.facebook_url || ''}
+              value={data.facebook_url || ''}
               onChange={(e) => handleChange('facebook_url', e.target.value)}
               placeholder="https://facebook.com/username"
-              className={!validateUrl(formData.facebook_url || '') ? 'border-red-500' : ''}
+              className={!validateUrl(data.facebook_url || '') ? 'border-red-500' : ''}
             />
-            {formData.facebook_url && !validateUrl(formData.facebook_url) && (
+            {data.facebook_url && !validateUrl(data.facebook_url) && (
               <p className="text-xs text-red-500">Please enter a valid URL</p>
             )}
           </div>
@@ -209,13 +212,13 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
           <Textarea
             id="about"
             rows={4}
-            value={formData.about_me || ''}
+            value={data.about_me || ''}
             onChange={(e) => handleChange('about_me', e.target.value)}
             placeholder="Tell us about your BJJ journey, achievements, goals, etc..."
             maxLength={1000}
           />
           <p className="text-xs text-gray-500">
-            {(formData.about_me || '').length}/1000 characters
+            {(data.about_me || '').length}/1000 characters
           </p>
         </div>
       </CardContent>

@@ -40,8 +40,12 @@ export const useBJJProfile = () => {
   const [loading, setLoading] = useState(false);
 
   const loadBJJProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found, skipping profile load');
+      return;
+    }
 
+    console.log('Loading BJJ profile for user:', user.id);
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -51,8 +55,11 @@ export const useBJJProfile = () => {
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
+        console.error('Error loading BJJ profile:', error);
         throw error;
       }
+
+      console.log('Loaded BJJ profile data:', data);
 
       if (data) {
         // Safely cast gallery_images to string array
@@ -60,7 +67,7 @@ export const useBJJProfile = () => {
           ? data.gallery_images.filter((img): img is string => typeof img === 'string')
           : [];
 
-        setBjjProfile({
+        const profileData = {
           weight_kg: data.weight_kg,
           height_cm: data.height_cm,
           belt_rank: data.belt_rank,
@@ -88,7 +95,13 @@ export const useBJJProfile = () => {
           other_link_1_name: data.other_link_1_name,
           other_link_2: data.other_link_2,
           other_link_2_name: data.other_link_2_name,
-        });
+        };
+        
+        console.log('Setting BJJ profile state:', profileData);
+        setBjjProfile(profileData);
+      } else {
+        console.log('No BJJ profile found, setting empty state');
+        setBjjProfile({});
       }
     } catch (error) {
       console.error('Error loading BJJ profile:', error);
@@ -99,8 +112,13 @@ export const useBJJProfile = () => {
   };
 
   const saveBJJProfile = async (profileData: BJJProfileData) => {
-    if (!user) return false;
+    if (!user) {
+      console.error('No user found, cannot save profile');
+      toast.error("You must be logged in to save your profile");
+      return false;
+    }
 
+    console.log('Saving BJJ profile for user:', user.id, 'with data:', profileData);
     setLoading(true);
     try {
       const { error } = await supabase
@@ -138,14 +156,17 @@ export const useBJJProfile = () => {
         });
 
       if (error) {
+        console.error('Supabase error saving BJJ profile:', error);
         throw error;
       }
 
+      console.log('Successfully saved BJJ profile');
       setBjjProfile(profileData);
+      toast.success("BJJ profile saved successfully");
       return true;
     } catch (error) {
       console.error('Error saving BJJ profile:', error);
-      toast.error("Failed to save BJJ profile");
+      toast.error("Failed to save BJJ profile: " + (error as Error).message);
       return false;
     } finally {
       setLoading(false);
@@ -153,6 +174,7 @@ export const useBJJProfile = () => {
   };
 
   const getPublicProfile = async (slug: string) => {
+    console.log('Loading public profile for slug:', slug);
     try {
       const { data, error } = await supabase
         .from('bjj_profiles')
@@ -165,6 +187,7 @@ export const useBJJProfile = () => {
         .single();
 
       if (error) {
+        console.error('Error loading public profile:', error);
         throw error;
       }
 
@@ -176,6 +199,7 @@ export const useBJJProfile = () => {
           .eq('profile_slug', slug);
       }
 
+      console.log('Loaded public profile:', data);
       return data;
     } catch (error) {
       console.error('Error loading public profile:', error);

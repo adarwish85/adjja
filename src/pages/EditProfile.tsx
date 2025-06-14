@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBJJProfile } from "@/hooks/useBJJProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { User, Camera, ArrowLeft, Dumbbell, Users, Trophy, ExternalLink, Shield } from "lucide-react";
+import { User, Camera, ArrowLeft, Dumbbell, Users, Trophy, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BJJProfileForm } from "@/components/profile/BJJProfileForm";
 import { GalleryManager } from "@/components/profile/GalleryManager";
@@ -45,14 +45,21 @@ export default function EditProfile() {
   const loadProfile = async () => {
     if (!user) return;
     
+    console.log('Loading personal profile for user:', user.id);
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading profile:', error);
+        throw error;
+      }
 
       if (profile) {
+        console.log('Loaded personal profile:', profile);
         setFormData({
           name: profile.name || user.user_metadata?.name || "",
           email: profile.email || user.email || "",
@@ -61,6 +68,7 @@ export default function EditProfile() {
           cover_photo_url: profile.cover_photo_url || ""
         });
       } else {
+        console.log('No profile found, using auth data');
         setFormData({
           name: user.user_metadata?.name || "",
           email: user.email || "",
@@ -71,28 +79,37 @@ export default function EditProfile() {
       }
     } catch (error) {
       console.error('Error loading profile:', error);
+      toast.error("Failed to load profile");
     }
   };
 
   const uploadImage = async (file: File, folder: 'profile-pictures' | 'cover-photos') => {
     if (!user) return null;
 
+    console.log(`Uploading ${folder} image:`, file.name);
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}/${folder}/${Math.random()}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('profiles')
-      .upload(fileName, file);
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(fileName, file);
 
-    if (uploadError) {
-      throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage
+        .from('profiles')
+        .getPublicUrl(fileName);
+
+      console.log('Upload successful, public URL:', data.publicUrl);
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error in uploadImage:', error);
+      throw error;
     }
-
-    const { data } = supabase.storage
-      .from('profiles')
-      .getPublicUrl(fileName);
-
-    return data.publicUrl;
   };
 
   const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,7 +125,7 @@ export default function EditProfile() {
       }
     } catch (error) {
       console.error('Error uploading profile picture:', error);
-      toast.error("Failed to upload profile picture");
+      toast.error("Failed to upload profile picture: " + (error as Error).message);
     } finally {
       setUploadingProfilePic(false);
     }
@@ -127,7 +144,7 @@ export default function EditProfile() {
       }
     } catch (error) {
       console.error('Error uploading cover photo:', error);
-      toast.error("Failed to upload cover photo");
+      toast.error("Failed to upload cover photo: " + (error as Error).message);
     } finally {
       setUploadingCoverPhoto(false);
     }
@@ -137,6 +154,7 @@ export default function EditProfile() {
     e.preventDefault();
     if (!user) return;
 
+    console.log('Saving personal profile:', formData);
     setLoading(true);
     try {
       const { error: authError } = await supabase.auth.updateUser({
@@ -147,7 +165,10 @@ export default function EditProfile() {
         }
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Auth update error:', authError);
+        throw authError;
+      }
 
       const { error: profileError } = await supabase
         .from('profiles')
@@ -163,13 +184,15 @@ export default function EditProfile() {
         });
 
       if (profileError) {
+        console.error('Profile update error:', profileError);
         throw profileError;
       }
 
       toast.success("Personal information updated successfully");
+      console.log('Personal profile saved successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error("Failed to update profile");
+      toast.error("Failed to update profile: " + (error as Error).message);
     } finally {
       setLoading(false);
     }
@@ -178,15 +201,17 @@ export default function EditProfile() {
   const handleSubmitBJJ = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Saving BJJ profile:', bjjProfile);
     const success = await saveBJJProfile(bjjProfile);
     if (success) {
-      toast.success("BJJ profile updated successfully");
+      console.log('BJJ profile saved successfully');
     }
   };
 
   const handleSaveAll = async () => {
     setLoading(true);
     try {
+      console.log('Saving all profile data...');
       // Save personal info
       await handleSubmitPersonal(new Event('submit') as any);
       // Save BJJ info
@@ -196,7 +221,7 @@ export default function EditProfile() {
       navigate(-1);
     } catch (error) {
       console.error('Error saving all profile data:', error);
-      toast.error("Failed to save all profile information");
+      toast.error("Failed to save all profile information: " + (error as Error).message);
     } finally {
       setLoading(false);
     }
@@ -211,6 +236,8 @@ export default function EditProfile() {
   if (!user) {
     return <div>Please log in to edit your profile.</div>;
   }
+
+  console.log('Rendering EditProfile with bjjProfile:', bjjProfile);
 
   return (
     <div className="min-h-screen bg-gray-50">
