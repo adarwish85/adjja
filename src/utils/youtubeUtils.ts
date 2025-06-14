@@ -5,7 +5,7 @@ export const cleanYouTubeUrl = (url: string): string => {
   try {
     const urlObj = new URL(url.trim());
     
-    // Remove tracking parameters
+    // Remove tracking parameters but keep time parameter for YouTube
     const paramsToRemove = ['si', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid'];
     paramsToRemove.forEach(param => urlObj.searchParams.delete(param));
     
@@ -50,7 +50,7 @@ export const extractYouTubeVideoId = (url: string): string | null => {
 export const getCleanEmbedUrl = (url: string): string => {
   const videoId = extractYouTubeVideoId(url);
   if (videoId) {
-    return `https://www.youtube.com/embed/${videoId}`;
+    return `https://www.youtube.com/watch?v=${videoId}`;
   }
   return cleanYouTubeUrl(url);
 };
@@ -151,4 +151,19 @@ export const validateYouTubeUrl = (url: string): { isValid: boolean; error?: str
   }
 
   return { isValid: true };
+};
+
+// Helper function to check if URL is YouTube
+export const isYouTubeUrl = (url: string): boolean => {
+  if (!url) return false;
+  return url.includes('youtube.com') || url.includes('youtu.be');
+};
+
+// Get a clean YouTube URL for embedding
+export const getEmbeddableYouTubeUrl = (url: string): string => {
+  const videoId = extractYouTubeVideoId(url);
+  if (!videoId) return url;
+  
+  // Return clean YouTube watch URL
+  return `https://www.youtube.com/watch?v=${videoId}`;
 };

@@ -26,8 +26,8 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { useState } from "react";
-import { EnhancedVideoPlayer } from "@/components/EnhancedVideoPlayer";
-import { extractYouTubeVideoId, getYouTubeThumbnail } from "@/utils/youtubeUtils";
+import { YouTubePreviewPlayer } from "@/components/video/YouTubePreviewPlayer";
+import { extractYouTubeVideoId, getYouTubeThumbnail, isYouTubeUrl, getEmbeddableYouTubeUrl } from "@/utils/youtubeUtils";
 import { useCourseEnrollment } from "@/hooks/useCourseEnrollment";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -192,8 +192,19 @@ const CourseLanding = () => {
 
   const handleVideoPreview = (videoUrl: string) => {
     console.log("Opening video preview for:", videoUrl);
-    setSelectedVideo(videoUrl);
-    setIsPlayerOpen(true);
+    
+    if (isYouTubeUrl(videoUrl)) {
+      // Use the dedicated YouTube player for YouTube URLs
+      const cleanUrl = getEmbeddableYouTubeUrl(videoUrl);
+      setSelectedVideo(cleanUrl);
+      setIsPlayerOpen(true);
+    } else {
+      toast({
+        title: "Unsupported Video Format",
+        description: "Currently only YouTube videos are supported for preview.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePreviewCourse = () => {
@@ -522,16 +533,16 @@ const CourseLanding = () => {
         </div>
       </div>
 
-      {/* Enhanced Video Player Modal */}
+      {/* YouTube Preview Player Modal */}
       {isPlayerOpen && selectedVideo && (
-        <EnhancedVideoPlayer
-          primaryUrl={selectedVideo}
-          {...generateFallbackUrls(selectedVideo)}
+        <YouTubePreviewPlayer
+          videoUrl={selectedVideo}
           isOpen={isPlayerOpen}
           onClose={() => {
             setIsPlayerOpen(false);
             setSelectedVideo(null);
           }}
+          title={course?.title || "Course Preview"}
         />
       )}
     </div>
