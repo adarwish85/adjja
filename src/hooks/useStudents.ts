@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -107,9 +108,10 @@ export const useStudents = () => {
     }
   };
 
-  const addStudent = async (studentData: Omit<Student, "id" | "created_at" | "updated_at">) => {
+  const addStudent = async (studentData: Omit<Student, "id" | "created_at" | "updated_at">, classIds?: string[]) => {
     try {
       console.log("Adding student with data:", studentData);
+      console.log("Class IDs to enroll in:", classIds);
       
       // If account creation is requested, create the user account first
       if (studentData.createAccount && studentData.username && studentData.password) {
@@ -149,6 +151,31 @@ export const useStudents = () => {
 
       console.log("Successfully added student:", data);
 
+      // Enroll student in selected classes
+      if (classIds && classIds.length > 0) {
+        console.log("Enrolling student in classes:", classIds);
+        for (const classId of classIds) {
+          try {
+            const { error: enrollmentError } = await supabase.rpc('enroll_student_in_class', {
+              p_student_id: data.id,
+              p_class_id: classId
+            });
+
+            if (enrollmentError) {
+              console.error("Error enrolling in class:", classId, enrollmentError);
+              // Continue with other enrollments even if one fails
+            } else {
+              console.log("Successfully enrolled in class:", classId);
+            }
+          } catch (enrollError) {
+            console.error("Unexpected error enrolling in class:", classId, enrollError);
+          }
+        }
+        toast.success(`Student added and enrolled in ${classIds.length} class(es)`);
+      } else {
+        toast.success("Student added successfully");
+      }
+
       const typedStudent: Student = {
         ...data,
         status: data.status as "active" | "inactive" | "on-hold",
@@ -164,7 +191,6 @@ export const useStudents = () => {
       };
 
       setStudents(prev => [...prev, typedStudent]);
-      toast.success("Student added successfully");
       return typedStudent;
     } catch (error) {
       console.error("Error adding student:", error);

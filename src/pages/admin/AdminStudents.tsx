@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,9 +35,13 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Trash2, Mail, Phone, Calendar } from "lucide-react";
 import { MultiStepStudentForm } from "@/components/admin/student/MultiStepStudentForm";
 import { useStudents, Student } from "@/hooks/useStudents";
+import { useClassEnrollments } from "@/hooks/useClassEnrollments";
+import { useClasses } from "@/hooks/useClasses";
 
 const AdminStudents = () => {
   const { students, loading, addStudent, updateStudent, deleteStudent } = useStudents();
+  const { enrollments } = useClassEnrollments();
+  const { classes } = useClasses();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -46,13 +50,25 @@ const AdminStudents = () => {
     (student) =>
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.branch.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.coach.toLowerCase().includes(searchTerm.toLowerCase())
+      getStudentEnrolledClasses(student.id).some(className => 
+        className.toLowerCase().includes(searchTerm.toLowerCase())
+      )
   );
 
-  const handleAddStudent = async (newStudent: Omit<Student, "id" | "created_at" | "updated_at">) => {
+  const getStudentEnrolledClasses = (studentId: string) => {
+    const studentEnrollments = enrollments.filter(
+      enrollment => enrollment.student_id === studentId && enrollment.status === "active"
+    );
+    
+    return studentEnrollments.map(enrollment => {
+      const classInfo = classes.find(cls => cls.id === enrollment.class_id);
+      return classInfo ? classInfo.name : "Unknown Class";
+    });
+  };
+
+  const handleAddStudent = async (newStudent: Omit<Student, "id" | "created_at" | "updated_at">, classIds?: string[]) => {
     try {
-      await addStudent(newStudent);
+      await addStudent(newStudent, classIds);
       setIsAddDialogOpen(false);
     } catch (error) {
       // Error is already handled in the hook
@@ -144,7 +160,7 @@ const AdminStudents = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-bjj-navy">Students</h1>
-            <p className="text-bjj-gray">Manage academy students and memberships</p>
+            <p className="text-bjj-gray">Manage academy students and class enrollments</p>
           </div>
           
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -198,11 +214,11 @@ const AdminStudents = () => {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-bjj-gray">Branches</CardTitle>
+              <CardTitle className="text-sm font-medium text-bjj-gray">Total Enrollments</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-bjj-navy">
-                {new Set(students.map(s => s.branch)).size}
+                {enrollments.filter(e => e.status === "active").length}
               </div>
             </CardContent>
           </Card>
@@ -217,7 +233,7 @@ const AdminStudents = () => {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    placeholder="Search students..."
+                    placeholder="Search students or classes..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 w-64"
@@ -232,7 +248,7 @@ const AdminStudents = () => {
                 <TableRow>
                   <TableHead>Student</TableHead>
                   <TableHead>Contact</TableHead>
-                  <TableHead>Branch & Coach</TableHead>
+                  <TableHead>Enrolled Classes</TableHead>
                   <TableHead>Belt & Stripes</TableHead>
                   <TableHead>Membership</TableHead>
                   <TableHead>Attendance</TableHead>
@@ -241,109 +257,119 @@ const AdminStudents = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStudents.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium text-bjj-navy">{student.name}</div>
-                        <div className="text-sm text-bjj-gray">
-                          Joined {new Date(student.joined_date).toLocaleDateString()}
+                {filteredStudents.map((student) => {
+                  const enrolledClasses = getStudentEnrolledClasses(student.id);
+                  return (
+                    <TableRow key={student.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium text-bjj-navy">{student.name}</div>
+                          <div className="text-sm text-bjj-gray">
+                            Joined {new Date(student.joined_date).toLocaleDateString()}
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center text-sm">
-                          <Mail className="h-3 w-3 mr-1 text-bjj-gray" />
-                          {student.email}
-                        </div>
-                        {student.phone && (
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
                           <div className="flex items-center text-sm">
-                            <Phone className="h-3 w-3 mr-1 text-bjj-gray" />
-                            {student.phone}
+                            <Mail className="h-3 w-3 mr-1 text-bjj-gray" />
+                            {student.email}
                           </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <Badge variant="outline">{student.branch}</Badge>
-                        <div className="text-sm text-bjj-gray">Coach: {student.coach}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <Badge className={getBeltColor(student.belt)}>
-                          {student.belt}
-                        </Badge>
-                        <div className="text-sm text-bjj-gray">
-                          {student.stripes} stripe{student.stripes !== 1 ? 's' : ''}
+                          {student.phone && (
+                            <div className="flex items-center text-sm">
+                              <Phone className="h-3 w-3 mr-1 text-bjj-gray" />
+                              {student.phone}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="capitalize">
-                        {student.membership_type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="font-medium">{student.attendance_rate}%</div>
-                        {student.last_attended && (
-                          <div className="flex items-center text-xs text-bjj-gray">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            Last: {new Date(student.last_attended).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {enrolledClasses.length > 0 ? (
+                            enrolledClasses.map((className, index) => (
+                              <Badge key={index} variant="outline" className="mr-1 mb-1">
+                                {className}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-500">No classes</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <Badge className={getBeltColor(student.belt)}>
+                            {student.belt}
+                          </Badge>
+                          <div className="text-sm text-bjj-gray">
+                            {student.stripes} stripe{student.stripes !== 1 ? 's' : ''}
                           </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(student.status)}>
-                        {student.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setEditingStudent(student)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the student
-                                "{student.name}" from the system.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteStudent(student.id)}
-                                className="bg-red-600 hover:bg-red-700"
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="capitalize">
+                          {student.membership_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">{student.attendance_rate}%</div>
+                          {student.last_attended && (
+                            <div className="flex items-center text-xs text-bjj-gray">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              Last: {new Date(student.last_attended).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(student.status)}>
+                          {student.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setEditingStudent(student)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-600 hover:text-red-800"
                               >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete the student
+                                  "{student.name}" from the system.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteStudent(student.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

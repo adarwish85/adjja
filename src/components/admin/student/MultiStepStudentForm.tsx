@@ -6,19 +6,21 @@ import { Progress } from "@/components/ui/progress";
 import { Student } from "@/hooks/useStudents";
 import { StudentBasicInfoStep } from "./StudentBasicInfoStep";
 import { StudentClassInfoStep } from "./StudentClassInfoStep";
+import { StudentClassEnrollmentStep } from "./StudentClassEnrollmentStep";
 import { StudentAccountStep } from "./StudentAccountStep";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface MultiStepStudentFormProps {
   student?: Student;
-  onSubmit: (student: Omit<Student, "id" | "created_at" | "updated_at">) => void;
+  onSubmit: (student: Omit<Student, "id" | "created_at" | "updated_at">, classIds?: string[]) => void;
   isEditing?: boolean;
 }
 
 const steps = [
   { id: 1, title: "Basic Information", description: "Personal details" },
-  { id: 2, title: "Class Information", description: "Belt, coach & membership" },
-  { id: 3, title: "Account Setup", description: "Portal access credentials" },
+  { id: 2, title: "Belt & Membership", description: "Belt level & subscription" },
+  { id: 3, title: "Class Enrollment", description: "Select classes to enroll in" },
+  { id: 4, title: "Account Setup", description: "Portal access credentials" },
 ];
 
 export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: MultiStepStudentFormProps) => {
@@ -27,10 +29,8 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     name: student?.name || "",
     email: student?.email || "",
     phone: student?.phone || "",
-    branch: student?.branch || "Main Branch",
     belt: student?.belt || "",
     stripes: student?.stripes || 0,
-    coach: student?.coach || "",
     status: student?.status || "active" as const,
     membership_type: student?.membership_type || "monthly" as const,
     subscription_plan_id: student?.subscription_plan_id || "",
@@ -38,6 +38,7 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     attendance_rate: student?.attendance_rate || 0,
     joined_date: student?.joined_date || new Date().toISOString().split('T')[0],
     last_attended: student?.last_attended || new Date().toISOString().split('T')[0],
+    selectedClassIds: [] as string[],
     username: "",
     password: "",
     createAccount: !isEditing,
@@ -62,13 +63,16 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
         console.log("Step 1 validation - Name:", formData.name, "Email:", formData.email, "Valid:", isStep1Valid);
         return isStep1Valid;
       case 2:
-        const isStep2Valid = formData.belt.trim() !== "" && formData.coach.trim() !== "" && formData.subscription_plan_id.trim() !== "";
-        console.log("Step 2 validation - Belt:", formData.belt, "Coach:", formData.coach, "Plan:", formData.subscription_plan_id, "Valid:", isStep2Valid);
+        const isStep2Valid = formData.belt.trim() !== "" && formData.subscription_plan_id.trim() !== "";
+        console.log("Step 2 validation - Belt:", formData.belt, "Plan:", formData.subscription_plan_id, "Valid:", isStep2Valid);
         return isStep2Valid;
       case 3:
-        const isStep3Valid = !formData.createAccount || (formData.username.trim() !== "" && formData.password.trim() !== "");
-        console.log("Step 3 validation - Create account:", formData.createAccount, "Username:", formData.username, "Password:", formData.password ? "***" : "", "Valid:", isStep3Valid);
-        return isStep3Valid;
+        // Class enrollment is optional, so always valid
+        return true;
+      case 4:
+        const isStep4Valid = !formData.createAccount || (formData.username.trim() !== "" && formData.password.trim() !== "");
+        console.log("Step 4 validation - Create account:", formData.createAccount, "Username:", formData.username, "Password:", formData.password ? "***" : "", "Valid:", isStep4Valid);
+        return isStep4Valid;
       default:
         return false;
     }
@@ -118,10 +122,10 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
       name: formData.name,
       email: formData.email,
       phone: formData.phone || null,
-      branch: formData.branch,
+      branch: "Main Branch", // Default branch since we removed it from the form
       belt: formData.belt,
       stripes: formData.stripes,
-      coach: formData.coach,
+      coach: "Unassigned", // Default coach since we removed it from the form
       status: formData.status,
       membership_type: formData.membership_type,
       subscription_plan_id: formData.subscription_plan_id || null,
@@ -140,7 +144,8 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     };
     
     console.log("MultiStepStudentForm: Submitting student data:", submissionData);
-    onSubmit(submissionData);
+    console.log("MultiStepStudentForm: Selected class IDs:", formData.selectedClassIds);
+    onSubmit(submissionData, formData.selectedClassIds);
   };
 
   const progress = (currentStep / steps.length) * 100;
@@ -165,6 +170,13 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
           />
         );
       case 3:
+        return (
+          <StudentClassEnrollmentStep
+            formData={formData}
+            updateFormData={updateFormData}
+          />
+        );
+      case 4:
         return (
           <StudentAccountStep
             formData={formData}

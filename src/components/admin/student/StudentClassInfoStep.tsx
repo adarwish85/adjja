@@ -8,14 +8,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCoaches } from "@/hooks/useCoaches";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 
 interface StudentClassInfoStepProps {
   formData: {
     belt: string;
     stripes: number;
-    coach: string;
     status: "active" | "inactive" | "on-hold";
     membership_type: "monthly" | "yearly" | "unlimited";
     subscription_plan_id: string;
@@ -31,9 +29,7 @@ const belts = ["White Belt", "Blue Belt", "Purple Belt", "Brown Belt", "Black Be
 const statusOptions = ["active", "inactive", "on-hold"];
 
 export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: StudentClassInfoStepProps) => {
-  const { coaches, loading: coachesLoading } = useCoaches();
   const { activeSubscriptionPlans, isLoading: plansLoading } = useSubscriptionPlans();
-  const activeCoaches = coaches.filter(coach => coach.status === "active");
 
   // Set default plan start date to today if not set
   const handlePlanStartDateChange = (date: string) => {
@@ -51,7 +47,7 @@ export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: St
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="belt">Belt Level *</Label>
           <Select
@@ -85,27 +81,6 @@ export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: St
               {[0, 1, 2, 3, 4].map((stripe) => (
                 <SelectItem key={stripe} value={stripe.toString()}>
                   {stripe}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="coach">Assigned Coach *</Label>
-          <Select
-            value={formData.coach}
-            onValueChange={(value) => updateFormData({ coach: value })}
-            required
-            disabled={coachesLoading}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={coachesLoading ? "Loading coaches..." : "Select coach"} />
-            </SelectTrigger>
-            <SelectContent>
-              {activeCoaches.map((coach) => (
-                <SelectItem key={coach.id} value={coach.name}>
-                  {coach.name}
                 </SelectItem>
               ))}
             </SelectContent>
