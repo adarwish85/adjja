@@ -18,11 +18,28 @@ export const useAuth = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const createFallbackProfile = (user: User): UserProfile => {
+    console.log('Creating fallback profile for user:', user.id);
+    return {
+      id: user.id,
+      name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+      email: user.email || '',
+      role_id: 'fallback-role-id',
+      role_name: 'Student', // Default role
+      status: 'active'
+    };
+  };
+
   const fetchUserProfile = async (userId: string, userEmail?: string) => {
     try {
       console.log('Fetching profile for user:', userId);
       
-      const { data: profile, error } = await supabase
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+      );
+      
+      const profilePromise = supabase
         .from('profiles')
         .select(`
           id,
@@ -37,71 +54,84 @@ export const useAuth = () => {
         .eq('id', userId)
         .single();
 
+      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
+
       console.log('Profile query result:', { profile, error });
 
       if (error) {
         console.error('Error fetching user profile:', error);
         
-        // If profile doesn't exist, try to create one with default role
+        // If it's a timeout or database recursion error, return fallback
+        if (error.message?.includes('timeout') || 
+            error.message?.includes('recursion') || 
+            error.code === 'PGRST301' ||
+            error.code === '42P17') {
+          console.log('Database issue detected, using fallback profile');
+          return createFallbackProfile({ id: userId, email: userEmail } as User);
+        }
+        
+        // If profile doesn't exist, try to create one (with error handling)
         if (error.code === 'PGRST116') {
-          console.log('Profile not found, creating default profile...');
-          
-          // Get default student role
-          const { data: studentRole, error: roleError } = await supabase
-            .from('user_roles')
-            .select('id')
-            .eq('name', 'Student')
-            .single();
-
-          if (roleError) {
-            console.error('Error fetching student role:', roleError);
-            return null;
-          }
-
-          if (studentRole) {
-            // Create profile with student role
-            const profileName = userEmail?.split('@')[0] || 'User';
-            const profileEmail = userEmail || '';
-
-            const { data: newProfile, error: createError } = await supabase
-              .from('profiles')
-              .insert({
-                id: userId,
-                name: profileName,
-                email: profileEmail,
-                role_id: studentRole.id,
-                status: 'active'
-              })
-              .select(`
-                id,
-                name,
-                email,
-                role_id,
-                status,
-                user_roles:role_id (
-                  name
-                )
-              `)
+          try {
+            console.log('Profile not found, attempting to create...');
+            
+            // Get default student role with timeout
+            const roleQuery = supabase
+              .from('user_roles')
+              .select('id')
+              .eq('name', 'Student')
               .single();
+              
+            const { data: studentRole } = await Promise.race([
+              roleQuery,
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Role fetch timeout')), 5000))
+            ]) as any;
 
-            if (createError) {
-              console.error('Error creating profile:', createError);
-              return null;
+            if (studentRole) {
+              const profileName = userEmail?.split('@')[0] || 'User';
+              const profileEmail = userEmail || '';
+
+              const createQuery = supabase
+                .from('profiles')
+                .insert({
+                  id: userId,
+                  name: profileName,
+                  email: profileEmail,
+                  role_id: studentRole.id,
+                  status: 'active'
+                })
+                .select(`
+                  id,
+                  name,
+                  email,
+                  role_id,
+                  status,
+                  user_roles:role_id (
+                    name
+                  )
+                `)
+                .single();
+
+              const { data: newProfile, error: createError } = await Promise.race([
+                createQuery,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Profile create timeout')), 5000))
+              ]) as any;
+
+              if (!createError && newProfile) {
+                const userRole = Array.isArray(newProfile.user_roles) ? newProfile.user_roles[0] : newProfile.user_roles;
+                return {
+                  ...newProfile,
+                  role_name: userRole?.name || 'Student'
+                } as UserProfile;
+              }
             }
-
-            if (newProfile) {
-              const userRole = Array.isArray(newProfile.user_roles) ? newProfile.user_roles[0] : newProfile.user_roles;
-              const userProfile = {
-                ...newProfile,
-                role_name: userRole?.name || 'Student'
-              } as UserProfile;
-
-              console.log('Created new profile:', userProfile);
-              return userProfile;
-            }
+          } catch (createError) {
+            console.error('Error creating profile, using fallback:', createError);
           }
         }
-        return null;
+        
+        // Return fallback profile if all else fails
+        return createFallbackProfile({ id: userId, email: userEmail } as User);
       }
 
       const userRole = Array.isArray(profile.user_roles) ? profile.user_roles[0] : profile.user_roles;
@@ -111,16 +141,18 @@ export const useAuth = () => {
         role_name: userRole?.name || 'Student'
       } as UserProfile;
 
-      console.log('Final user profile:', userProfile);
+      console.log('Successfully fetched profile:', userProfile);
       return userProfile;
     } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
-      return null;
+      console.error('Critical error in fetchUserProfile:', error);
+      // Always return a fallback to prevent infinite loading
+      return createFallbackProfile({ id: userId, email: userEmail } as User);
     }
   };
 
   useEffect(() => {
     let mounted = true;
+    let authTimeout: NodeJS.Timeout;
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -133,10 +165,18 @@ export const useAuth = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          const profile = await fetchUserProfile(session.user.id, session.user.email);
-          if (mounted) {
-            setUserProfile(profile);
-            console.log('Profile set:', profile);
+          try {
+            const profile = await fetchUserProfile(session.user.id, session.user.email);
+            if (mounted) {
+              setUserProfile(profile);
+              console.log('Profile set:', profile);
+            }
+          } catch (error) {
+            console.error('Error setting profile:', error);
+            if (mounted) {
+              // Set fallback profile to prevent infinite loading
+              setUserProfile(createFallbackProfile(session.user));
+            }
           }
         } else {
           if (mounted) {
@@ -150,30 +190,50 @@ export const useAuth = () => {
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
+    // Get initial session with timeout
+    const getInitialSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
 
-      console.log("Initial session:", session?.user?.id);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id, session.user.email);
+        console.log("Initial session:", session?.user?.id);
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          const profile = await fetchUserProfile(session.user.id, session.user.email);
+          if (mounted) {
+            setUserProfile(profile);
+            console.log('Initial profile set:', profile);
+          }
+        }
+        
         if (mounted) {
-          setUserProfile(profile);
-          console.log('Initial profile set:', profile);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error getting initial session:', error);
+        if (mounted) {
+          setLoading(false);
         }
       }
-      
+    };
+
+    getInitialSession();
+
+    // Safety timeout - never stay loading forever
+    authTimeout = setTimeout(() => {
       if (mounted) {
+        console.log('Auth timeout reached, stopping loading');
         setLoading(false);
       }
-    });
+    }, 15000);
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      clearTimeout(authTimeout);
     };
   }, []);
 
