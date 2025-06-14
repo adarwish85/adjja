@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useRef, useState } from "react";
 import { ProfileEditModal } from "./ProfileEditModal";
 import { ChangePasswordModal } from "./ChangePasswordModal";
+import { AccountSettingsModal } from "./AccountSettingsModal";
 
 interface UserProfileDropdownProps {
   onClose: () => void;
@@ -17,6 +18,7 @@ export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -45,10 +47,15 @@ export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
     onClose();
   };
 
+  const handleAccountSettings = () => {
+    setShowAccountSettings(true);
+    onClose();
+  };
+
   return (
     <>
       <div ref={dropdownRef} className="absolute right-0 top-12 w-64 z-50">
-        <Card className="shadow-lg border">
+        <Card className="shadow-lg border bg-white">
           <CardContent className="p-0">
             {/* User Info Section */}
             <div className="p-4 bg-gray-50">
@@ -75,7 +82,7 @@ export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
             <div className="p-2">
               <Button
                 variant="ghost"
-                className="w-full justify-start text-left"
+                className="w-full justify-start text-left hover:bg-gray-100"
                 onClick={handleEditProfile}
               >
                 <Edit className="h-4 w-4 mr-3" />
@@ -84,7 +91,7 @@ export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
               
               <Button
                 variant="ghost"
-                className="w-full justify-start text-left"
+                className="w-full justify-start text-left hover:bg-gray-100"
                 onClick={handleChangePassword}
               >
                 <Lock className="h-4 w-4 mr-3" />
@@ -93,7 +100,8 @@ export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
               
               <Button
                 variant="ghost"
-                className="w-full justify-start text-left"
+                className="w-full justify-start text-left hover:bg-gray-100"
+                onClick={handleAccountSettings}
               >
                 <Settings className="h-4 w-4 mr-3" />
                 Account Settings
@@ -125,6 +133,11 @@ export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
       <ChangePasswordModal 
         open={showChangePassword} 
         onOpenChange={setShowChangePassword}
+      />
+
+      <AccountSettingsModal 
+        open={showAccountSettings} 
+        onOpenChange={setShowAccountSettings}
       />
     </>
   );
