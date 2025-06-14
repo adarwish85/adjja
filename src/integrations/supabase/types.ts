@@ -366,27 +366,36 @@ export type Database = {
         Row: {
           completion_date: string | null
           course_id: string
+          enrolled_by: string | null
           enrollment_date: string
           id: string
+          note: string | null
           progress_percentage: number | null
+          start_date: string | null
           status: string | null
           student_id: string
         }
         Insert: {
           completion_date?: string | null
           course_id: string
+          enrolled_by?: string | null
           enrollment_date?: string
           id?: string
+          note?: string | null
           progress_percentage?: number | null
+          start_date?: string | null
           status?: string | null
           student_id: string
         }
         Update: {
           completion_date?: string | null
           course_id?: string
+          enrolled_by?: string | null
           enrollment_date?: string
           id?: string
+          note?: string | null
           progress_percentage?: number | null
+          start_date?: string | null
           status?: string | null
           student_id?: string
         }
@@ -707,6 +716,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          read: boolean | null
+          title: string
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          title: string
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          title?: string
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       orders: {
         Row: {

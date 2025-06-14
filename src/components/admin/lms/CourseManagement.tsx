@@ -18,9 +18,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Eye, Users } from "lucide-react";
 import { useCourses } from "@/hooks/useCourses";
 import { CreateCourseWizard } from "./CreateCourseWizard";
+import { EnrollStudentsModal } from "./EnrollStudentsModal";
 
 export const CourseManagement = () => {
   const { courses, isLoading, deleteCourse } = useCourses();
@@ -28,6 +29,8 @@ export const CourseManagement = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [enrollModalOpen, setEnrollModalOpen] = useState(false);
+  const [selectedCourseForEnrollment, setSelectedCourseForEnrollment] = useState<{id: string, title: string} | null>(null);
 
   const filteredCourses = courses.filter(course =>
     course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,6 +58,11 @@ export const CourseManagement = () => {
   const handleCourseNameClick = (courseId: string) => {
     const courseUrl = `${window.location.origin}/course/${courseId}`;
     window.open(courseUrl, '_blank');
+  };
+
+  const handleEnrollStudents = (course: any) => {
+    setSelectedCourseForEnrollment({ id: course.id, title: course.title });
+    setEnrollModalOpen(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -163,6 +171,15 @@ export const CourseManagement = () => {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => handleEnrollStudents(course)}
+                              title="Enroll Students"
+                              className="text-bjj-gold hover:text-bjj-gold-dark"
+                            >
+                              <Users className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleViewCourse(course.id)}
                               title="View Course"
                             >
@@ -210,6 +227,18 @@ export const CourseManagement = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {selectedCourseForEnrollment && (
+        <EnrollStudentsModal
+          isOpen={enrollModalOpen}
+          onClose={() => {
+            setEnrollModalOpen(false);
+            setSelectedCourseForEnrollment(null);
+          }}
+          courseId={selectedCourseForEnrollment.id}
+          courseTitle={selectedCourseForEnrollment.title}
+        />
+      )}
     </div>
   );
 };

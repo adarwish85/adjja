@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -11,13 +12,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, TrendingUp, Award, Clock } from "lucide-react";
+import { Search, TrendingUp, Award, Clock, UserPlus } from "lucide-react";
 import { useCourseEnrollments } from "@/hooks/useCourseEnrollments";
+import { useStudents } from "@/hooks/useStudents";
 import { Progress } from "@/components/ui/progress";
+import { SingleStudentEnrollment } from "./SingleStudentEnrollment";
 
 export const StudentProgress = () => {
   const { enrollments, isLoading } = useCourseEnrollments();
+  const { students } = useStudents();
   const [searchTerm, setSearchTerm] = useState("");
+  const [enrollmentModalOpen, setEnrollmentModalOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<{id: string, name: string} | null>(null);
 
   const filteredEnrollments = enrollments.filter(enrollment =>
     enrollment.students?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -33,18 +39,23 @@ export const StudentProgress = () => {
     }
   };
 
-  const getProgressColor = (progress: number) => {
-    if (progress >= 80) return "bg-green-500";
-    if (progress >= 50) return "bg-yellow-500";
-    return "bg-red-500";
-  };
-
   const averageProgress = enrollments.length > 0 
     ? Math.round(enrollments.reduce((acc, e) => acc + (e.progress_percentage || 0), 0) / enrollments.length)
     : 0;
 
   const completedCourses = enrollments.filter(e => e.status === "Completed").length;
   const activeCourses = enrollments.filter(e => e.status === "Active").length;
+
+  const handleEnrollStudent = (studentId: string, studentName: string) => {
+    setSelectedStudent({ id: studentId, name: studentName });
+    setEnrollmentModalOpen(true);
+  };
+
+  // Get unique students for quick enrollment
+  const uniqueStudents = students.filter(student => 
+    student.status === 'active' && 
+    student.name.toLowerCase().includes(searchTerm.toLowerCase())
+  ).slice(0, 5); // Show top 5 for quick access
 
   return (
     <div className="space-y-6">
@@ -91,6 +102,31 @@ export const StudentProgress = () => {
         </Card>
       </div>
 
+      {/* Quick Enrollment Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-bjj-navy flex items-center space-x-2">
+            <UserPlus className="h-5 w-5" />
+            <span>Quick Student Enrollment</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {uniqueStudents.map((student) => (
+              <Button
+                key={student.id}
+                variant="outline"
+                size="sm"
+                onClick={() => handleEnrollStudent(student.id, student.name)}
+                className="border-bjj-gold text-bjj-gold hover:bg-bjj-gold hover:text-white"
+              >
+                Enroll {student.name}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-bjj-navy">Student Progress Tracking</CardTitle>
@@ -117,18 +153,19 @@ export const StudentProgress = () => {
                     <TableHead>Progress</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Completion</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4">
+                      <TableCell colSpan={7} className="text-center py-4">
                         Loading progress data...
                       </TableCell>
                     </TableRow>
                   ) : filteredEnrollments.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4">
+                      <TableCell colSpan={7} className="text-center py-4">
                         No enrollment data found
                       </TableCell>
                     </TableRow>
@@ -182,6 +219,16 @@ export const StudentProgress = () => {
                             : "-"
                           }
                         </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEnrollStudent(enrollment.student_id, enrollment.students?.name || "Student")}
+                            title="Enroll in Another Course"
+                          >
+                            <UserPlus className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -191,6 +238,18 @@ export const StudentProgress = () => {
           </div>
         </CardContent>
       </Card>
+
+      {selectedStudent && (
+        <SingleStudentEnrollment
+          isOpen={enrollmentModalOpen}
+          onClose={() => {
+            setEnrollmentModalOpen(false);
+            setSelectedStudent(null);
+          }}
+          studentId={selectedStudent.id}
+          studentName={selectedStudent.name}
+        />
+      )}
     </div>
   );
 };
