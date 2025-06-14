@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import ReactPlayer from "react-player";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Volume2, VolumeX, Maximize, X, AlertCircle, RefreshCw } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, X, AlertCircle, RefreshCw, ExternalLink } from "lucide-react";
 
 interface VideoPlayerProps {
   videoUrl: string;
@@ -21,9 +21,11 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [playerReady, setPlayerReady] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   
   const playerRef = useRef<ReactPlayer>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
+  const loadingTimeoutRef = useRef<NodeJS.Timeout>();
 
   console.log('VideoPlayer opened:', { videoUrl, isOpen });
 
@@ -31,6 +33,26 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const startLoadingTimeout = () => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.log('⏰ Loading timeout reached for:', videoUrl);
+      setLoadingTimeout(true);
+      setError('Video is taking too long to load. Please try again or open externally.');
+      setLoading(false);
+    }, 10000); // 10 second timeout
+  };
+
+  const clearLoadingTimeout = () => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = undefined;
+    }
   };
 
   const handleProgress = (state: { played: number; playedSeconds: number; loaded: number; loadedSeconds: number }) => {
@@ -44,16 +66,20 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
 
   const handleReady = () => {
     console.log('✅ React Player ready for:', videoUrl);
+    clearLoadingTimeout();
     setPlayerReady(true);
     setLoading(false);
     setError(null);
+    setLoadingTimeout(false);
   };
 
   const handleError = (error: any) => {
     console.error('❌ React Player error for:', videoUrl, error);
-    setError('Failed to load video. Please check the video URL or try again.');
+    clearLoadingTimeout();
+    setError('Failed to load video. The video may be unavailable or restricted.');
     setLoading(false);
     setPlayerReady(false);
+    setLoadingTimeout(false);
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,6 +118,12 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
     setError(null);
     setLoading(true);
     setPlayerReady(false);
+    setLoadingTimeout(false);
+    startLoadingTimeout();
+  };
+
+  const openExternally = () => {
+    window.open(videoUrl, '_blank');
   };
 
   // Reset states when dialog closes or video changes
@@ -102,6 +134,8 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
       setLoading(true);
       setError(null);
       setPlayerReady(false);
+      setLoadingTimeout(false);
+      clearLoadingTimeout();
     }
   }, [isOpen]);
 
@@ -112,14 +146,22 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
       setError(null);
       setPlayerReady(false);
       setPlaying(false);
+      setLoadingTimeout(false);
+      startLoadingTimeout();
     }
+
+    return () => {
+      clearLoadingTimeout();
+    };
   }, [videoUrl, isOpen]);
 
   const renderErrorState = () => (
     <div className="flex flex-col items-center justify-center text-white space-y-4 p-8">
       <AlertCircle className="h-16 w-16 text-red-500" />
       <div className="text-center space-y-2">
-        <h3 className="text-xl font-semibold">Video Loading Error</h3>
+        <h3 className="text-xl font-semibold">
+          {loadingTimeout ? 'Loading Timeout' : 'Video Loading Error'}
+        </h3>
         <p className="text-gray-300 max-w-md">{error}</p>
         <p className="text-sm text-gray-400">URL: {videoUrl}</p>
       </div>
@@ -134,10 +176,11 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
           {loading ? 'Loading...' : 'Try Again'}
         </Button>
         <Button 
-          onClick={() => window.open(videoUrl, '_blank')}
+          onClick={openExternally}
           variant="outline"
           className="text-white border-white hover:bg-white hover:text-black"
         >
+          <ExternalLink className="h-4 w-4 mr-2" />
           Open Externally
         </Button>
       </div>
@@ -149,7 +192,17 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
       <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white"></div>
       <div className="text-center space-y-2">
         <p className="text-lg">Loading video...</p>
-        <p className="text-sm text-gray-400">Preparing player...</p>
+        <p className="text-sm text-gray-400">This may take a few moments</p>
+        <div className="mt-4">
+          <Button 
+            onClick={openExternally}
+            variant="outline"
+            className="text-white border-white hover:bg-white hover:text-black"
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Skip to External Link
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -182,10 +235,11 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                 <p className="text-gray-300 max-w-md">This video format is not supported by the player.</p>
               </div>
               <Button 
-                onClick={() => window.open(videoUrl, '_blank')}
+                onClick={openExternally}
                 variant="outline"
                 className="text-white border-white hover:bg-white hover:text-black"
               >
+                <ExternalLink className="h-4 w-4 mr-2" />
                 Open Externally
               </Button>
             </div>
@@ -213,6 +267,7 @@ export const VideoPlayer = ({ videoUrl, isOpen, onClose }: VideoPlayerProps) => 
                 onDuration={handleDuration}
                 onStart={() => {
                   console.log('Video started playing');
+                  clearLoadingTimeout();
                   setLoading(false);
                 }}
                 controls={false}
