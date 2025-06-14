@@ -3,8 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserCog, Users, GraduationCap, BarChart3, Calendar, Trophy, BookOpen, Shield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const LandingPage = () => {
+  const navigate = useNavigate();
+
   const features = [
     {
       icon: <Users className="h-8 w-8 text-bjj-gold-dark" />,
@@ -76,9 +79,20 @@ const LandingPage = () => {
               <p className="text-bjj-gold-dark text-sm">Academy Management System</p>
             </div>
           </div>
-          <Button variant="outline" className="border-bjj-gold text-bjj-gold hover:bg-bjj-gold hover:text-white">
-            Contact Support
-          </Button>
+          <div className="flex items-center space-x-4">
+            <Button 
+              variant="outline" 
+              className="border-bjj-gold text-bjj-gold hover:bg-bjj-gold hover:text-white"
+            >
+              Contact Support
+            </Button>
+            <Button 
+              className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
+              onClick={() => navigate("/login")}
+            >
+              Sign In
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -96,10 +110,10 @@ const LandingPage = () => {
             Comprehensive student management, attendance tracking, performance analytics, and online learning platform designed specifically for martial arts academies.
           </p>
           
-          {/* User Role Selection */}
+          {/* User Role Information Cards */}
           <div className="grid md:grid-cols-3 gap-6 mb-16">
             {userRoles.map((role, index) => (
-              <Card key={role.title} className="bg-white border-bjj-gold/20 hover:shadow-lg transition-all duration-300 hover:scale-105 cursor-pointer">
+              <Card key={role.title} className="bg-white border-bjj-gold/20 hover:shadow-lg transition-all duration-300">
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto mb-4 p-3 bg-bjj-gold/10 rounded-full w-fit">
                     {role.icon}
@@ -123,23 +137,22 @@ const LandingPage = () => {
                       </li>
                     ))}
                   </ul>
-                  <Button 
-                    className="w-full mt-6 bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold"
-                    onClick={() => {
-                      if (role.title === "Super Admin") {
-                        window.location.href = "/admin/dashboard";
-                      } else if (role.title === "Coach") {
-                        window.location.href = "/coach/dashboard";
-                      } else if (role.title === "Student") {
-                        window.location.href = "/student/dashboard";
-                      }
-                    }}
-                  >
-                    Login as {role.title}
-                  </Button>
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          <div className="text-center">
+            <Button 
+              size="lg"
+              className="bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold px-8 py-4 text-lg"
+              onClick={() => navigate("/login")}
+            >
+              Get Started - Sign In
+            </Button>
+            <p className="text-bjj-gray mt-4">
+              Access your personalized dashboard based on your role
+            </p>
           </div>
         </div>
       </section>
