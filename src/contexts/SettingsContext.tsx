@@ -42,7 +42,7 @@ interface SettingsContextType {
   
   // Loading states
   isLoading: boolean;
-  updateSetting: (category: string, key: string, value: any) => Promise<void>;
+  updateSetting: (category: string, key: string, value: any) => Promise<string>;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
