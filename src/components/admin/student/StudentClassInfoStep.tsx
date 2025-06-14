@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCoaches } from "@/hooks/useCoaches";
+import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 
 interface StudentClassInfoStepProps {
   formData: {
@@ -17,6 +18,8 @@ interface StudentClassInfoStepProps {
     coach: string;
     status: "active" | "inactive" | "on-hold";
     membership_type: "monthly" | "yearly" | "unlimited";
+    subscription_plan_id: string;
+    plan_start_date: string;
     attendance_rate: number;
     last_attended: string;
   };
@@ -25,12 +28,26 @@ interface StudentClassInfoStepProps {
 }
 
 const belts = ["White Belt", "Blue Belt", "Purple Belt", "Brown Belt", "Black Belt"];
-const membershipTypes = ["monthly", "yearly", "unlimited"];
 const statusOptions = ["active", "inactive", "on-hold"];
 
 export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: StudentClassInfoStepProps) => {
   const { coaches, loading: coachesLoading } = useCoaches();
+  const { activeSubscriptionPlans, isLoading: plansLoading } = useSubscriptionPlans();
   const activeCoaches = coaches.filter(coach => coach.status === "active");
+
+  // Set default plan start date to today if not set
+  const handlePlanStartDateChange = (date: string) => {
+    updateFormData({ plan_start_date: date });
+  };
+
+  // When subscription plan changes, update both plan_id and reset start date if needed
+  const handleSubscriptionPlanChange = (planId: string) => {
+    updateFormData({ 
+      subscription_plan_id: planId,
+      // Set default start date to today if not already set
+      plan_start_date: formData.plan_start_date || new Date().toISOString().split('T')[0]
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -98,19 +115,20 @@ export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: St
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="membership_type">Membership Type *</Label>
+          <Label htmlFor="subscription_plan">Subscription Plan *</Label>
           <Select
-            value={formData.membership_type}
-            onValueChange={(value) => updateFormData({ membership_type: value })}
+            value={formData.subscription_plan_id}
+            onValueChange={handleSubscriptionPlanChange}
             required
+            disabled={plansLoading}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select membership" />
+              <SelectValue placeholder={plansLoading ? "Loading plans..." : "Select subscription plan"} />
             </SelectTrigger>
             <SelectContent>
-              {membershipTypes.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
+              {activeSubscriptionPlans?.map((plan) => (
+                <SelectItem key={plan.id} value={plan.id}>
+                  {plan.title} - ${plan.sale_price || plan.standard_price}/{plan.subscription_period}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -118,24 +136,35 @@ export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: St
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="status">Status *</Label>
-          <Select
-            value={formData.status}
-            onValueChange={(value) => updateFormData({ status: value })}
+          <Label htmlFor="plan_start_date">Plan Start Date *</Label>
+          <Input
+            id="plan_start_date"
+            type="date"
+            value={formData.plan_start_date || new Date().toISOString().split('T')[0]}
+            onChange={(e) => handlePlanStartDateChange(e.target.value)}
             required
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              {statusOptions.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="status">Status *</Label>
+        <Select
+          value={formData.status}
+          onValueChange={(value) => updateFormData({ status: value })}
+          required
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select status" />
+          </SelectTrigger>
+          <SelectContent>
+            {statusOptions.map((status) => (
+              <SelectItem key={status} value={status}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {isEditing && (

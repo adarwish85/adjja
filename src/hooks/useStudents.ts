@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -14,6 +13,10 @@ export interface Student {
   coach: string;
   status: "active" | "inactive" | "on-hold";
   membership_type: "monthly" | "yearly" | "unlimited";
+  subscription_plan_id: string | null;
+  plan_start_date: string | null;
+  next_due_date: string | null;
+  payment_status: "unpaid" | "paid" | "due_soon" | "overdue" | null;
   attendance_rate: number;
   joined_date: string;
   last_attended: string | null;
@@ -44,6 +47,14 @@ const cleanUpdateData = (data: any) => {
   
   if ('last_attended' in cleaned && (cleaned.last_attended === "" || cleaned.last_attended === "undefined")) {
     cleaned.last_attended = null;
+  }
+
+  if ('subscription_plan_id' in cleaned && cleaned.subscription_plan_id === "") {
+    cleaned.subscription_plan_id = null;
+  }
+
+  if ('plan_start_date' in cleaned && cleaned.plan_start_date === "") {
+    cleaned.plan_start_date = null;
   }
   
   // Remove undefined values
@@ -77,8 +88,12 @@ export const useStudents = () => {
         ...student,
         status: student.status as "active" | "inactive" | "on-hold",
         membership_type: student.membership_type as "monthly" | "yearly" | "unlimited",
+        payment_status: student.payment_status as "unpaid" | "paid" | "due_soon" | "overdue" | null,
         phone: student.phone || null,
         last_attended: student.last_attended || null,
+        subscription_plan_id: student.subscription_plan_id || null,
+        plan_start_date: student.plan_start_date || null,
+        next_due_date: student.next_due_date || null,
         stripes: student.stripes || 0,
         attendance_rate: student.attendance_rate || 0
       }));
@@ -138,8 +153,12 @@ export const useStudents = () => {
         ...data,
         status: data.status as "active" | "inactive" | "on-hold",
         membership_type: data.membership_type as "monthly" | "yearly" | "unlimited",
+        payment_status: data.payment_status as "unpaid" | "paid" | "due_soon" | "overdue" | null,
         phone: data.phone || null,
         last_attended: data.last_attended || null,
+        subscription_plan_id: data.subscription_plan_id || null,
+        plan_start_date: data.plan_start_date || null,
+        next_due_date: data.next_due_date || null,
         stripes: data.stripes || 0,
         attendance_rate: data.attendance_rate || 0
       };
@@ -208,8 +227,12 @@ export const useStudents = () => {
         ...data,
         status: data.status as "active" | "inactive" | "on-hold",
         membership_type: data.membership_type as "monthly" | "yearly" | "unlimited",
+        payment_status: data.payment_status as "unpaid" | "paid" | "due_soon" | "overdue" | null,
         phone: data.phone || null,
         last_attended: data.last_attended || null,
+        subscription_plan_id: data.subscription_plan_id || null,
+        plan_start_date: data.plan_start_date || null,
+        next_due_date: data.next_due_date || null,
         stripes: data.stripes || 0,
         attendance_rate: data.attendance_rate || 0
       };

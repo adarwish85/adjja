@@ -1036,6 +1036,7 @@ export type Database = {
           next_due_date: string | null
           payment_status: string | null
           phone: string | null
+          plan_start_date: string | null
           status: string
           stripes: number
           subscription_plan_id: string | null
@@ -1056,6 +1057,7 @@ export type Database = {
           next_due_date?: string | null
           payment_status?: string | null
           phone?: string | null
+          plan_start_date?: string | null
           status?: string
           stripes?: number
           subscription_plan_id?: string | null
@@ -1076,6 +1078,7 @@ export type Database = {
           next_due_date?: string | null
           payment_status?: string | null
           phone?: string | null
+          plan_start_date?: string | null
           status?: string
           stripes?: number
           subscription_plan_id?: string | null
@@ -1463,6 +1466,10 @@ export type Database = {
         Args: { period_type: string; from_date?: string }
         Returns: string
       }
+      calculate_next_due_date_for_student: {
+        Args: { p_student_id: string; p_start_date?: string }
+        Returns: string
+      }
       create_student_account: {
         Args: {
           p_email: string
@@ -1506,6 +1513,10 @@ export type Database = {
           p_user_id?: string
         }
         Returns: string
+      }
+      update_student_payment_status: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {
