@@ -1130,6 +1130,109 @@ export type Database = {
         }
         Relationships: []
       }
+      system_settings: {
+        Row: {
+          branch_id: string | null
+          category: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          branch_id?: string | null
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          branch_id?: string | null
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_settings_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_settings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_settings_history: {
+        Row: {
+          change_reason: string | null
+          changed_at: string | null
+          changed_by: string | null
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          setting_id: string | null
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          setting_id?: string | null
+        }
+        Update: {
+          change_reason?: string | null
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          setting_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_settings_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_settings_history_setting_id_fkey"
+            columns: ["setting_id"]
+            isOneToOne: false
+            referencedRelation: "system_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_activity_logs: {
         Row: {
           action: string
@@ -1343,6 +1446,10 @@ export type Database = {
           attendance_count: number
         }[]
       }
+      get_setting_value: {
+        Args: { p_category: string; p_key: string; p_branch_id?: string }
+        Returns: Json
+      }
       refresh_analytics_views: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1350,6 +1457,16 @@ export type Database = {
       unenroll_student_from_class: {
         Args: { p_student_id: string; p_class_id: string }
         Returns: boolean
+      }
+      update_setting: {
+        Args: {
+          p_category: string
+          p_key: string
+          p_value: Json
+          p_branch_id?: string
+          p_user_id?: string
+        }
+        Returns: string
       }
     }
     Enums: {

@@ -1,8 +1,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useSystemSettings } from "./useSystemSettings";
 
 export const useStudentAnalytics = (dateRange?: { start?: Date; end?: Date }, branchId?: string) => {
+  const { getSettingValue } = useSystemSettings();
+  
   const startDate = dateRange?.start 
     ? new Date(dateRange.start).toISOString()
     : new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString();
@@ -10,6 +13,12 @@ export const useStudentAnalytics = (dateRange?: { start?: Date; end?: Date }, br
   const endDate = dateRange?.end
     ? new Date(dateRange.end).toISOString()
     : new Date().toISOString();
+
+  // Check if analytics are enabled
+  const { data: analyticsEnabled } = useQuery({
+    queryKey: ['analytics-enabled'],
+    queryFn: () => getSettingValue('analytics', 'enable_revenue_tracking', true),
+  });
 
   // Fetch student growth data from materialized view
   const { data: growthData, isLoading: growthLoading } = useQuery({
@@ -29,7 +38,8 @@ export const useStudentAnalytics = (dateRange?: { start?: Date; end?: Date }, br
         growthRate: index > 0 && data[index - 1] ? 
           ((item.new_students - data[index - 1].new_students) / data[index - 1].new_students) * 100 : 0
       }));
-    }
+    },
+    enabled: analyticsEnabled !== false
   });
 
   // Fetch retention data
@@ -68,7 +78,8 @@ export const useStudentAnalytics = (dateRange?: { start?: Date; end?: Date }, br
         month,
         ...data
       })).sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
-    }
+    },
+    enabled: analyticsEnabled !== false
   });
 
   // Fetch belt distribution
@@ -101,7 +112,8 @@ export const useStudentAnalytics = (dateRange?: { start?: Date; end?: Date }, br
         count,
         color: beltColors[belt] || '#6c757d'
       }));
-    }
+    },
+    enabled: analyticsEnabled !== false
   });
 
   // Fetch student metrics
@@ -141,7 +153,8 @@ export const useStudentAnalytics = (dateRange?: { start?: Date; end?: Date }, br
         averageLifetimeDays,
         averageLifetimeMonths
       };
-    }
+    },
+    enabled: analyticsEnabled !== false
   });
 
   return {
@@ -149,6 +162,7 @@ export const useStudentAnalytics = (dateRange?: { start?: Date; end?: Date }, br
     retentionData,
     beltDistribution,
     metrics,
-    isLoading: growthLoading || retentionLoading || beltLoading || metricsLoading
+    isLoading: growthLoading || retentionLoading || beltLoading || metricsLoading,
+    analyticsEnabled
   };
 };

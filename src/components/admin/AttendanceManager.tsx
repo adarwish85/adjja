@@ -11,6 +11,7 @@ import { CalendarIcon, Search, CheckCircle2, XCircle, Clock } from "lucide-react
 import { useClasses } from "@/hooks/useClasses";
 import { useStudents } from "@/hooks/useStudents";
 import { useAuth } from "@/hooks/useAuth";
+import { useAppSettings } from "@/contexts/SettingsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -29,6 +30,14 @@ export const AttendanceManager = () => {
   const { students, loading: studentsLoading } = useStudents();
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Use centralized settings
+  const { 
+    enableInstructorValidation, 
+    lateThresholdMinutes, 
+    autoAbsenceMinutes,
+    defaultAttendanceBuffer 
+  } = useAppSettings();
 
   const filteredStudents = students?.filter(student => 
     student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -79,6 +88,16 @@ export const AttendanceManager = () => {
 
   const markAttendance = async (studentId: string, status: string) => {
     if (!selectedClass || !selectedDate || !user) return;
+    
+    // Check if instructor validation is required and user is not an instructor
+    if (enableInstructorValidation && user.role !== 'Coach' && user.role !== 'Admin' && user.role !== 'Super Admin') {
+      toast({
+        title: "Access Denied",
+        description: "Only instructors can mark attendance when instructor validation is enabled",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       // Check if record already exists
@@ -166,12 +185,26 @@ export const AttendanceManager = () => {
     return record ? record.status : null;
   };
 
+  // Helper to determine if student should be marked as late or absent based on settings
+  const getAutoStatus = (classStartTime: Date) => {
+    const now = new Date();
+    const minutesLate = (now.getTime() - classStartTime.getTime()) / (1000 * 60);
+    
+    if (minutesLate > autoAbsenceMinutes) return 'absent';
+    if (minutesLate > lateThresholdMinutes) return 'late';
+    return 'present';
+  };
+
   const isLoading = classesLoading || studentsLoading || loadingAttendance;
 
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Attendance Management</CardTitle>
+        <div className="text-sm text-gray-500 space-y-1">
+          <p>Settings: Late threshold: {lateThresholdMinutes} min, Auto-absence: {autoAbsenceMinutes} min</p>
+          {enableInstructorValidation && <p>Instructor validation is enabled</p>}
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex flex-col sm:flex-row gap-4">

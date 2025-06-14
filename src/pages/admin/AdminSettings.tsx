@@ -8,6 +8,7 @@ import { SecuritySettings } from "@/components/admin/settings/SecuritySettings";
 import { IntegrationSettings } from "@/components/admin/settings/IntegrationSettings";
 import { NotificationSettings } from "@/components/admin/settings/NotificationSettings";
 import { BackupSettings } from "@/components/admin/settings/BackupSettings";
+import { CentralizedSettings } from "@/components/admin/settings/CentralizedSettings";
 
 const AdminSettings = () => {
   return (
@@ -18,8 +19,9 @@ const AdminSettings = () => {
           <p className="text-bjj-gray">Manage academy configuration and preferences</p>
         </div>
 
-        <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+        <Tabs defaultValue="centralized" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-8">
+            <TabsTrigger value="centralized">Centralized</TabsTrigger>
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="system">System</TabsTrigger>
@@ -28,6 +30,10 @@ const AdminSettings = () => {
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="backup">Backup</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="centralized">
+            <CentralizedSettings />
+          </TabsContent>
 
           <TabsContent value="general">
             <GeneralSettings />
