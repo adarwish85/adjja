@@ -321,14 +321,30 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
+      // Clear local state first to prevent UI issues
       setUserProfile(null);
-      toast.success("Signed out successfully");
+      setUser(null);
+      setSession(null);
+      
+      // Attempt to sign out, but don't throw error if session is already missing
+      const { error } = await supabase.auth.signOut();
+      
+      // Only log error if it's not a session-related error
+      if (error && !error.message.includes('session') && !error.message.includes('Session')) {
+        console.error("Sign out error:", error);
+        toast.error(error.message);
+      } else {
+        // Success or expected session error
+        toast.success("Signed out successfully");
+      }
     } catch (error) {
       console.error("Error signing out:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to sign out");
+      // Don't show error to user for session issues, just clear local state
+      if (error instanceof Error && !error.message.includes('session')) {
+        toast.error("Failed to sign out");
+      } else {
+        toast.success("Signed out successfully");
+      }
     }
   };
 
