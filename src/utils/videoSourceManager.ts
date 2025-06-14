@@ -1,4 +1,3 @@
-
 interface VideoSource {
   url: string;
   type: 'mp4' | 'hls' | 'dash' | 'youtube';
@@ -14,11 +13,10 @@ interface VideoSourceConfig {
 export class VideoSourceManager {
   private sources: VideoSource[] = [];
   private currentSourceIndex = 0;
-  private maxRetries = 2;
+  private maxRetries = 1; // Reduced retries for YouTube
   private currentRetries = 0;
 
   constructor(private config: VideoSourceConfig) {
-    // For YouTube sources, don't prioritize over MP4 - use as provided
     this.sources = [config.primary, ...config.fallbacks];
     console.log('📹 VideoSourceManager initialized with sources:', this.sources);
   }
@@ -38,6 +36,11 @@ export class VideoSourceManager {
   }
 
   canRetry(): boolean {
+    const current = this.getCurrentSource();
+    // For YouTube videos, be more lenient with retries
+    if (current?.type === 'youtube') {
+      return this.currentRetries < 1;
+    }
     return this.currentRetries < this.maxRetries;
   }
 
@@ -56,33 +59,64 @@ export class VideoSourceManager {
     console.log('🔄 VideoSourceManager reset');
   }
 
-  // Get the current video URL without obfuscation for YouTube
   getObfuscatedUrl(): string {
     const current = this.getCurrentSource();
     if (!current) return '';
     
-    // For YouTube, return the original URL - ReactPlayer handles it properly
+    // For YouTube, return the cleaned URL
     if (current.type === 'youtube') {
-      return current.url;
+      return this.cleanYouTubeUrl(current.url);
     }
     
-    // For other types, return as-is
     return current.url;
   }
 
-  // Check if current source is a YouTube source
+  // Clean and validate YouTube URLs
+  private cleanYouTubeUrl(url: string): string {
+    if (!url) return '';
+    
+    try {
+      // Handle different YouTube URL formats
+      if (url.includes('youtu.be/')) {
+        const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+        return videoId ? `https://www.youtube.com/watch?v=${videoId}` : url;
+      }
+      
+      if (url.includes('youtube.com/watch')) {
+        // Clean URL but keep essential parameters
+        const urlObj = new URL(url);
+        const videoId = urlObj.searchParams.get('v');
+        const time = urlObj.searchParams.get('t');
+        
+        if (videoId) {
+          let cleanUrl = `https://www.youtube.com/watch?v=${videoId}`;
+          if (time) cleanUrl += `&t=${time}`;
+          return cleanUrl;
+        }
+      }
+      
+      if (url.includes('youtube.com/embed/')) {
+        const videoId = url.split('youtube.com/embed/')[1]?.split('?')[0];
+        return videoId ? `https://www.youtube.com/watch?v=${videoId}` : url;
+      }
+      
+      return url;
+    } catch (error) {
+      console.warn('Error cleaning YouTube URL:', error);
+      return url;
+    }
+  }
+
   isYouTubeSource(): boolean {
     const current = this.getCurrentSource();
     return current?.type === 'youtube';
   }
 
-  // Get preferred player type for current source
   getPreferredPlayerType(): 'react-player' | 'videojs' {
     const current = this.getCurrentSource();
     if (!current) return 'react-player';
     
-    // Use ReactPlayer for YouTube sources as it handles them better
-    // Use Video.js for direct video files
+    // Always use ReactPlayer for YouTube - it handles YouTube better
     return current.type === 'youtube' ? 'react-player' : 'videojs';
   }
 }
@@ -92,7 +126,6 @@ export const createVideoSourceConfig = (
   fallbackUrls: string[] = [],
   mp4Urls: string[] = []
 ): VideoSourceConfig => {
-  // Determine primary source type
   const getPrimaryType = (url: string): VideoSource['type'] => {
     if (url.includes('youtube') || url.includes('youtu.be')) return 'youtube';
     if (url.includes('.m3u8')) return 'hls';
@@ -105,19 +138,18 @@ export const createVideoSourceConfig = (
     type: getPrimaryType(primaryUrl)
   };
 
-  // Create fallback sources
+  // For YouTube videos, don't add MP4 fallbacks as they likely don't exist
   const fallbacks: VideoSource[] = [
-    // Add other fallback URLs
     ...fallbackUrls.map(url => ({
       url,
       type: getPrimaryType(url)
     })),
-    // Add MP4 URLs as additional fallbacks only if they exist
-    ...mp4Urls.filter(url => url && url.trim()).map(url => ({
+    // Only add MP4 URLs if primary is not YouTube
+    ...(primary.type !== 'youtube' ? mp4Urls.filter(url => url && url.trim()).map(url => ({
       url,
       type: 'mp4' as const,
       quality: url.includes('720p') ? '720p' : url.includes('480p') ? '480p' : 'auto'
-    }))
+    })) : [])
   ];
 
   return {

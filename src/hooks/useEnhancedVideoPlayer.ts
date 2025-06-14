@@ -25,6 +25,7 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
   const sourceManagerRef = useRef<VideoSourceManager | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout>();
   const progressIntervalRef = useRef<NodeJS.Timeout>();
+  const errorTimeoutRef = useRef<NodeJS.Timeout>();
 
   const initializeSourceManager = useCallback(() => {
     console.log('🚀 Initializing source manager with URL:', config.primaryUrl);
@@ -36,7 +37,6 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
     );
     sourceManagerRef.current = new VideoSourceManager(sourceConfig);
     
-    // Set initial player type based on preferred source
     if (sourceManagerRef.current) {
       const preferredType = sourceManagerRef.current.getPreferredPlayerType();
       console.log('🎮 Setting player type to:', preferredType);
@@ -49,17 +49,16 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
       clearTimeout(timeoutRef.current);
     }
 
-    // Simulate loading progress
     setLoadingProgress(0);
     progressIntervalRef.current = setInterval(() => {
-      setLoadingProgress(prev => Math.min(prev + Math.random() * 10, 85));
-    }, 300);
+      setLoadingProgress(prev => Math.min(prev + Math.random() * 15, 90));
+    }, 500);
 
-    // Shorter timeout for YouTube videos as they should load quickly
-    const timeout = sourceManagerRef.current?.isYouTubeSource() ? 10000 : (config.timeoutDuration || 8000);
+    // Longer timeout for YouTube videos to allow for proper loading
+    const timeout = sourceManagerRef.current?.isYouTubeSource() ? 15000 : (config.timeoutDuration || 10000);
     
     timeoutRef.current = setTimeout(() => {
-      console.log('⏰ Loading timeout - trying next source');
+      console.log('⏰ Loading timeout - trying next source or showing error');
       tryNextSource();
     }, timeout);
   }, [config.timeoutDuration]);
@@ -73,6 +72,10 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
       clearInterval(progressIntervalRef.current);
       progressIntervalRef.current = undefined;
     }
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = undefined;
+    }
     setLoadingProgress(100);
   }, []);
 
@@ -85,15 +88,18 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
       setLoading(true);
       setError(null);
       setPlayerReady(false);
-      
-      // Update player type based on source
       setCurrentPlayerType(sourceManagerRef.current.getPreferredPlayerType());
-      
       startLoadingTimeout();
     } else {
-      // All sources exhausted
-      console.error('❌ All video sources exhausted');
-      setError('Video content is temporarily unavailable. Please try again later or contact support if the issue persists.');
+      // All sources exhausted - for YouTube videos, show a more specific error
+      const isYouTube = sourceManagerRef.current.isYouTubeSource();
+      console.error('❌ All video sources exhausted, isYouTube:', isYouTube);
+      
+      if (isYouTube) {
+        setError('This YouTube video cannot be embedded. It may be restricted by the content owner or unavailable in your region.');
+      } else {
+        setError('Video content is temporarily unavailable. Please try again later.');
+      }
       setLoading(false);
       clearLoadingTimeout();
     }
@@ -122,7 +128,7 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
     setLoading(true);
     setError(null);
     setPlayerReady(false);
-    setCurrentPlayerType('react-player'); // Default to ReactPlayer for better YouTube support
+    setCurrentPlayerType('react-player');
     setLoadingProgress(0);
     clearLoadingTimeout();
     
@@ -149,10 +155,17 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
     console.error('❌ Player error:', error);
     clearLoadingTimeout();
     
-    // For YouTube errors, try to retry or use next source
-    setTimeout(() => {
-      retryCurrentSource();
-    }, 1000);
+    // For YouTube errors, give a short delay before retrying
+    errorTimeoutRef.current = setTimeout(() => {
+      const isYouTube = sourceManagerRef.current?.isYouTubeSource();
+      if (isYouTube) {
+        // YouTube specific error handling
+        console.log('YouTube video error, trying to recover...');
+        retryCurrentSource();
+      } else {
+        retryCurrentSource();
+      }
+    }, 2000);
   }, [clearLoadingTimeout, retryCurrentSource]);
 
   // Initialize when dialog opens

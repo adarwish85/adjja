@@ -55,7 +55,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       primaryUrl, 
       fallbackUrls, 
       mp4Urls,
-      timeoutDuration: 10000 // Increased timeout for better reliability
+      timeoutDuration: 15000 // Longer timeout for YouTube
     }, 
     isOpen
   );
@@ -64,10 +64,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
   const handleProgress = (state: any) => {
     if (typeof state === 'number') {
-      // Video.js progress
       setCurrentTime(state);
     } else {
-      // ReactPlayer progress
       setCurrentTime(state.playedSeconds);
     }
   };
@@ -75,7 +73,6 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
     setCurrentTime(time);
-    // Seeking will be handled by the individual player components
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,7 +106,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       );
     }
 
-    // Use ReactPlayer for YouTube and other sources
+    // Enhanced ReactPlayer configuration for YouTube
     return (
       <ReactPlayer
         url={videoUrl}
@@ -137,6 +134,11 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               playsinline: 1,
               origin: window.location.origin,
               enablejsapi: 1,
+              autoplay: 0,
+              start: 0
+            },
+            embedOptions: {
+              host: 'https://www.youtube-nocookie.com'
             }
           },
           file: {
@@ -146,6 +148,11 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             }
           }
         }}
+        onStart={() => console.log('ReactPlayer started')}
+        onPlay={() => console.log('ReactPlayer playing')}
+        onPause={() => console.log('ReactPlayer paused')}
+        onBuffer={() => console.log('ReactPlayer buffering')}
+        onBufferEnd={() => console.log('ReactPlayer buffer end')}
       />
     );
   };
@@ -165,8 +172,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
           {error ? (
             <CustomErrorState
-              title="Video Temporarily Unavailable"
-              message="We're having trouble loading this video. This may be due to network issues or temporary restrictions."
+              title="Video Unavailable"
+              message={error}
               onRetry={retryCurrentSource}
               onDownload={onDownload}
               showDownload={!!onDownload}
@@ -175,13 +182,12 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             <CustomLoadingState
               progress={loadingProgress}
               onRetry={retryCurrentSource}
-              showRetry={loadingProgress > 80}
+              showRetry={loadingProgress > 85}
             />
           ) : (
             <div className="relative w-full h-full">
               {renderPlayer()}
 
-              {/* Custom Video Controls */}
               {playerReady && (
                 <VideoControls
                   playing={playing}
