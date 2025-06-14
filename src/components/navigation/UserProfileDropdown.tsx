@@ -38,8 +38,9 @@ export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
   };
 
   const handleEditProfile = () => {
+    console.log("Edit Profile clicked");
     setShowEditProfile(true);
-    onClose();
+    // Don't close the dropdown immediately - let the modal open first
   };
 
   const handleChangePassword = () => {
@@ -50,6 +51,13 @@ export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
   const handleAccountSettings = () => {
     setShowAccountSettings(true);
     onClose();
+  };
+
+  const handleEditProfileClose = (open: boolean) => {
+    setShowEditProfile(open);
+    if (!open) {
+      onClose(); // Close dropdown when modal closes
+    }
   };
 
   return (
@@ -127,7 +135,7 @@ export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
       {/* Modals */}
       <ProfileEditModal 
         open={showEditProfile} 
-        onOpenChange={setShowEditProfile}
+        onOpenChange={handleEditProfileClose}
       />
       
       <ChangePasswordModal 
