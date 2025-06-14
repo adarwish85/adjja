@@ -1,11 +1,12 @@
 
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AnalyticsOverview } from "@/components/admin/analytics/AnalyticsOverview";
-import { StudentAnalytics } from "@/components/admin/analytics/StudentAnalytics";
-import { RevenueAnalytics } from "@/components/admin/analytics/RevenueAnalytics";
-import { PerformanceAnalytics } from "@/components/admin/analytics/PerformanceAnalytics";
-import { CustomReports } from "@/components/admin/analytics/CustomReports";
+import { AnalyticsDashboard } from "@/components/admin/analytics/AnalyticsDashboard";
+import { StudentAnalyticsComponent } from "@/components/admin/analytics/StudentAnalyticsComponent";
+import { RevenueAnalyticsComponent } from "@/components/admin/analytics/RevenueAnalyticsComponent";
+import { AttendanceAnalyticsComponent } from "@/components/admin/analytics/AttendanceAnalyticsComponent";
+import { ClassAnalyticsComponent } from "@/components/admin/analytics/ClassAnalyticsComponent";
+import { BarChart, Users, Calendar, DollarSign, FileText } from "lucide-react";
 
 const AdminAnalytics = () => {
   return (
@@ -18,31 +19,46 @@ const AdminAnalytics = () => {
 
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="students">Students</TabsTrigger>
-            <TabsTrigger value="revenue">Revenue</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
+            <TabsTrigger value="overview">
+              <BarChart className="h-4 w-4 mr-2" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="students">
+              <Users className="h-4 w-4 mr-2" />
+              Students
+            </TabsTrigger>
+            <TabsTrigger value="attendance">
+              <Calendar className="h-4 w-4 mr-2" />
+              Attendance
+            </TabsTrigger>
+            <TabsTrigger value="revenue">
+              <DollarSign className="h-4 w-4 mr-2" />
+              Revenue
+            </TabsTrigger>
+            <TabsTrigger value="reports">
+              <FileText className="h-4 w-4 mr-2" />
+              Reports
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
-            <AnalyticsOverview />
+            <AnalyticsDashboard />
           </TabsContent>
 
           <TabsContent value="students">
-            <StudentAnalytics />
+            <StudentAnalyticsComponent />
+          </TabsContent>
+
+          <TabsContent value="attendance">
+            <AttendanceAnalyticsComponent />
           </TabsContent>
 
           <TabsContent value="revenue">
-            <RevenueAnalytics />
-          </TabsContent>
-
-          <TabsContent value="performance">
-            <PerformanceAnalytics />
+            <RevenueAnalyticsComponent />
           </TabsContent>
 
           <TabsContent value="reports">
-            <CustomReports />
+            <ClassAnalyticsComponent />
           </TabsContent>
         </Tabs>
       </div>

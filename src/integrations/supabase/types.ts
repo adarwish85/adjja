@@ -9,6 +9,68 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      attendance_records: {
+        Row: {
+          attendance_date: string
+          class_id: string
+          created_at: string
+          id: string
+          marked_at: string
+          marked_by: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          attendance_date?: string
+          class_id: string
+          created_at?: string
+          id?: string
+          marked_at?: string
+          marked_by?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          attendance_date?: string
+          class_id?: string
+          created_at?: string
+          id?: string
+          marked_at?: string
+          marked_by?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_class_performance"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "attendance_records_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branches: {
         Row: {
           active_classes: number | null
@@ -125,6 +187,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "class_enrollments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_class_performance"
+            referencedColumns: ["class_id"]
+          },
           {
             foreignKeyName: "class_enrollments_class_id_fkey"
             columns: ["class_id"]
@@ -1213,7 +1282,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      analytics_class_performance: {
+        Row: {
+          absent_count: number | null
+          capacity: number | null
+          class_id: string | null
+          class_name: string | null
+          enrolled: number | null
+          instructor: string | null
+          present_count: number | null
+          total_attendances: number | null
+          utilization_percentage: number | null
+        }
+        Relationships: []
+      }
+      analytics_revenue_metrics: {
+        Row: {
+          month: string | null
+          plan_name: string | null
+          subscription_period: string | null
+          total_revenue: number | null
+          transaction_count: number | null
+        }
+        Relationships: []
+      }
+      analytics_student_metrics: {
+        Row: {
+          active_students: number | null
+          inactive_students: number | null
+          month: string | null
+          new_students: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_next_due_date: {
@@ -1233,6 +1334,18 @@ export type Database = {
       enroll_student_in_class: {
         Args: { p_student_id: string; p_class_id: string }
         Returns: string
+      }
+      get_attendance_heatmap: {
+        Args: { start_date?: string; end_date?: string }
+        Returns: {
+          day_of_week: number
+          hour_of_day: number
+          attendance_count: number
+        }[]
+      }
+      refresh_analytics_views: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       unenroll_student_from_class: {
         Args: { p_student_id: string; p_class_id: string }
