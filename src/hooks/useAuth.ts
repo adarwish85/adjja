@@ -18,7 +18,7 @@ export const useAuth = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string, userEmail?: string) => {
     try {
       console.log('Fetching profile for user:', userId);
       
@@ -47,20 +47,28 @@ export const useAuth = () => {
           console.log('Profile not found, creating default profile...');
           
           // Get default student role
-          const { data: studentRole } = await supabase
+          const { data: studentRole, error: roleError } = await supabase
             .from('user_roles')
             .select('id')
             .eq('name', 'Student')
             .single();
 
+          if (roleError) {
+            console.error('Error fetching student role:', roleError);
+            return null;
+          }
+
           if (studentRole) {
             // Create profile with student role
+            const profileName = userEmail?.split('@')[0] || 'User';
+            const profileEmail = userEmail || '';
+
             const { data: newProfile, error: createError } = await supabase
               .from('profiles')
               .insert({
                 id: userId,
-                name: user?.email?.split('@')[0] || 'User',
-                email: user?.email || '',
+                name: profileName,
+                email: profileEmail,
                 role_id: studentRole.id,
                 status: 'active'
               })
@@ -76,12 +84,20 @@ export const useAuth = () => {
               `)
               .single();
 
-            if (!createError && newProfile) {
+            if (createError) {
+              console.error('Error creating profile:', createError);
+              return null;
+            }
+
+            if (newProfile) {
               const userRole = Array.isArray(newProfile.user_roles) ? newProfile.user_roles[0] : newProfile.user_roles;
-              return {
+              const userProfile = {
                 ...newProfile,
                 role_name: userRole?.name || 'Student'
               } as UserProfile;
+
+              console.log('Created new profile:', userProfile);
+              return userProfile;
             }
           }
         }
@@ -104,41 +120,61 @@ export const useAuth = () => {
   };
 
   useEffect(() => {
+    let mounted = true;
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("Auth state changed:", event, session?.user?.id);
+        
+        if (!mounted) return;
+
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          const profile = await fetchUserProfile(session.user.id);
-          setUserProfile(profile);
-          console.log('Profile set:', profile);
+          const profile = await fetchUserProfile(session.user.id, session.user.email);
+          if (mounted) {
+            setUserProfile(profile);
+            console.log('Profile set:', profile);
+          }
         } else {
-          setUserProfile(null);
+          if (mounted) {
+            setUserProfile(null);
+          }
         }
         
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     );
 
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
+
       console.log("Initial session:", session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id);
-        setUserProfile(profile);
-        console.log('Initial profile set:', profile);
+        const profile = await fetchUserProfile(session.user.id, session.user.email);
+        if (mounted) {
+          setUserProfile(profile);
+          console.log('Initial profile set:', profile);
+        }
       }
       
-      setLoading(false);
+      if (mounted) {
+        setLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithEmail = async (email: string, password: string) => {

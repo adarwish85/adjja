@@ -35,19 +35,21 @@ const Login = () => {
       const userRole = userProfile.role_name?.toLowerCase();
       console.log('User logged in with role:', userRole, 'redirecting...');
       
-      if (userRole === 'student') {
-        console.log('Redirecting to student dashboard');
-        navigate("/dashboard");
-      } else if (userRole === 'coach') {
-        console.log('Redirecting to coach dashboard');
-        navigate("/coach");
-      } else if (userRole === 'super admin' || userRole === 'admin') {
-        console.log('Redirecting to admin dashboard');
-        navigate("/admin");
-      } else {
-        console.log('Unknown role, redirecting to home');
-        navigate("/");
-      }
+      setTimeout(() => {
+        if (userRole === 'student') {
+          console.log('Redirecting to student dashboard');
+          navigate("/dashboard");
+        } else if (userRole === 'coach') {
+          console.log('Redirecting to coach dashboard');
+          navigate("/coach");
+        } else if (userRole === 'super admin' || userRole === 'admin') {
+          console.log('Redirecting to admin dashboard');
+          navigate("/admin");
+        } else {
+          console.log('Unknown role, redirecting to home');
+          navigate("/");
+        }
+      }, 100);
     }
   }, [user, userProfile, loading, navigate]);
 
@@ -130,7 +132,10 @@ const Login = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div>Loading...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bjj-gold mx-auto mb-4"></div>
+          <p className="text-bjj-gray">Loading...</p>
+        </div>
       </div>
     );
   }

@@ -21,8 +21,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         return;
       }
 
-      // If user is authenticated but we're on a generic protected route,
-      // redirect them to their appropriate dashboard
+      // Wait for userProfile to be loaded before redirecting
+      if (user && !userProfile) {
+        console.log('User found but no profile yet, waiting...');
+        return;
+      }
+
+      // If user is authenticated and we have profile data, redirect based on role
       if (user && userProfile && window.location.pathname === "/protected") {
         const userRole = userProfile.role_name?.toLowerCase();
         console.log('Redirecting user with role:', userRole);
@@ -53,6 +58,18 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!user) {
     return null; // Will redirect to login
+  }
+
+  // Show loading if we have user but no profile yet
+  if (user && !userProfile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bjj-gold mx-auto mb-4"></div>
+          <p className="text-bjj-gray">Loading profile...</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
