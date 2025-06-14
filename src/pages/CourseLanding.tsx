@@ -1,10 +1,10 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import { CleanYouTubePlayer } from "@/components/video/CleanYouTubePlayer";
 import { extractYouTubeVideoId, getYouTubeThumbnail, isYouTubeUrl } from "@/utils/youtubeUtils";
 import { useCourseEnrollment } from "@/hooks/useCourseEnrollment";
 import { useAuth } from "@/hooks/useAuth";
