@@ -39,8 +39,9 @@ export const ProfileEditModal = ({ open, onOpenChange }: ProfileEditModalProps) 
 
     setLoading(true);
     try {
-      // Update auth user metadata
+      // Update auth user metadata and email
       const { error: authError } = await supabase.auth.updateUser({
+        email: formData.email,
         data: {
           name: formData.name,
           phone: formData.phone
@@ -54,6 +55,7 @@ export const ProfileEditModal = ({ open, onOpenChange }: ProfileEditModalProps) 
         .from('profiles')
         .update({
           name: formData.name,
+          email: formData.email,
           phone: formData.phone
         })
         .eq('id', user.id);
@@ -104,10 +106,11 @@ export const ProfileEditModal = ({ open, onOpenChange }: ProfileEditModalProps) 
               id="email"
               type="email"
               value={formData.email}
-              disabled
-              className="bg-gray-100"
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              placeholder="Enter your email address"
+              required
             />
-            <p className="text-xs text-gray-500">Email cannot be changed here</p>
+            <p className="text-xs text-gray-500">You may need to verify your new email address</p>
           </div>
           
           <div className="space-y-2">
