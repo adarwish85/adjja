@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +14,7 @@ import { CourseContentAccordion } from "@/components/course/CourseContentAccordi
 import { CourseRequirements } from "@/components/course/CourseRequirements";
 import { CourseDescription } from "@/components/course/CourseDescription";
 import { CourseInstructorCard } from "@/components/course/CourseInstructorCard";
-import { ReliableVideoPlayer } from "@/components/video/ReliableVideoPlayer";
+import { UniversalVideoPlayer } from "@/components/video/UniversalVideoPlayer";
 
 const CourseLanding = () => {
   const { courseId } = useParams();
@@ -241,7 +240,7 @@ const CourseLanding = () => {
       </div>
 
       {isPlayerOpen && selectedVideo && (
-        <ReliableVideoPlayer
+        <UniversalVideoPlayer
           videoUrl={selectedVideo}
           isOpen={isPlayerOpen}
           onClose={() => {
