@@ -111,33 +111,31 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
           onError={handleError}
           onReady={handleReady}
           config={{
-            youtube: {
-              playerVars: {
-                // Maximum branding minimization within legal limits
-                modestbranding: 1,        // Minimize YouTube branding
-                rel: 0,                   // Don't show related videos at end
-                showinfo: 0,              // Don't show video title/uploader
-                iv_load_policy: 3,        // Don't show video annotations
-                cc_load_policy: 0,        // Don't show captions by default
-                playsinline: 1,           // Play inline on mobile
-                origin: window.location.origin,
-                enablejsapi: 1,
-                fs: 1,                    // Allow fullscreen
-                controls: 1,              // Show player controls
-                disablekb: 0,             // Keep keyboard controls for accessibility
-                autoplay: 0,              // Don't autoplay
-                start: 0,                 // Start from beginning
-                end: 0,                   // Play full video
-                loop: 0,                  // Don't loop
-                playlist: '',             // No playlist
-                color: 'white',           // Use white progress bar
-                hl: 'en',                 // Set language to English
-                widget_referrer: window.location.origin
-              },
-              embedOptions: {
-                // Additional embed options to minimize branding
-                host: 'https://www.youtube-nocookie.com'
-              }
+            playerVars: {
+              // Maximum branding minimization within legal limits
+              modestbranding: 1,        // Minimize YouTube branding
+              rel: 0,                   // Don't show related videos at end
+              showinfo: 0,              // Don't show video title/uploader
+              iv_load_policy: 3,        // Don't show video annotations
+              cc_load_policy: 0,        // Don't show captions by default
+              playsinline: 1,           // Play inline on mobile
+              origin: window.location.origin,
+              enablejsapi: 1,
+              fs: 1,                    // Allow fullscreen
+              controls: 1,              // Show player controls
+              disablekb: 0,             // Keep keyboard controls for accessibility
+              autoplay: 0,              // Don't autoplay
+              start: 0,                 // Start from beginning
+              end: 0,                   // Play full video
+              loop: 0,                  // Don't loop
+              playlist: '',             // No playlist
+              color: 'white',           // Use white progress bar
+              hl: 'en',                 // Set language to English
+              widget_referrer: window.location.origin
+            },
+            embedOptions: {
+              // Additional embed options to minimize branding
+              host: 'https://www.youtube-nocookie.com'
             }
           }}
           style={{
