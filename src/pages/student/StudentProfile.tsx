@@ -1,4 +1,3 @@
-
 import { StudentLayout } from "@/components/layouts/StudentLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,7 @@ const StudentProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [profileForm, setProfileForm] = useState({
     name: userProfile?.name || '',
-    phone: userProfile?.phone || '',
+    phone: '', // Initialize with empty string since phone comes from fullProfile
     weight: '',
     height: '',
     favoritePosition: '',
