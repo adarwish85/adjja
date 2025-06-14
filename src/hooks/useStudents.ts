@@ -17,7 +17,6 @@ export interface Student {
   attendance_rate: number;
   joined_date: string;
   last_attended: string | null;
-  class_enrollment?: string | null;
   created_at: string;
   updated_at: string;
   // Optional fields for account creation
@@ -25,13 +24,6 @@ export interface Student {
   password?: string;
   createAccount?: boolean;
 }
-
-// Helper function to validate UUID
-const isValidUUID = (uuid: string | null | undefined): boolean => {
-  if (!uuid) return false;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(uuid);
-};
 
 // Helper function to clean update data
 const cleanUpdateData = (data: any) => {
@@ -44,13 +36,6 @@ const cleanUpdateData = (data: any) => {
   delete cleaned.username;
   delete cleaned.password;
   delete cleaned.createAccount;
-  
-  // Handle UUID fields - convert invalid values to null
-  if ('class_enrollment' in cleaned) {
-    if (cleaned.class_enrollment === "undefined" || cleaned.class_enrollment === "" || !isValidUUID(cleaned.class_enrollment)) {
-      cleaned.class_enrollment = null;
-    }
-  }
   
   // Handle other nullable fields
   if ('phone' in cleaned && (cleaned.phone === "" || cleaned.phone === "undefined")) {
@@ -94,7 +79,6 @@ export const useStudents = () => {
         membership_type: student.membership_type as "monthly" | "yearly" | "unlimited",
         phone: student.phone || null,
         last_attended: student.last_attended || null,
-        class_enrollment: student.class_enrollment || null,
         stripes: student.stripes || 0,
         attendance_rate: student.attendance_rate || 0
       }));
@@ -150,28 +134,12 @@ export const useStudents = () => {
 
       console.log("Successfully added student:", data);
 
-      // If student is enrolled in a class, create the enrollment record
-      if (studentRecord.class_enrollment) {
-        const { error: enrollmentError } = await supabase.rpc('enroll_student_in_class', {
-          p_student_id: data.id,
-          p_class_id: studentRecord.class_enrollment
-        });
-
-        if (enrollmentError) {
-          console.error("Enrollment error:", enrollmentError);
-          toast.error("Student added but failed to enroll in class");
-        } else {
-          console.log("Student enrolled in class successfully");
-        }
-      }
-
       const typedStudent: Student = {
         ...data,
         status: data.status as "active" | "inactive" | "on-hold",
         membership_type: data.membership_type as "monthly" | "yearly" | "unlimited",
         phone: data.phone || null,
         last_attended: data.last_attended || null,
-        class_enrollment: data.class_enrollment || null,
         stripes: data.stripes || 0,
         attendance_rate: data.attendance_rate || 0
       };
@@ -218,20 +186,9 @@ export const useStudents = () => {
         toast.success("Student account created successfully");
       }
 
-      // Handle class enrollment changes
-      const currentStudent = students.find(s => s.id === id);
-      const oldClassId = currentStudent?.class_enrollment;
-      const newClassId = updates.class_enrollment;
-
       // Clean the update data
       const cleanUpdates = cleanUpdateData(updates);
       console.log("useStudents: Clean updates to send:", cleanUpdates);
-      
-      // Validate UUID field if present
-      if (cleanUpdates.class_enrollment && !isValidUUID(cleanUpdates.class_enrollment)) {
-        console.error("useStudents: Invalid UUID for class_enrollment:", cleanUpdates.class_enrollment);
-        throw new Error("Invalid class selection");
-      }
       
       const { data, error } = await supabase
         .from("students")
@@ -247,45 +204,12 @@ export const useStudents = () => {
 
       console.log("useStudents: Successfully updated student:", data);
 
-      // Handle class enrollment/unenrollment
-      if (oldClassId !== newClassId) {
-        // Unenroll from old class if exists
-        if (oldClassId && isValidUUID(oldClassId)) {
-          const { error: unenrollError } = await supabase.rpc('unenroll_student_from_class', {
-            p_student_id: id,
-            p_class_id: oldClassId
-          });
-          
-          if (unenrollError) {
-            console.error("useStudents: Unenrollment error:", unenrollError);
-          } else {
-            console.log("useStudents: Successfully unenrolled from old class");
-          }
-        }
-
-        // Enroll in new class if provided and valid
-        if (newClassId && isValidUUID(newClassId)) {
-          const { error: enrollmentError } = await supabase.rpc('enroll_student_in_class', {
-            p_student_id: id,
-            p_class_id: newClassId
-          });
-
-          if (enrollmentError) {
-            console.error("useStudents: Enrollment error:", enrollmentError);
-            toast.error("Student updated but failed to enroll in new class");
-          } else {
-            console.log("useStudents: Student enrolled in new class successfully");
-          }
-        }
-      }
-
       const typedStudent: Student = {
         ...data,
         status: data.status as "active" | "inactive" | "on-hold",
         membership_type: data.membership_type as "monthly" | "yearly" | "unlimited",
         phone: data.phone || null,
         last_attended: data.last_attended || null,
-        class_enrollment: data.class_enrollment || null,
         stripes: data.stripes || 0,
         attendance_rate: data.attendance_rate || 0
       };

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Button } from "@/components/ui/button";
@@ -68,8 +69,6 @@ const AdminStudents = () => {
       // Remove read-only fields and ensure proper data types
       const updateData = {
         ...updatedStudent,
-        // Convert undefined to null for UUID fields
-        class_enrollment: updatedStudent.class_enrollment || null,
         phone: updatedStudent.phone || null,
         last_attended: updatedStudent.last_attended || null,
       };

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,7 @@ interface MultiStepStudentFormProps {
 
 const steps = [
   { id: 1, title: "Basic Information", description: "Personal details" },
-  { id: 2, title: "Class Information", description: "Belt, coach & class enrollment" },
+  { id: 2, title: "Class Information", description: "Belt, coach & membership" },
   { id: 3, title: "Account Setup", description: "Portal access credentials" },
 ];
 
@@ -35,7 +36,6 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     attendance_rate: student?.attendance_rate || 0,
     joined_date: student?.joined_date || new Date().toISOString().split('T')[0],
     last_attended: student?.last_attended || new Date().toISOString().split('T')[0],
-    class_enrollment: student?.class_enrollment || null,
     username: "",
     password: "",
     createAccount: !isEditing,
@@ -45,14 +45,6 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     console.log("MultiStepStudentForm: Updating form data:", updates);
     setFormData(prev => {
       const newData = { ...prev, ...updates };
-      
-      // Ensure class_enrollment is properly handled
-      if ('class_enrollment' in updates) {
-        newData.class_enrollment = updates.class_enrollment === "none" || updates.class_enrollment === "" 
-          ? null 
-          : updates.class_enrollment || null;
-      }
-      
       console.log("MultiStepStudentForm: Updated form data:", newData);
       return newData;
     });
@@ -133,7 +125,6 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
       attendance_rate: formData.attendance_rate,
       joined_date: formData.joined_date,
       last_attended: formData.last_attended || null,
-      class_enrollment: formData.class_enrollment,
       // Only include account fields if creating account
       ...(formData.createAccount && {
         username: formData.username,

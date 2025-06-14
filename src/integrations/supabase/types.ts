@@ -777,7 +777,6 @@ export type Database = {
           attendance_rate: number
           belt: string
           branch: string
-          class_enrollment: string | null
           coach: string
           created_at: string
           email: string
@@ -795,7 +794,6 @@ export type Database = {
           attendance_rate?: number
           belt: string
           branch: string
-          class_enrollment?: string | null
           coach: string
           created_at?: string
           email: string
@@ -813,7 +811,6 @@ export type Database = {
           attendance_rate?: number
           belt?: string
           branch?: string
-          class_enrollment?: string | null
           coach?: string
           created_at?: string
           email?: string
@@ -827,15 +824,7 @@ export type Database = {
           stripes?: number
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "students_class_enrollment_fkey"
-            columns: ["class_enrollment"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       subscribers: {
         Row: {

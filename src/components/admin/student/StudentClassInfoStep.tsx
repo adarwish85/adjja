@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -8,7 +9,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCoaches } from "@/hooks/useCoaches";
-import { useClasses } from "@/hooks/useClasses";
 
 interface StudentClassInfoStepProps {
   formData: {
@@ -19,7 +19,6 @@ interface StudentClassInfoStepProps {
     membership_type: "monthly" | "yearly" | "unlimited";
     attendance_rate: number;
     last_attended: string;
-    class_enrollment?: string | null;
   };
   updateFormData: (updates: any) => void;
   isEditing: boolean;
@@ -31,25 +30,7 @@ const statusOptions = ["active", "inactive", "on-hold"];
 
 export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: StudentClassInfoStepProps) => {
   const { coaches, loading: coachesLoading } = useCoaches();
-  const { classes, loading: classesLoading } = useClasses();
   const activeCoaches = coaches.filter(coach => coach.status === "active");
-  const activeClasses = classes.filter(cls => cls.status === "Active");
-
-  const handleClassEnrollmentChange = (value: string) => {
-    console.log("StudentClassInfoStep: Class enrollment change:", value);
-    // Handle the selection properly
-    if (value === "none" || value === "") {
-      updateFormData({ class_enrollment: null });
-    } else {
-      updateFormData({ class_enrollment: value });
-    }
-  };
-
-  // Determine the current selection value for the dropdown
-  const getCurrentClassValue = () => {
-    if (!formData.class_enrollment) return "none";
-    return formData.class_enrollment;
-  };
 
   return (
     <div className="space-y-4">
@@ -155,27 +136,6 @@ export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: St
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="class_enrollment">Class Enrollment (Optional)</Label>
-        <Select
-          value={getCurrentClassValue()}
-          onValueChange={handleClassEnrollmentChange}
-          disabled={classesLoading}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder={classesLoading ? "Loading classes..." : "Select class (optional)"} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">No class selected</SelectItem>
-            {activeClasses.map((cls) => (
-              <SelectItem key={cls.id} value={cls.id}>
-                {cls.name} - {cls.instructor} ({cls.schedule})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       {isEditing && (
