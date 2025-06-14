@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +10,12 @@ import RoleGuard from "./components/RoleGuard";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import StudentDashboard from "./pages/StudentDashboard";
+import StudentAttendance from "./pages/student/StudentAttendance";
+import StudentLMS from "./pages/student/StudentLMS";
+import StudentProgress from "./pages/student/StudentProgress";
+import StudentNotes from "./pages/student/StudentNotes";
+import StudentSchedule from "./pages/student/StudentSchedule";
+import StudentProfile from "./pages/student/StudentProfile";
 import CoachDashboard from "./pages/CoachDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import AdminStudents from "./pages/admin/AdminStudents";
@@ -55,10 +60,27 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
+                {/* Student Routes */}
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <RoleGuard allowedRoles={['Student']}>
                       <StudentDashboard />
+                    </RoleGuard>
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/student/*" element={
+                  <ProtectedRoute>
+                    <RoleGuard allowedRoles={['Student']}>
+                      <Routes>
+                        <Route path="dashboard" element={<StudentDashboard />} />
+                        <Route path="attendance" element={<StudentAttendance />} />
+                        <Route path="lms" element={<StudentLMS />} />
+                        <Route path="progress" element={<StudentProgress />} />
+                        <Route path="notes" element={<StudentNotes />} />
+                        <Route path="schedule" element={<StudentSchedule />} />
+                        <Route path="profile" element={<StudentProfile />} />
+                      </Routes>
                     </RoleGuard>
                   </ProtectedRoute>
                 } />
@@ -71,6 +93,7 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
+                {/* Admin Routes - keep existing code the same */}
                 <Route path="/admin/*" element={
                   <ProtectedRoute>
                     <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
