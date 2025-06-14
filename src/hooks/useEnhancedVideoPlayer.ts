@@ -19,7 +19,7 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [playerReady, setPlayerReady] = useState(false);
-  const [currentPlayerType, setCurrentPlayerType] = useState<'react-player' | 'videojs'>('videojs');
+  const [currentPlayerType, setCurrentPlayerType] = useState<'react-player' | 'videojs'>('react-player');
   const [loadingProgress, setLoadingProgress] = useState(0);
   
   const sourceManagerRef = useRef<VideoSourceManager | null>(null);
@@ -27,6 +27,8 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
   const progressIntervalRef = useRef<NodeJS.Timeout>();
 
   const initializeSourceManager = useCallback(() => {
+    console.log('🚀 Initializing source manager with URL:', config.primaryUrl);
+    
     const sourceConfig = createVideoSourceConfig(
       config.primaryUrl,
       config.fallbackUrls || [],
@@ -36,7 +38,9 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
     
     // Set initial player type based on preferred source
     if (sourceManagerRef.current) {
-      setCurrentPlayerType(sourceManagerRef.current.getPreferredPlayerType());
+      const preferredType = sourceManagerRef.current.getPreferredPlayerType();
+      console.log('🎮 Setting player type to:', preferredType);
+      setCurrentPlayerType(preferredType);
     }
   }, [config.primaryUrl, config.fallbackUrls, config.mp4Urls]);
 
@@ -48,13 +52,16 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
     // Simulate loading progress
     setLoadingProgress(0);
     progressIntervalRef.current = setInterval(() => {
-      setLoadingProgress(prev => Math.min(prev + Math.random() * 15, 90));
-    }, 200);
+      setLoadingProgress(prev => Math.min(prev + Math.random() * 10, 85));
+    }, 300);
 
+    // Shorter timeout for YouTube videos as they should load quickly
+    const timeout = sourceManagerRef.current?.isYouTubeSource() ? 10000 : (config.timeoutDuration || 8000);
+    
     timeoutRef.current = setTimeout(() => {
       console.log('⏰ Loading timeout - trying next source');
       tryNextSource();
-    }, config.timeoutDuration || 8000); // Increased timeout for better user experience
+    }, timeout);
   }, [config.timeoutDuration]);
 
   const clearLoadingTimeout = useCallback(() => {
@@ -85,6 +92,7 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
       startLoadingTimeout();
     } else {
       // All sources exhausted
+      console.error('❌ All video sources exhausted');
       setError('Video content is temporarily unavailable. Please try again later or contact support if the issue persists.');
       setLoading(false);
       clearLoadingTimeout();
@@ -108,12 +116,13 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
   }, [startLoadingTimeout, tryNextSource]);
 
   const resetPlayer = useCallback(() => {
+    console.log('🔄 Resetting player');
     setPlaying(false);
     setCurrentTime(0);
     setLoading(true);
     setError(null);
     setPlayerReady(false);
-    setCurrentPlayerType('videojs'); // Default to Video.js
+    setCurrentPlayerType('react-player'); // Default to ReactPlayer for better YouTube support
     setLoadingProgress(0);
     clearLoadingTimeout();
     
@@ -123,7 +132,9 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
   }, [clearLoadingTimeout]);
 
   const getCurrentVideoUrl = useCallback(() => {
-    return sourceManagerRef.current?.getObfuscatedUrl() || '';
+    const url = sourceManagerRef.current?.getObfuscatedUrl() || '';
+    console.log('🎥 Current video URL:', url);
+    return url;
   }, []);
 
   const handlePlayerReady = useCallback(() => {
@@ -138,7 +149,7 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
     console.error('❌ Player error:', error);
     clearLoadingTimeout();
     
-    // Try to recover with next source after a short delay
+    // For YouTube errors, try to retry or use next source
     setTimeout(() => {
       retryCurrentSource();
     }, 1000);
@@ -149,6 +160,7 @@ export const useEnhancedVideoPlayer = (config: VideoPlayerConfig, isOpen: boolea
     if (!isOpen) {
       resetPlayer();
     } else if (config.primaryUrl) {
+      console.log('🎬 Opening video player with URL:', config.primaryUrl);
       initializeSourceManager();
       startLoadingTimeout();
     }

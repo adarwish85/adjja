@@ -14,20 +14,13 @@ interface VideoSourceConfig {
 export class VideoSourceManager {
   private sources: VideoSource[] = [];
   private currentSourceIndex = 0;
-  private maxRetries = 3;
+  private maxRetries = 2;
   private currentRetries = 0;
 
   constructor(private config: VideoSourceConfig) {
-    // Prioritize MP4 sources over YouTube
-    this.sources = this.prioritizeSources([config.primary, ...config.fallbacks]);
-  }
-
-  private prioritizeSources(sources: VideoSource[]): VideoSource[] {
-    // Sort sources to prioritize MP4, then HLS/DASH, then YouTube as last resort
-    return sources.sort((a, b) => {
-      const priority = { mp4: 0, hls: 1, dash: 2, youtube: 3 };
-      return priority[a.type] - priority[b.type];
-    });
+    // For YouTube sources, don't prioritize over MP4 - use as provided
+    this.sources = [config.primary, ...config.fallbacks];
+    console.log('📹 VideoSourceManager initialized with sources:', this.sources);
   }
 
   getCurrentSource(): VideoSource | null {
@@ -38,6 +31,7 @@ export class VideoSourceManager {
     if (this.currentSourceIndex < this.sources.length - 1) {
       this.currentSourceIndex++;
       this.currentRetries = 0;
+      console.log('🔄 Switching to next source:', this.getCurrentSource());
       return this.getCurrentSource();
     }
     return null;
@@ -50,6 +44,7 @@ export class VideoSourceManager {
   retry(): VideoSource | null {
     if (this.canRetry()) {
       this.currentRetries++;
+      console.log('🔄 Retrying current source:', this.getCurrentSource());
       return this.getCurrentSource();
     }
     return this.getNextSource();
@@ -58,61 +53,21 @@ export class VideoSourceManager {
   reset(): void {
     this.currentSourceIndex = 0;
     this.currentRetries = 0;
+    console.log('🔄 VideoSourceManager reset');
   }
 
-  // Generate CDN URLs for video sources
-  private generateCDNUrl(originalUrl: string, quality?: string): string {
-    // In a real implementation, this would generate your CDN URLs
-    // For now, return the original URL
-    return originalUrl;
-  }
-
-  // Obfuscate video URLs to remove external branding
-  private obfuscateVideoUrl(url: string): string {
-    const current = this.getCurrentSource();
-    if (!current) return url;
-
-    switch (current.type) {
-      case 'youtube':
-        // For YouTube sources, use nocookie embed with minimal UI
-        const videoId = this.extractVideoId(url);
-        if (videoId) {
-          return `https://www.youtube-nocookie.com/embed/${videoId}?modestbranding=1&rel=0&showinfo=0&controls=1&disablekb=1&fs=1&iv_load_policy=3&cc_load_policy=0&playsinline=1&origin=${window.location.origin}`;
-        }
-        break;
-      case 'mp4':
-      case 'hls':
-      case 'dash':
-        // For direct video files, return as-is or apply CDN transformation
-        return this.generateCDNUrl(url, current.quality);
-      default:
-        break;
-    }
-    
-    return url;
-  }
-
-  private extractVideoId(url: string): string | null {
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
-      /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-      /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-    ];
-    
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match && match[1]) {
-        return match[1];
-      }
-    }
-    return null;
-  }
-
+  // Get the current video URL without obfuscation for YouTube
   getObfuscatedUrl(): string {
     const current = this.getCurrentSource();
     if (!current) return '';
     
-    return this.obfuscateVideoUrl(current.url);
+    // For YouTube, return the original URL - ReactPlayer handles it properly
+    if (current.type === 'youtube') {
+      return current.url;
+    }
+    
+    // For other types, return as-is
+    return current.url;
   }
 
   // Check if current source is a YouTube source
@@ -124,10 +79,10 @@ export class VideoSourceManager {
   // Get preferred player type for current source
   getPreferredPlayerType(): 'react-player' | 'videojs' {
     const current = this.getCurrentSource();
-    if (!current) return 'videojs';
+    if (!current) return 'react-player';
     
-    // Use Video.js for MP4, HLS, DASH sources
-    // Use ReactPlayer only for YouTube as fallback
+    // Use ReactPlayer for YouTube sources as it handles them better
+    // Use Video.js for direct video files
     return current.type === 'youtube' ? 'react-player' : 'videojs';
   }
 }
@@ -150,18 +105,18 @@ export const createVideoSourceConfig = (
     type: getPrimaryType(primaryUrl)
   };
 
-  // Create fallback sources, prioritizing MP4s
+  // Create fallback sources
   const fallbacks: VideoSource[] = [
-    // Add MP4 URLs first (highest priority)
-    ...mp4Urls.map(url => ({
-      url,
-      type: 'mp4' as const,
-      quality: url.includes('720p') ? '720p' : url.includes('480p') ? '480p' : 'auto'
-    })),
-    // Then add other fallback URLs
+    // Add other fallback URLs
     ...fallbackUrls.map(url => ({
       url,
       type: getPrimaryType(url)
+    })),
+    // Add MP4 URLs as additional fallbacks only if they exist
+    ...mp4Urls.filter(url => url && url.trim()).map(url => ({
+      url,
+      type: 'mp4' as const,
+      quality: url.includes('720p') ? '720p' : url.includes('480p') ? '480p' : 'auto'
     }))
   ];
 

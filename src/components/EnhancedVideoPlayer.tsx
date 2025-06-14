@@ -55,7 +55,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       primaryUrl, 
       fallbackUrls, 
       mp4Urls,
-      timeoutDuration: 5000 
+      timeoutDuration: 10000 // Increased timeout for better reliability
     }, 
     isOpen
   );
@@ -85,6 +85,13 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   };
 
   const renderPlayer = () => {
+    if (!videoUrl) {
+      console.warn('⚠️ No video URL available');
+      return null;
+    }
+
+    console.log('🎮 Rendering player type:', currentPlayerType, 'for URL:', videoUrl);
+
     if (currentPlayerType === 'videojs') {
       return (
         <VideoJSPlayer
@@ -102,6 +109,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       );
     }
 
+    // Use ReactPlayer for YouTube and other sources
     return (
       <ReactPlayer
         url={videoUrl}
@@ -128,7 +136,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               cc_load_policy: 0,
               playsinline: 1,
               origin: window.location.origin,
-              enablejsapi: 0,
+              enablejsapi: 1,
             }
           },
           file: {
