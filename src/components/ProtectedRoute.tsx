@@ -26,13 +26,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         const userRole = userProfile.role_name?.toLowerCase();
         console.log('Redirecting user with role:', userRole);
         
+        // Improved role-based routing with case-insensitive matching
         if (userRole === 'student') {
           navigate("/dashboard", { replace: true });
         } else if (userRole === 'coach') {
           navigate("/coach", { replace: true });
-        } else if (userRole === 'super admin' || userRole === 'admin') {
+        } else if (userRole === 'super admin' || userRole === 'admin' || userRole === 'superadmin') {
           navigate("/admin", { replace: true });
         } else {
+          console.log('Unknown role:', userRole, 'redirecting to home');
           navigate("/", { replace: true });
         }
       }

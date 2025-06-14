@@ -18,14 +18,14 @@ export const useAuth = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const createFallbackProfile = (user: User): UserProfile => {
-    console.log('Creating fallback profile for user:', user.id);
+  const createFallbackProfile = (user: User, suggestedRole: string = 'Student'): UserProfile => {
+    console.log('Creating fallback profile for user:', user.id, 'with suggested role:', suggestedRole);
     return {
       id: user.id,
       name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
       email: user.email || '',
       role_id: 'fallback-role-id',
-      role_name: 'Student', // Default role
+      role_name: suggestedRole,
       status: 'active'
     };
   };
@@ -67,7 +67,9 @@ export const useAuth = () => {
             error.code === 'PGRST301' ||
             error.code === '42P17') {
           console.log('Database issue detected, using fallback profile');
-          return createFallbackProfile({ id: userId, email: userEmail } as User);
+          // Don't default to Student - preserve any role info from auth metadata
+          const suggestedRole = user?.user_metadata?.role || 'Student';
+          return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, suggestedRole);
         }
         
         // If profile doesn't exist, try to create one (with error handling)
@@ -130,8 +132,9 @@ export const useAuth = () => {
           }
         }
         
-        // Return fallback profile if all else fails
-        return createFallbackProfile({ id: userId, email: userEmail } as User);
+        // Return fallback profile if all else fails - don't always default to Student
+        const suggestedRole = user?.user_metadata?.role || 'Student';
+        return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, suggestedRole);
       }
 
       const userRole = Array.isArray(profile.user_roles) ? profile.user_roles[0] : profile.user_roles;
@@ -145,8 +148,9 @@ export const useAuth = () => {
       return userProfile;
     } catch (error) {
       console.error('Critical error in fetchUserProfile:', error);
-      // Always return a fallback to prevent infinite loading
-      return createFallbackProfile({ id: userId, email: userEmail } as User);
+      // Always return a fallback to prevent infinite loading - but don't always default to Student
+      const suggestedRole = user?.user_metadata?.role || 'Student';
+      return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, suggestedRole);
     }
   };
 
@@ -349,7 +353,9 @@ export const useAuth = () => {
   };
 
   const hasRole = (roleName: string): boolean => {
-    return userProfile?.role_name?.toLowerCase() === roleName.toLowerCase();
+    if (!userProfile?.role_name) return false;
+    // Case-insensitive role comparison
+    return userProfile.role_name.toLowerCase() === roleName.toLowerCase();
   };
 
   const isAdmin = (): boolean => hasRole('Super Admin') || hasRole('Admin');

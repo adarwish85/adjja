@@ -22,7 +22,10 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
       }
 
       const userRole = userProfile.role_name?.toLowerCase();
+      // Case-insensitive role matching
       const hasPermission = allowedRoles.some(role => role.toLowerCase() === userRole);
+
+      console.log('RoleGuard - User role:', userRole, 'Allowed roles:', allowedRoles, 'Has permission:', hasPermission);
 
       if (!hasPermission) {
         // Redirect to appropriate dashboard based on role
@@ -30,7 +33,7 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
           navigate("/dashboard");
         } else if (userRole === 'coach') {
           navigate("/coach");
-        } else if (userRole === 'super admin' || userRole === 'admin') {
+        } else if (userRole === 'super admin' || userRole === 'admin' || userRole === 'superadmin') {
           navigate("/admin");
         } else {
           navigate(redirectTo || "/access-denied");
@@ -66,6 +69,7 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
   }
 
   const userRole = userProfile.role_name?.toLowerCase();
+  // Case-insensitive role matching
   const hasPermission = allowedRoles.some(role => role.toLowerCase() === userRole);
 
   if (!hasPermission) {

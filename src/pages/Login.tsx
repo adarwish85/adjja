@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,20 +38,21 @@ const Login = () => {
       
       // Use a longer timeout to ensure profile is fully loaded
       setTimeout(() => {
+        // Improved role-based routing with case-insensitive matching
         if (userRole === 'student') {
           console.log('Redirecting to student dashboard');
           navigate("/dashboard", { replace: true });
         } else if (userRole === 'coach') {
           console.log('Redirecting to coach dashboard');
           navigate("/coach", { replace: true });
-        } else if (userRole === 'super admin' || userRole === 'admin') {
+        } else if (userRole === 'super admin' || userRole === 'admin' || userRole === 'superadmin') {
           console.log('Redirecting to admin dashboard');
           navigate("/admin", { replace: true });
         } else {
-          console.log('Unknown role, redirecting to home');
+          console.log('Unknown role:', userRole, 'redirecting to home');
           navigate("/", { replace: true });
         }
-      }, 200);
+      }, 300);
     }
   }, [user, userProfile, loading, navigate]);
 
@@ -60,7 +62,7 @@ const Login = () => {
 
     setIsSubmitting(true);
     try {
-      console.log('Attempting login...');
+      console.log('Attempting login for:', loginData.emailOrUsername);
       const { data, error } = await signIn(loginData.emailOrUsername, loginData.password);
       if (data && !error) {
         console.log("Login successful, waiting for profile to load and redirect...");
