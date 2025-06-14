@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,9 +14,11 @@ import {
 } from "@/components/ui/select";
 import { Save, Settings, Mail, Video, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAppSettings } from "@/contexts/SettingsContext";
 
 export const LMSSettings = () => {
   const { toast } = useToast();
+  const { currency, academyName } = useAppSettings();
   
   const [generalSettings, setGeneralSettings] = useState({
     platformName: "ADJJA LMS",
@@ -43,6 +44,19 @@ export const LMSSettings = () => {
     reminderNotifications: true,
     emailNotifications: true,
   });
+
+  // Get currency display name
+  const getCurrencyDisplay = (currencyCode: string) => {
+    const currencyMap: Record<string, string> = {
+      'egp': 'EGP (Egyptian Pound)',
+      'usd': 'USD (US Dollar)',
+      'eur': 'EUR (Euro)',
+      'gbp': 'GBP (British Pound)',
+      'aed': 'AED (UAE Dirham)',
+      'sar': 'SAR (Saudi Riyal)',
+    };
+    return currencyMap[currencyCode.toLowerCase()] || currencyCode.toUpperCase();
+  };
 
   const handleSaveGeneral = () => {
     // Save general settings logic here
@@ -70,6 +84,38 @@ export const LMSSettings = () => {
 
   return (
     <div className="space-y-6">
+      {/* Currency Display Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-bjj-navy flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Current Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Academy Currency</Label>
+              <div className="p-3 bg-muted rounded-md">
+                <span className="font-medium text-bjj-navy">{getCurrencyDisplay(currency)}</span>
+                <p className="text-sm text-muted-foreground">
+                  All course prices will be displayed in {currency.toUpperCase()}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Academy Name</Label>
+              <div className="p-3 bg-muted rounded-md">
+                <span className="font-medium text-bjj-navy">{academyName}</span>
+              </div>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mt-4">
+            Currency and academy settings are managed in the main Settings tab. Changes there will automatically reflect across all modules.
+          </p>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-bjj-navy flex items-center gap-2">

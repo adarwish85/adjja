@@ -15,8 +15,26 @@ import {
   Key,
   DollarSign
 } from "lucide-react";
+import { useAppSettings } from "@/contexts/SettingsContext";
 
 export const PaymentSettings = () => {
+  const { currency, academyName } = useAppSettings();
+
+  // Get currency display name and symbol
+  const getCurrencyInfo = (currencyCode: string) => {
+    const currencyMap: Record<string, { name: string; symbol: string }> = {
+      'egp': { name: 'Egyptian Pound', symbol: 'LE' },
+      'usd': { name: 'US Dollar', symbol: '$' },
+      'eur': { name: 'Euro', symbol: '€' },
+      'gbp': { name: 'British Pound', symbol: '£' },
+      'aed': { name: 'UAE Dirham', symbol: 'AED' },
+      'sar': { name: 'Saudi Riyal', symbol: 'SR' },
+    };
+    return currencyMap[currencyCode.toLowerCase()] || { name: currencyCode.toUpperCase(), symbol: currencyCode.toUpperCase() };
+  };
+
+  const currencyInfo = getCurrencyInfo(currency);
+
   const gatewaySettings = [
     {
       name: "Stripe",
@@ -52,6 +70,45 @@ export const PaymentSettings = () => {
 
   return (
     <div className="space-y-6">
+      {/* Currency Display Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-bjj-navy flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Current Payment Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Payment Currency</Label>
+              <div className="p-4 bg-muted rounded-lg border">
+                <div className="flex items-center space-x-3">
+                  <div className="text-2xl font-bold text-bjj-navy">{currencyInfo.symbol}</div>
+                  <div>
+                    <p className="font-semibold text-bjj-navy">{currencyInfo.name}</p>
+                    <p className="text-sm text-muted-foreground">Code: {currency.toUpperCase()}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Academy Name</Label>
+              <div className="p-4 bg-muted rounded-lg border">
+                <p className="font-semibold text-bjj-navy">{academyName}</p>
+                <p className="text-sm text-muted-foreground">Used in payment descriptions</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800">
+              <strong>Note:</strong> Currency settings are managed in the main Settings tab. 
+              All payment amounts, receipts, and invoices will use {currency.toUpperCase()} as configured.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Payment Gateway Configuration */}
       <Card>
         <CardHeader>
@@ -133,13 +190,21 @@ export const PaymentSettings = () => {
           <div className="grid gap-4">
             <div>
               <Label htmlFor="currency">Default Currency</Label>
-              <Input id="currency" value="USD" readOnly />
+              <Input 
+                id="currency" 
+                value={`${currency.toUpperCase()} - ${currencyInfo.name}`} 
+                readOnly 
+                className="bg-muted"
+              />
+              <p className="text-xs text-bjj-gray mt-1">
+                Currency is managed in the main Settings tab
+              </p>
             </div>
             <div>
               <Label htmlFor="statement-descriptor">Statement Descriptor</Label>
               <Input 
                 id="statement-descriptor" 
-                placeholder="ADJJA ACADEMY"
+                placeholder={`${academyName.toUpperCase().slice(0, 15)}`}
                 maxLength={22}
               />
               <p className="text-xs text-bjj-gray mt-1">
@@ -184,7 +249,6 @@ export const PaymentSettings = () => {
         </CardContent>
       </Card>
 
-      {/* Security Settings */}
       <Card>
         <CardHeader>
           <CardTitle className="text-bjj-navy flex items-center gap-2">
