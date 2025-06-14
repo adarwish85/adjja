@@ -150,7 +150,12 @@ export const useSmartAttendance = () => {
 
       if (error) throw error;
 
-      return data as CheckInResult;
+      // Type guard to ensure we have a valid CheckInResult
+      if (typeof data === 'object' && data !== null && 'success' in data) {
+        return data as CheckInResult;
+      }
+      
+      throw new Error('Invalid response format from check-in function');
     },
     onSuccess: (result) => {
       if (result.success) {
@@ -185,7 +190,19 @@ export const useSmartAttendance = () => {
           });
 
           if (error) throw error;
-          results.push({ studentId, result: data as CheckInResult });
+          
+          // Type guard to ensure we have a valid CheckInResult
+          if (typeof data === 'object' && data !== null && 'success' in data) {
+            results.push({ studentId, result: data as CheckInResult });
+          } else {
+            results.push({ 
+              studentId, 
+              result: { 
+                success: false, 
+                error: 'Invalid response format from check-in function' 
+              } 
+            });
+          }
         } catch (error) {
           results.push({ 
             studentId, 

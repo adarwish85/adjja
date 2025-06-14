@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,11 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
-
-interface DateRange {
-  from?: Date;
-  to?: Date;
-}
+import { DateRange } from "react-day-picker";
 
 export const AttendanceManager = () => {
   const [showManualCheckIn, setShowManualCheckIn] = useState(false);
@@ -28,7 +25,13 @@ export const AttendanceManager = () => {
   const [classId, setClassId] = useState<string | undefined>(undefined);
   const [branchId, setBranchId] = useState<string | undefined>(undefined);
   
-  const { metrics, isLoading } = useAttendanceAnalytics(dateRange, classId, branchId);
+  // Convert DateRange to the format expected by useAttendanceAnalytics
+  const analyticsDateRange = dateRange ? {
+    start: dateRange.from,
+    end: dateRange.to
+  } : undefined;
+  
+  const { metrics, isLoading } = useAttendanceAnalytics(analyticsDateRange, classId, branchId);
 
   return (
     <div className="space-y-6">
