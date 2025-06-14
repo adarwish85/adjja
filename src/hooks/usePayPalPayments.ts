@@ -2,20 +2,29 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/hooks/useSettings";
 
 export const usePayPalPayments = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { loadIntegrationSettings } = useSettings();
 
   const createPayPalOrder = async (amount: number, studentId: string, planId?: string) => {
     setIsLoading(true);
     try {
+      const integrationSettings = loadIntegrationSettings();
+      
       const { data, error } = await supabase.functions.invoke('create-paypal-order', {
         body: { 
           amount: amount.toFixed(2), 
           currency: 'USD',
           studentId,
-          planId 
+          planId,
+          paypalConfig: {
+            clientId: integrationSettings.paypalClientId,
+            clientSecret: integrationSettings.paypalClientSecret,
+            sandboxMode: integrationSettings.paypalSandboxMode
+          }
         }
       });
 
@@ -36,8 +45,17 @@ export const usePayPalPayments = () => {
   const capturePayPalOrder = async (orderId: string) => {
     setIsLoading(true);
     try {
+      const integrationSettings = loadIntegrationSettings();
+      
       const { data, error } = await supabase.functions.invoke('capture-paypal-order', {
-        body: { orderId }
+        body: { 
+          orderId,
+          paypalConfig: {
+            clientId: integrationSettings.paypalClientId,
+            clientSecret: integrationSettings.paypalClientSecret,
+            sandboxMode: integrationSettings.paypalSandboxMode
+          }
+        }
       });
 
       if (error) throw error;

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,8 @@ import {
   BarChart,
   Webhook,
   Key,
-  ExternalLink
+  ExternalLink,
+  TestTube
 } from "lucide-react";
 import { useSettings, IntegrationSettings as IntegrationSettingsType } from "@/hooks/useSettings";
 
@@ -24,6 +24,14 @@ export const IntegrationSettings = () => {
   const [settings, setSettings] = useState<IntegrationSettingsType>(defaultIntegrationSettings);
 
   const integrations = [
+    {
+      name: "PayPal",
+      category: "Payment",
+      status: settings.paypalClientId ? "connected" : "disconnected",
+      description: "PayPal payment processing",
+      icon: CreditCard,
+      lastSync: settings.paypalClientId ? "Active" : "Not configured"
+    },
     {
       name: "Stripe",
       category: "Payment",
@@ -80,6 +88,11 @@ export const IntegrationSettings = () => {
     setSettings(defaultIntegrationSettings);
   };
 
+  const testPayPalConnection = async () => {
+    // Test PayPal connection logic here
+    console.log("Testing PayPal connection...");
+  };
+
   return (
     <div className="space-y-6">
       {/* Third-Party Integrations */}
@@ -106,7 +119,7 @@ export const IntegrationSettings = () => {
                       <Badge variant="outline" className="text-xs">
                         {integration.category}
                       </Badge>
-                      <span className="text-xs text-bjj-gray">Last sync: {integration.lastSync}</span>
+                      <span className="text-xs text-bjj-gray">Status: {integration.lastSync}</span>
                     </div>
                   </div>
                 </div>
@@ -124,6 +137,60 @@ export const IntegrationSettings = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* PayPal Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-bjj-navy flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            PayPal Configuration
+          </CardTitle>
+          <p className="text-sm text-bjj-gray">Configure PayPal API credentials for payment processing</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="paypal-client-id">PayPal Client ID</Label>
+            <Input 
+              id="paypal-client-id" 
+              placeholder="Your PayPal Client ID"
+              value={settings.paypalClientId}
+              onChange={(e) => setSettings(prev => ({ ...prev, paypalClientId: e.target.value }))}
+            />
+          </div>
+          <div>
+            <Label htmlFor="paypal-client-secret">PayPal Client Secret</Label>
+            <Input 
+              id="paypal-client-secret" 
+              type="password"
+              placeholder="Your PayPal Client Secret"
+              value={settings.paypalClientSecret}
+              onChange={(e) => setSettings(prev => ({ ...prev, paypalClientSecret: e.target.value }))}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium">Sandbox Mode</h4>
+              <p className="text-sm text-bjj-gray">Use PayPal sandbox environment for testing</p>
+            </div>
+            <Switch 
+              checked={settings.paypalSandboxMode}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, paypalSandboxMode: checked }))}
+            />
+          </div>
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={testPayPalConnection}>
+              <TestTube className="h-4 w-4 mr-2" />
+              Test Connection
+            </Button>
+            <Button variant="outline" asChild>
+              <a href="https://developer.paypal.com/developer/applications/" target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                PayPal Developer Console
+              </a>
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -215,41 +282,6 @@ export const IntegrationSettings = () => {
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Payment Gateway Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-bjj-navy flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Payment Gateway Settings
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="stripe-public-key">Stripe Public Key</Label>
-            <Input 
-              id="stripe-public-key" 
-              placeholder="pk_test_..."
-              value={settings.stripePublicKey}
-              onChange={(e) => setSettings(prev => ({ ...prev, stripePublicKey: e.target.value }))}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium">Test Mode</h4>
-              <p className="text-sm text-bjj-gray">Use Stripe test environment</p>
-            </div>
-            <Switch 
-              checked={settings.enableStripeTestMode}
-              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enableStripeTestMode: checked }))}
-            />
-          </div>
-          <Button variant="outline">
-            <CreditCard className="h-4 w-4 mr-2" />
-            Test Connection
-          </Button>
         </CardContent>
       </Card>
 

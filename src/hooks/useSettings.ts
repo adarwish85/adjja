@@ -109,6 +109,9 @@ export interface BackupSettings {
 export interface IntegrationSettings {
   stripePublicKey: string;
   enableStripeTestMode: boolean;
+  paypalClientId: string;
+  paypalClientSecret: string;
+  paypalSandboxMode: boolean;
   mailchimpAPIKey: string;
   mailchimpListId: string;
   autoSubscribeNewStudents: boolean;
@@ -340,6 +343,9 @@ export const useSettings = () => {
   const defaultIntegrationSettings: IntegrationSettings = {
     stripePublicKey: "",
     enableStripeTestMode: true,
+    paypalClientId: "",
+    paypalClientSecret: "",
+    paypalSandboxMode: true,
     mailchimpAPIKey: "",
     mailchimpListId: "",
     autoSubscribeNewStudents: false,
@@ -514,6 +520,11 @@ export const useSettings = () => {
     setIsLoading(true);
     try {
       console.log("Saving integration settings:", settings);
+      
+      // Save to localStorage for persistence
+      localStorage.setItem('adjja_integration_settings', JSON.stringify(settings));
+      
+      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
@@ -532,6 +543,18 @@ export const useSettings = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadIntegrationSettings = (): IntegrationSettings => {
+    try {
+      const saved = localStorage.getItem('adjja_integration_settings');
+      if (saved) {
+        return { ...defaultIntegrationSettings, ...JSON.parse(saved) };
+      }
+    } catch (error) {
+      console.error('Error loading integration settings:', error);
+    }
+    return defaultIntegrationSettings;
   };
 
   const testEmailConfiguration = async () => {
@@ -652,6 +675,7 @@ export const useSettings = () => {
     defaultNotificationSettings,
     defaultBackupSettings,
     defaultIntegrationSettings,
+    loadIntegrationSettings,
     saveGeneralSettings,
     saveUserManagementSettings,
     saveSystemSettings,

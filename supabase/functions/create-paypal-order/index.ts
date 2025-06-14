@@ -13,30 +13,35 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, currency = 'USD', studentId, planId } = await req.json();
+    const { amount, currency = 'USD', studentId, planId, paypalConfig } = await req.json();
 
-    // PayPal API credentials from environment
-    const PAYPAL_CLIENT_ID = Deno.env.get('PAYPAL_CLIENT_ID');
-    const PAYPAL_CLIENT_SECRET = Deno.env.get('PAYPAL_CLIENT_SECRET');
-    const PAYPAL_API_BASE = Deno.env.get('PAYPAL_ENVIRONMENT') === 'live' 
-      ? 'https://api-m.paypal.com' 
-      : 'https://api-m.sandbox.paypal.com';
-
-    if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
-      throw new Error('PayPal credentials not configured');
+    // PayPal API credentials from request payload (dynamic configuration)
+    const { clientId, clientSecret, sandboxMode } = paypalConfig;
+    
+    if (!clientId || !clientSecret) {
+      throw new Error('PayPal credentials not configured in admin settings');
     }
+
+    const PAYPAL_API_BASE = sandboxMode 
+      ? 'https://api-m.sandbox.paypal.com' 
+      : 'https://api-m.paypal.com';
+
+    console.log('PayPal API Base:', PAYPAL_API_BASE);
+    console.log('Sandbox Mode:', sandboxMode);
 
     // Get PayPal access token
     const authResponse = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${btoa(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`)}`,
+        'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
       },
       body: 'grant_type=client_credentials',
     });
 
     if (!authResponse.ok) {
+      const errorText = await authResponse.text();
+      console.error('PayPal auth error:', errorText);
       throw new Error('Failed to get PayPal access token');
     }
 
