@@ -56,6 +56,8 @@ export const useCourseEnrollments = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["course_enrollments"] });
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+      queryClient.invalidateQueries({ queryKey: ["students"] });
       toast({
         title: "Success",
         description: "Student enrolled successfully",
@@ -90,6 +92,8 @@ export const useCourseEnrollments = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["course_enrollments"] });
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+      queryClient.invalidateQueries({ queryKey: ["students"] });
       toast({
         title: "Success",
         description: "Enrollment updated successfully",
