@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { CourseDetailsStep } from "./wizard/CourseDetailsStep";
 import { CourseContentStep } from "./wizard/CourseContentStep";
 import { AdditionalInfoStep } from "./wizard/AdditionalInfoStep";
 import { CourseReviewStep } from "./wizard/CourseReviewStep";
-import { VideoPlayer } from "@/components/VideoPlayer";
+import { EnhancedVideoPlayer } from "@/components/EnhancedVideoPlayer";
 import { useCourses } from "@/hooks/useCourses";
 import { useToast } from "@/hooks/use-toast";
 import { generateCourseSlug } from "@/utils/youtubeUtils";
@@ -525,8 +526,10 @@ export const CreateCourseWizard = ({ onClose, course, isEditMode = false }: Crea
         </div>
       </div>
 
-      <VideoPlayer
-        videoUrl={previewVideo.url}
+      <EnhancedVideoPlayer
+        primaryUrl={previewVideo.url}
+        fallbackUrls={[]}
+        mp4Urls={[]}
         isOpen={previewVideo.isOpen}
         onClose={closeVideoPreview}
       />
