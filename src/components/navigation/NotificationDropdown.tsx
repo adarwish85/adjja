@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Bell, Calendar, Upload, BookOpen, Check, X, MarkdownIcon as MarkAllRead } from "lucide-react";
+import { Bell, Calendar, Upload, BookOpen, Check, X, CheckCheck } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 import { useEffect, useRef } from "react";
@@ -102,7 +102,7 @@ export const NotificationDropdown = ({ onClose }: NotificationDropdownProps) => 
                   onClick={markAllAsRead}
                   className="text-xs"
                 >
-                  <MarkAllRead className="h-3 w-3 mr-1" />
+                  <CheckCheck className="h-3 w-3 mr-1" />
                   Mark all read
                 </Button>
               )}
