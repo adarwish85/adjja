@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -64,8 +65,8 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       {/* Header */}
-      <header className="relative z-10 px-6 py-8 bg-white shadow-sm">
-        <div className="container mx-auto flex items-center justify-between">
+      <header className="relative z-10 py-8 bg-white shadow-sm">
+        <div className="w-full px-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="h-12 w-12 bg-bjj-gold rounded-lg flex items-center justify-center">
               <Shield className="h-8 w-8 text-white font-bold" />
@@ -82,8 +83,8 @@ const LandingPage = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="px-6 py-16 text-center animate-fade-in">
-        <div className="container mx-auto max-w-4xl">
+      <section className="py-16 text-center animate-fade-in">
+        <div className="w-full px-4 max-w-4xl mx-auto">
           <Badge className="mb-6 bg-bjj-gold/10 text-bjj-gold-dark border-bjj-gold/30">
             Brazilian Jiu-Jitsu Academy Management
           </Badge>
@@ -144,8 +145,8 @@ const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section className="px-6 py-16 bg-gray-50">
-        <div className="container mx-auto">
+      <section className="py-16 bg-gray-50">
+        <div className="w-full px-4">
           <div className="text-center mb-16">
             <h3 className="text-4xl font-bold text-bjj-navy mb-4">Powerful Features</h3>
             <p className="text-xl text-bjj-gray max-w-2xl mx-auto">
@@ -172,8 +173,8 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="px-6 py-12 text-center bg-white">
-        <div className="container mx-auto">
+      <footer className="py-12 text-center bg-white">
+        <div className="w-full px-4">
           <div className="flex items-center justify-center space-x-3 mb-6">
             <div className="h-8 w-8 bg-bjj-gold rounded flex items-center justify-center">
               <Shield className="h-5 w-5 text-white" />

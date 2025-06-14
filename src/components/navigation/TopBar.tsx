@@ -14,7 +14,7 @@ export const TopBar = () => {
   const [showUserProfile, setShowUserProfile] = useState(false);
 
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <header className="bg-white border-b border-gray-200 px-4 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <SidebarTrigger className="text-bjj-gray hover:text-bjj-navy" />

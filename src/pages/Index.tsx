@@ -1,3 +1,4 @@
+
 import LandingPage from "@/components/LandingPage";
 import { CourseCard } from "@/components/CourseCard";
 import { SeedCourseData } from "@/components/SeedCourseData";
@@ -25,8 +26,8 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-bjj-navy to-bjj-navy/90">
       {/* Navigation Header */}
       <nav className="bg-white/10 backdrop-blur-sm border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+        <div className="w-full px-0">
+          <div className="flex justify-between items-center h-16 px-4">
             <div className="flex items-center space-x-3">
               <div className="h-10 w-10 bg-bjj-gold rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">A</span>
@@ -53,7 +54,7 @@ const Index = () => {
       {/* Featured Courses Section */}
       {courses.length > 0 && (
         <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-bjj-navy mb-4">Featured Courses</h2>
               <p className="text-gray-600 max-w-2xl mx-auto">
