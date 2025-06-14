@@ -13,22 +13,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { X, Copy } from "lucide-react";
+import { X, Copy, Play } from "lucide-react";
 import { CourseWizardData } from "../CreateCourseWizard";
 import { useCoaches } from "@/hooks/useCoaches";
 import { useToast } from "@/hooks/use-toast";
+import { isValidYouTubeUrl } from "@/utils/youtubeUtils";
 
 interface CourseDetailsStepProps {
   data: CourseWizardData;
   onUpdate: (updates: Partial<CourseWizardData>) => void;
   courseId?: string;
+  onPreviewVideo: (videoUrl: string) => void;
 }
 
 const categories = ["Fundamentals", "Advanced", "Competition", "Self-Defense", "Kids"];
 const levels = ["Beginner", "Intermediate", "Advanced"];
 const statusOptions = ["Draft", "Published"];
 
-export const CourseDetailsStep = ({ data, onUpdate, courseId }: CourseDetailsStepProps) => {
+export const CourseDetailsStep = ({ data, onUpdate, courseId, onPreviewVideo }: CourseDetailsStepProps) => {
   const { coaches } = useCoaches();
   const [newTag, setNewTag] = useState("");
   const { toast } = useToast();
@@ -52,6 +54,18 @@ export const CourseDetailsStep = ({ data, onUpdate, courseId }: CourseDetailsSte
       title: "Link Copied!",
       description: "Course link has been copied to clipboard.",
     });
+  };
+
+  const handlePreviewVideo = () => {
+    if (data.introVideo && isValidYouTubeUrl(data.introVideo)) {
+      onPreviewVideo(data.introVideo);
+    } else {
+      toast({
+        title: "Invalid Video URL",
+        description: "Please enter a valid YouTube URL to preview.",
+        variant: "destructive",
+      });
+    }
   };
 
   const courseLink = courseId ? `${window.location.origin}/course/${courseId}` : null;
@@ -251,12 +265,27 @@ export const CourseDetailsStep = ({ data, onUpdate, courseId }: CourseDetailsSte
 
         <div className="space-y-2">
           <Label htmlFor="introVideo">Intro Video (YouTube URL)</Label>
-          <Input
-            id="introVideo"
-            value={data.introVideo}
-            onChange={(e) => onUpdate({ introVideo: e.target.value })}
-            placeholder="https://www.youtube.com/watch?v=..."
-          />
+          <div className="flex space-x-2">
+            <Input
+              id="introVideo"
+              value={data.introVideo}
+              onChange={(e) => onUpdate({ introVideo: e.target.value })}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="flex-1"
+            />
+            {data.introVideo && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePreviewVideo}
+                className="flex items-center gap-1"
+              >
+                <Play className="h-3 w-3" />
+                Preview
+              </Button>
+            )}
+          </div>
           <p className="text-xs text-gray-500">
             Leave empty to use the first lesson video as intro
           </p>
