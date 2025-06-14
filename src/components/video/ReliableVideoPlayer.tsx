@@ -89,19 +89,17 @@ export const ReliableVideoPlayer: React.FC<ReliableVideoPlayerProps> = ({
           onError={handleError}
           onReady={handleReady}
           config={{
-            youtube: {
-              playerVars: {
-                modestbranding: 1,
-                rel: 0,
-                showinfo: 0,
-                iv_load_policy: 3,
-                cc_load_policy: 0,
-                playsinline: 1,
-                origin: window.location.origin,
-                enablejsapi: 1,
-                fs: 1,
-                controls: 1
-              }
+            playerVars: {
+              modestbranding: 1,
+              rel: 0,
+              showinfo: 0,
+              iv_load_policy: 3,
+              cc_load_policy: 0,
+              playsinline: 1,
+              origin: window.location.origin,
+              enablejsapi: 1,
+              fs: 1,
+              controls: 1
             }
           }}
           style={{
