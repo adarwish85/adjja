@@ -880,36 +880,42 @@ export type Database = {
       }
       profiles: {
         Row: {
+          cover_photo_url: string | null
           created_at: string | null
           email: string
           id: string
           last_login: string | null
           name: string
           phone: string | null
+          profile_picture_url: string | null
           role_id: string | null
           status: string | null
           updated_at: string | null
           username: string | null
         }
         Insert: {
+          cover_photo_url?: string | null
           created_at?: string | null
           email: string
           id: string
           last_login?: string | null
           name: string
           phone?: string | null
+          profile_picture_url?: string | null
           role_id?: string | null
           status?: string | null
           updated_at?: string | null
           username?: string | null
         }
         Update: {
+          cover_photo_url?: string | null
           created_at?: string | null
           email?: string
           id?: string
           last_login?: string | null
           name?: string
           phone?: string | null
+          profile_picture_url?: string | null
           role_id?: string | null
           status?: string | null
           updated_at?: string | null

@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { User, Settings, Lock, LogOut, Edit } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useRef, useState } from "react";
-import { ProfileEditModal } from "./ProfileEditModal";
+import { useNavigate } from "react-router-dom";
 import { ChangePasswordModal } from "./ChangePasswordModal";
 import { AccountSettingsModal } from "./AccountSettingsModal";
 
@@ -15,8 +15,8 @@ interface UserProfileDropdownProps {
 
 export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [showEditProfile, setShowEditProfile] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
 
@@ -38,9 +38,8 @@ export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
   };
 
   const handleEditProfile = () => {
-    console.log("Edit Profile clicked");
-    setShowEditProfile(true);
-    // Don't close the dropdown immediately - let the modal open first
+    navigate('/edit-profile');
+    onClose();
   };
 
   const handleChangePassword = () => {
@@ -51,13 +50,6 @@ export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
   const handleAccountSettings = () => {
     setShowAccountSettings(true);
     onClose();
-  };
-
-  const handleEditProfileClose = (open: boolean) => {
-    setShowEditProfile(open);
-    if (!open) {
-      onClose(); // Close dropdown when modal closes
-    }
   };
 
   return (
@@ -133,11 +125,6 @@ export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
       </div>
 
       {/* Modals */}
-      <ProfileEditModal 
-        open={showEditProfile} 
-        onOpenChange={handleEditProfileClose}
-      />
-      
       <ChangePasswordModal 
         open={showChangePassword} 
         onOpenChange={setShowChangePassword}

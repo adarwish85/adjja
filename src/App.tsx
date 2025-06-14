@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import EditProfile from "./pages/EditProfile";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import CoachDashboard from "./pages/CoachDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
@@ -37,6 +38,14 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
+              <Route 
+                path="/edit-profile" 
+                element={
+                  <ProtectedRoute>
+                    <EditProfile />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
               <Route path="/admin/coaches" element={<AdminCoaches />} />
               <Route path="/admin/students" element={<AdminStudents />} />
