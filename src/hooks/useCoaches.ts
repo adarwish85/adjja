@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Coach, CoachInput, CoachUpdate } from "@/types/coach";
 import { coachService } from "@/services/coachService";
+import { useCoachesRealTimeSync } from "./useCoachesRealTimeSync";
 
 export const useCoaches = () => {
   const [coaches, setCoaches] = useState<Coach[]>([]);
@@ -20,6 +20,26 @@ export const useCoaches = () => {
       setLoading(false);
     }
   };
+
+  // Set up real-time sync
+  useCoachesRealTimeSync({
+    onCoachAdded: () => {
+      console.log("Real-time: Coach added, refreshing...");
+      fetchCoaches();
+    },
+    onCoachUpdated: () => {
+      console.log("Real-time: Coach updated, refreshing...");
+      fetchCoaches();
+    },
+    onCoachRemoved: () => {
+      console.log("Real-time: Coach removed, refreshing...");
+      fetchCoaches();
+    },
+    onStudentUpgraded: () => {
+      console.log("Real-time: Student upgraded to coach, refreshing...");
+      fetchCoaches();
+    },
+  });
 
   const addCoach = async (coachData: CoachInput) => {
     try {

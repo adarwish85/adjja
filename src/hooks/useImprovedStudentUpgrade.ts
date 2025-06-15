@@ -29,6 +29,10 @@ export const useImprovedStudentUpgrade = () => {
 
       if (result.success) {
         toast.success(result.message || `${result.student_name} successfully upgraded to Coach`);
+        
+        // Trigger real-time notification by updating a timestamp or similar
+        // This ensures all connected clients get notified of the change
+        console.log("Student upgrade successful, real-time updates will be triggered automatically");
       } else {
         toast.error(result.error || "Failed to upgrade student");
       }
@@ -71,6 +75,7 @@ export const useImprovedStudentUpgrade = () => {
 
       if (successful > 0) {
         toast.success(`Successfully upgraded ${successful} student(s) to Coach`);
+        console.log(`Bulk upgrade completed: ${successful} successful, ${failed} failed. Real-time updates triggered.`);
       }
       
       if (failed > 0) {

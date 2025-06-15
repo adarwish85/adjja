@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useCheckAuthUserByEmail } from "./student-auth";
+import { useStudentsRealTimeSync } from "./useStudentsRealTimeSync";
 
 export interface Student {
   id: string;
@@ -110,6 +111,26 @@ export const useStudents = () => {
       setLoading(false);
     }
   };
+
+  // Set up real-time sync
+  useStudentsRealTimeSync({
+    onStudentAdded: () => {
+      console.log("Real-time: Student added, refreshing...");
+      fetchStudents();
+    },
+    onStudentUpdated: () => {
+      console.log("Real-time: Student updated, refreshing...");
+      fetchStudents();
+    },
+    onStudentRemoved: () => {
+      console.log("Real-time: Student removed, refreshing...");
+      fetchStudents();
+    },
+    onStudentRoleChanged: () => {
+      console.log("Real-time: Student role changed, refreshing...");
+      fetchStudents();
+    },
+  });
 
   const addStudent = async (studentData: Omit<Student, "id" | "created_at" | "updated_at">, classIds?: string[]) => {
     try {
