@@ -373,10 +373,10 @@ const AdminStudents = () => {
               isSuperAdmin={isSuperAdmin}
               getStudentEnrolledClasses={getStudentEnrolledClasses}
               onStatusChange={async (student, nextStatus) => {
-                // Ensure nextStatus is of proper type
+                // Ensure nextStatus is of type "active" | "inactive" | "on-hold"
                 if (student.status === nextStatus) return;
                 try {
-                  await updateStudent(student.id, { status: nextStatus });
+                  await updateStudent(student.id, { status: nextStatus as "active" | "inactive" | "on-hold" });
                   toast({
                     title: `Student status updated`,
                     description: `${student.name} is now "${nextStatus.replace('-', ' ')}".`
