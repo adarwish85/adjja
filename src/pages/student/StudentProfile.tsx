@@ -4,10 +4,10 @@ import { StudentLayout } from "@/components/layouts/StudentLayout";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { StudentProfileCard } from "@/components/profile/StudentProfileCard";
-import { StudentProfileForm } from "@/components/profile/StudentProfileForm";
+import { StudentProfileHeader } from "@/components/profile/StudentProfileHeader";
+import { StudentProfileSidebar } from "@/components/profile/StudentProfileSidebar";
+import { StudentProfileMainForm } from "@/components/profile/StudentProfileMainForm";
 import { ChangePasswordSection } from "@/components/profile/ChangePasswordSection";
-import { BeltProgressBar } from "@/components/profile/BeltProgressBar";
 import { BJJProfileForm } from "@/components/profile/BJJProfileForm";
 import { useBJJProfile } from "@/hooks/useBJJProfile";
 import { Button } from "@/components/ui/button";
@@ -241,75 +241,65 @@ export default function StudentProfile() {
 
   return (
     <StudentLayout>
-      <div className="max-w-4xl mx-auto py-12 px-4 md:px-0 font-playfair">
-        {/* Cover Photo Section */}
-        <div className="relative h-48 md:h-64 rounded-t-3xl overflow-hidden mb-6 bg-gradient-to-br from-amber-100 via-yellow-50 to-white">
-          {formState.cover_photo_url ? (
-            <img 
-              src={formState.cover_photo_url} 
-              alt="Cover" 
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-bjj-gold/20 via-amber-50 to-white" />
-          )}
-          <div className="absolute inset-0 bg-black/20" />
-          <button
-            onClick={handleCoverPhotoEdit}
-            className="absolute top-4 right-4 bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition"
-            type="button"
-          >
-            <svg width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5H3v-4L16.5 3.5Z" />
-            </svg>
-          </button>
-        </div>
-
-        <StudentProfileCard
-          name={formState.name}
-          profilePicture={formState.profile_picture_url}
-          belt={formState.belt}
-          stripes={formState.stripes}
-          joinedDate={formState.joined_date}
+      <div className="min-h-screen bg-gray-50">
+        {/* Cover Photo & Profile Header */}
+        <StudentProfileHeader
+          formState={formState}
+          onCoverPhotoEdit={handleCoverPhotoEdit}
           onAvatarEdit={handleAvatarEdit}
-        />
-        <BeltProgressBar belt={formState.belt} stripes={formState.stripes} />
-        
-        {/* Basic Profile Information */}
-        <StudentProfileForm
-          data={formState}
-          onChange={handleFormChange}
           loading={loading}
-          onSave={handleSave}
-          saveState={saveState}
-          hasChanges={hasChanges}
         />
 
-        {/* BJJ Athlete Profile */}
-        <div className="mt-8">
-          <BJJProfileForm
-            data={bjjProfile}
-            onChange={setBjjProfile}
-            loading={bjjLoading}
-          />
-          <div className="mt-6 flex justify-end">
-            <Button
-              onClick={handleBJJProfileSave}
-              className="font-semibold bg-bjj-gold hover:bg-bjj-gold-dark text-white rounded-lg px-8 py-3 text-lg shadow-lg transition"
-              disabled={bjjLoading || bjjSaveState === "saving"}
-            >
-              {bjjSaveState === "saving" ? "Saving BJJ Profile..." : bjjSaveState === "success" ? "BJJ Profile Saved!" : "Save BJJ Profile"}
-            </Button>
+        {/* Main Content Area with Facebook-style layout */}
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Left Sidebar - Profile Info (30%) */}
+            <div className="lg:col-span-4 xl:col-span-3">
+              <StudentProfileSidebar
+                formState={formState}
+              />
+            </div>
+
+            {/* Main Content - Editable Forms (70%) */}
+            <div className="lg:col-span-8 xl:col-span-9 space-y-6">
+              {/* Basic Profile Information */}
+              <StudentProfileMainForm
+                data={formState}
+                onChange={handleFormChange}
+                loading={loading}
+                onSave={handleSave}
+                saveState={saveState}
+                hasChanges={hasChanges}
+              />
+
+              {/* BJJ Athlete Profile */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">BJJ Athlete Profile</h2>
+                <BJJProfileForm
+                  data={bjjProfile}
+                  onChange={setBjjProfile}
+                  loading={bjjLoading}
+                />
+                <div className="mt-6 flex justify-end">
+                  <Button
+                    onClick={handleBJJProfileSave}
+                    className="font-semibold bg-bjj-gold hover:bg-bjj-gold-dark text-white rounded-lg px-8 py-3 text-lg shadow-lg transition"
+                    disabled={bjjLoading || bjjSaveState === "saving"}
+                  >
+                    {bjjSaveState === "saving" ? "Saving BJJ Profile..." : bjjSaveState === "success" ? "BJJ Profile Saved!" : "Save BJJ Profile"}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Change Password Section */}
+              <ChangePasswordSection
+                onChangePassword={handleChangePassword}
+                loading={passwordState === "saving"}
+                saveState={passwordState}
+              />
+            </div>
           </div>
         </div>
-
-        {/* Change Password Section */}
-        <ChangePasswordSection
-          onChangePassword={handleChangePassword}
-          loading={passwordState === "saving"}
-          saveState={passwordState}
-        />
       </div>
     </StudentLayout>
   );
