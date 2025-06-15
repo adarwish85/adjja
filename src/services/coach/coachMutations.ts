@@ -159,6 +159,10 @@ export const coachMutations = {
         throw new Error(`Failed to update coach: ${studentError.message}`);
       }
 
+      if (!studentData) {
+        throw new Error("No coach record was updated. The coach may not exist.");
+      }
+
       console.log("coachMutations.updateCoach: Successfully updated student-coach:", studentData);
 
       // Handle coach-specific data in coach_profiles table with proper error handling
@@ -192,13 +196,16 @@ export const coachMutations = {
 
         if (profileError) {
           console.error("coachMutations.updateCoach: Error updating coach profile:", profileError);
-          // Don't throw here - log the error but continue since main update succeeded
-          console.warn(`Coach profile update failed but main record updated successfully: ${profileError.message}`);
-        } else {
-          console.log("coachMutations.updateCoach: Successfully updated coach profile for upgraded student:", profileData);
+          throw new Error(`Failed to update coach profile: ${profileError.message}`);
         }
 
-        // Verify the coach profile update
+        if (!profileData) {
+          throw new Error("Coach profile update failed - no data returned");
+        }
+
+        console.log("coachMutations.updateCoach: Successfully updated coach profile for upgraded student:", profileData);
+
+        // Critical: Verify the coach profile update by fetching fresh data
         const { data: verificationData, error: verificationError } = await supabase
           .from("coach_profiles")
           .select("*")
@@ -206,10 +213,28 @@ export const coachMutations = {
           .single();
 
         if (verificationError) {
-          console.warn("coachMutations.updateCoach: Could not verify coach profile update:", verificationError);
-        } else {
-          console.log("coachMutations.updateCoach: Coach profile verification successful:", verificationData);
+          console.error("coachMutations.updateCoach: Coach profile verification failed:", verificationError);
+          throw new Error("Profile update verification failed. Changes may not have been saved.");
         }
+
+        // Verify the actual data matches what we tried to save
+        if (cleanUpdates.specialties !== undefined) {
+          const expectedSpecialties = Array.isArray(cleanUpdates.specialties) ? cleanUpdates.specialties : [];
+          const actualSpecialties = verificationData.specialties || [];
+          if (JSON.stringify(expectedSpecialties) !== JSON.stringify(actualSpecialties)) {
+            throw new Error("Specialties update verification failed. Changes were not saved correctly.");
+          }
+        }
+
+        if (cleanUpdates.assigned_classes !== undefined) {
+          const expectedClasses = Array.isArray(cleanUpdates.assigned_classes) ? cleanUpdates.assigned_classes : [];
+          const actualClasses = verificationData.assigned_classes || [];
+          if (JSON.stringify(expectedClasses) !== JSON.stringify(actualClasses)) {
+            throw new Error("Assigned classes update verification failed. Changes were not saved correctly.");
+          }
+        }
+
+        console.log("coachMutations.updateCoach: Coach profile verification successful:", verificationData);
       }
 
       // Convert student data back to coach format with the updated profile data
@@ -235,9 +260,13 @@ export const coachMutations = {
       return typedCoach;
     }
 
+    if (!coachData) {
+      throw new Error("No coach record was updated. The coach may not exist.");
+    }
+
     console.log("coachMutations.updateCoach: Successfully updated traditional coach:", coachData);
 
-    // Verify the traditional coach update
+    // Critical: Verify the traditional coach update by fetching fresh data
     const { data: verificationData, error: verificationError } = await supabase
       .from("coaches")
       .select("*")
@@ -245,10 +274,28 @@ export const coachMutations = {
       .single();
 
     if (verificationError) {
-      console.warn("coachMutations.updateCoach: Could not verify traditional coach update:", verificationError);
-    } else {
-      console.log("coachMutations.updateCoach: Traditional coach verification successful:", verificationData);
+      console.error("coachMutations.updateCoach: Traditional coach verification failed:", verificationError);
+      throw new Error("Update verification failed. Changes may not have been saved.");
     }
+
+    // Verify the actual data matches what we tried to save
+    if (cleanUpdates.specialties !== undefined) {
+      const expectedSpecialties = Array.isArray(cleanUpdates.specialties) ? cleanUpdates.specialties : [];
+      const actualSpecialties = verificationData.specialties || [];
+      if (JSON.stringify(expectedSpecialties) !== JSON.stringify(actualSpecialties)) {
+        throw new Error("Specialties update verification failed. Changes were not saved correctly.");
+      }
+    }
+
+    if (cleanUpdates.assigned_classes !== undefined) {
+      const expectedClasses = Array.isArray(cleanUpdates.assigned_classes) ? cleanUpdates.assigned_classes : [];
+      const actualClasses = verificationData.assigned_classes || [];
+      if (JSON.stringify(expectedClasses) !== JSON.stringify(actualClasses)) {
+        throw new Error("Assigned classes update verification failed. Changes were not saved correctly.");
+      }
+    }
+
+    console.log("coachMutations.updateCoach: Traditional coach verification successful:", verificationData);
 
     const typedCoach: Coach = {
       ...coachData,

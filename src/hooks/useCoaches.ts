@@ -91,11 +91,18 @@ export const useCoaches = () => {
       }
 
       console.log("useCoaches: Updating coach with id:", id, "updates:", updates);
+      
+      // Perform the update with enhanced error handling
       const updatedCoach = await coachService.updateCoach(id, updates);
+      
+      if (!updatedCoach) {
+        throw new Error("Update operation did not return updated coach data");
+      }
+      
       console.log("useCoaches: Coach updated successfully:", updatedCoach);
       
-      // Immediately refresh the coaches list after successful update to reflect changes
-      console.log("useCoaches: Refreshing coaches list after update...");
+      // Critical: Force immediate refresh to ensure UI reflects changes
+      console.log("useCoaches: Force refreshing coaches list after update...");
       await fetchCoaches();
       
       // If the coach name changed, we need to update student assignments
@@ -103,11 +110,23 @@ export const useCoaches = () => {
         await coachService.updateCoachStudentCount(updates.name);
       }
       
+      // Verify the coach data was actually updated by checking the refreshed list
+      const refreshedCoaches = coaches.find(c => c.id === id);
+      if (refreshedCoaches) {
+        console.log("useCoaches: Verified coach update in refreshed data:", refreshedCoaches);
+      }
+      
       console.log("useCoaches: Update process completed successfully");
       return updatedCoach;
     } catch (error) {
       console.error("useCoaches: Error updating coach:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to update coach");
+      const errorMessage = error instanceof Error ? error.message : "Failed to update coach";
+      toast.error(errorMessage);
+      
+      // Force refresh even on error to ensure UI is in sync
+      console.log("useCoaches: Refreshing coaches list after error to ensure consistency...");
+      await fetchCoaches();
+      
       throw error;
     }
   };

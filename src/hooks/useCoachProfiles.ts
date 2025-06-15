@@ -71,7 +71,7 @@ export const useCoachProfiles = () => {
 
         console.log("saveCoachProfile: Successfully updated coach profile:", profileResult);
 
-        // Verify the update by fetching the data back
+        // Critical: Verify the update was actually saved by fetching fresh data
         const { data: verificationData, error: verificationError } = await supabase
           .from("coach_profiles")
           .select("*")
@@ -79,10 +79,24 @@ export const useCoachProfiles = () => {
           .single();
 
         if (verificationError) {
-          console.warn("saveCoachProfile: Could not verify update:", verificationError);
-        } else {
-          console.log("saveCoachProfile: Verification successful - updated data:", verificationData);
+          console.error("saveCoachProfile: Verification failed:", verificationError);
+          throw new Error("Update verification failed. Changes may not have been saved.");
         }
+
+        // Check if the data actually matches what we tried to save
+        const isDataCorrect = (
+          JSON.stringify(verificationData.specialties || []) === JSON.stringify(profileData.specialties || []) &&
+          JSON.stringify(verificationData.assigned_classes || []) === JSON.stringify(profileData.assigned_classes || []) &&
+          verificationData.bio === (profileData.bio || null) &&
+          verificationData.years_experience === (profileData.years_experience || 0)
+        );
+
+        if (!isDataCorrect) {
+          console.error("saveCoachProfile: Data verification failed. Expected:", profileData, "Got:", verificationData);
+          throw new Error("Data verification failed. The update was not saved correctly.");
+        }
+
+        console.log("saveCoachProfile: Data verification successful:", verificationData);
 
       } else {
         // For traditional coaches, update the coaches table directly
@@ -108,9 +122,13 @@ export const useCoachProfiles = () => {
           throw new Error(`Failed to update coach: ${coachError.message}`);
         }
 
+        if (!coachResult) {
+          throw new Error("No coach record was updated. The coach may not exist.");
+        }
+
         console.log("saveCoachProfile: Successfully updated traditional coach:", coachResult);
 
-        // Verify the update by fetching the data back
+        // Verify the traditional coach update
         const { data: verificationData, error: verificationError } = await supabase
           .from("coaches")
           .select("*")
@@ -118,10 +136,22 @@ export const useCoachProfiles = () => {
           .single();
 
         if (verificationError) {
-          console.warn("saveCoachProfile: Could not verify update:", verificationError);
-        } else {
-          console.log("saveCoachProfile: Verification successful - updated data:", verificationData);
+          console.error("saveCoachProfile: Traditional coach verification failed:", verificationError);
+          throw new Error("Update verification failed. Changes may not have been saved.");
         }
+
+        // Check if the data actually matches what we tried to save
+        const isDataCorrect = (
+          JSON.stringify(verificationData.specialties || []) === JSON.stringify(profileData.specialties || []) &&
+          JSON.stringify(verificationData.assigned_classes || []) === JSON.stringify(profileData.assigned_classes || [])
+        );
+
+        if (!isDataCorrect) {
+          console.error("saveCoachProfile: Traditional coach data verification failed. Expected:", profileData, "Got:", verificationData);
+          throw new Error("Data verification failed. The update was not saved correctly.");
+        }
+
+        console.log("saveCoachProfile: Traditional coach verification successful:", verificationData);
       }
 
       toast.success("Coach profile updated successfully");
