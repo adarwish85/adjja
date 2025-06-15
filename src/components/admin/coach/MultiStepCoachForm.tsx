@@ -186,7 +186,8 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
           <CoachAccountStep
             formData={{
               ...formData,
-              email: formData.email
+              email: formData.email,
+              auth_user_id: formData.auth_user_id
             }}
             updateFormData={updateFormData}
             isEditing={isEditing}

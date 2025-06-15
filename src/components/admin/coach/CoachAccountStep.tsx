@@ -12,6 +12,7 @@ interface CoachAccountStepProps {
     password: string;
     createAccount: boolean;
     email?: string;
+    auth_user_id?: string | null;
   };
   updateFormData: (updates: any) => void;
   isEditing: boolean;
@@ -19,13 +20,24 @@ interface CoachAccountStepProps {
 
 export const CoachAccountStep = ({ formData, updateFormData, isEditing }: CoachAccountStepProps) => {
   const [hasAuthUser, setHasAuthUser] = useState(false);
-  const { checkAuthUserByEmail, checking } = useAuthUserDetection();
+  const [authDetectionMethod, setAuthDetectionMethod] = useState<'auth_user_id' | 'email' | null>(null);
+  const { checkAuthUserStatus, checking } = useAuthUserDetection();
 
   useEffect(() => {
-    async function check() {
-      if (formData.email) {
-        const result = await checkAuthUserByEmail(formData.email);
+    async function checkAuth() {
+      if (formData.email || formData.auth_user_id) {
+        console.log("CoachAccountStep: Checking auth status", {
+          email: formData.email,
+          auth_user_id: formData.auth_user_id,
+          isEditing
+        });
+        
+        const result = await checkAuthUserStatus(formData.email || "", formData.auth_user_id || undefined);
+        
+        console.log("CoachAccountStep: Auth check result:", result);
+        
         setHasAuthUser(result.hasAuthAccount);
+        setAuthDetectionMethod(result.method || null);
         
         // If user already has auth account, disable the checkbox and set it as checked
         if (result.hasAuthAccount) {
@@ -34,13 +46,32 @@ export const CoachAccountStep = ({ formData, updateFormData, isEditing }: CoachA
       }
     }
     
-    if (formData.email) {
-      check();
-    }
-  }, [formData.email, checkAuthUserByEmail, updateFormData]);
+    checkAuth();
+  }, [formData.email, formData.auth_user_id, checkAuthUserStatus, updateFormData]);
 
   const isCheckboxDisabled = hasAuthUser;
   const shouldShowAsChecked = hasAuthUser || formData.createAccount;
+
+  const getStatusMessage = () => {
+    if (hasAuthUser) {
+      if (authDetectionMethod === 'auth_user_id') {
+        return "This coach already has portal access (detected via account link)";
+      } else if (authDetectionMethod === 'email') {
+        return "This coach already has portal access (detected via email)";
+      }
+      return "This coach already has portal access";
+    }
+    return null;
+  };
+
+  const getStatusBadgeText = () => {
+    if (authDetectionMethod === 'auth_user_id') {
+      return "Account Linked";
+    } else if (authDetectionMethod === 'email') {
+      return "Portal Access Exists";
+    }
+    return "Portal Access Exists";
+  };
 
   return (
     <div className="space-y-4">
@@ -61,23 +92,29 @@ export const CoachAccountStep = ({ formData, updateFormData, isEditing }: CoachA
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger>
-                <Badge variant="secondary" className="ml-2">Portal Access Exists</Badge>
+                <Badge variant="secondary" className="ml-2">{getStatusBadgeText()}</Badge>
               </TooltipTrigger>
               <TooltipContent>
                 <p>This coach already has login credentials and can access the portal</p>
+                {authDetectionMethod === 'auth_user_id' && (
+                  <p className="text-xs mt-1">Detected via direct account link</p>
+                )}
+                {authDetectionMethod === 'email' && (
+                  <p className="text-xs mt-1">Detected via email match</p>
+                )}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         )}
         
         {checking && (
-          <span className="text-sm text-gray-500 ml-2">Checking...</span>
+          <span className="text-sm text-gray-500 ml-2">Checking portal access...</span>
         )}
       </div>
       
       {hasAuthUser && (
         <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md">
-          This coach already has portal access and can log in with their existing credentials.
+          {getStatusMessage()}
         </div>
       )}
       
