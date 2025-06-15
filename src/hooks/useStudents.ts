@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useStudentAuthStatus } from "./useStudentAuthStatus";
 
 export interface Student {
   id: string;
@@ -72,6 +72,9 @@ export const useStudents = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Import the helper
+  const authStatusHelper = useStudentAuthStatus();
+
   const fetchStudents = async () => {
     try {
       setLoading(true);
@@ -113,11 +116,16 @@ export const useStudents = () => {
       console.log("Adding student with data:", studentData);
       console.log("Class IDs to enroll in:", classIds);
       
-      // If account creation is requested, create the user account first
+      // Check for existing auth user before creating one
       if (studentData.createAccount && studentData.username && studentData.password) {
-        console.log("Creating student account...");
+        // Use email for existing check
+        const alreadyExists = await authStatusHelper.checkAuthUserByEmail(studentData.email);
+        if (alreadyExists) {
+          toast.error("An Auth user already exists for this email. You cannot create another account for this student.");
+          throw new Error("Auth user already exists for this email.");
+        }
         
-        // Call the database function to create the student account
+        // Account creation code as before...
         const { data: accountData, error: accountError } = await supabase.rpc('create_student_account', {
           p_email: studentData.email,
           p_password: studentData.password,

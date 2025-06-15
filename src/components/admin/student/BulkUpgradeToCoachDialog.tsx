@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useStudentAuthStatus } from "@/hooks/useStudentAuthStatus";
 
 interface BulkUpgradeToCoachDialogProps {
   open: boolean;
@@ -21,17 +21,11 @@ export const BulkUpgradeToCoachDialog = ({
   onSuccess,
 }: BulkUpgradeToCoachDialogProps) => {
   const [loading, setLoading] = useState(false);
+  const { checkAuthUserById } = useStudentAuthStatus();
 
-  // Helper: Checks if a given userId exists in auth.users
+  // Update: Checks if a given userId exists in auth.users by checking profiles
   const checkAuthUserExists = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("id", userId)
-      .single();
-
-    // Auth user exists if profile exists, since `profiles.id = auth.users.id` by design
-    return Boolean(data && data.id === userId && !error);
+    return await checkAuthUserById(userId);
   };
 
   const handleUpgrade = async () => {
@@ -43,7 +37,7 @@ export const BulkUpgradeToCoachDialog = ({
       const id = studentIds[i];
       const name = studentNames[i];
 
-      // Check if the user exists in auth.users table (by checking existence in profiles)
+      // Check if the user exists in auth.users (by checking profiles)
       const hasAuthAccount = await checkAuthUserExists(id);
 
       if (!hasAuthAccount) {
