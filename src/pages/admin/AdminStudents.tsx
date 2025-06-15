@@ -54,6 +54,7 @@ import { StudentStatsCards } from "@/components/admin/student/StudentStatsCards"
 import { StudentsSearchBar } from "@/components/admin/student/StudentsSearchBar";
 import { StudentsActionBar } from "@/components/admin/student/StudentsActionBar";
 import { StudentsTable } from "@/components/admin/student/StudentsTable";
+import { BulkActionsDropdown } from "@/components/admin/student/BulkActionsDropdown";
 
 // Add this Belt type and array above the component or near BeltPromotionModal usage.
 type Belt =
@@ -343,14 +344,12 @@ const AdminStudents = () => {
           </Dialog>
         </div>
 
-        {/* ACTION BAR */}
-        {isSuperAdmin && selectedStudentIds.length > 0 && (
-          <StudentsActionBar
-            selectedStudentCount={selectedStudentIds.length}
-            onUpgradeClick={() => setIsBulkUpgradeOpen(true)}
-            onClearSelection={() => setSelectedStudentIds([])}
-          />
-        )}
+        {/* Bulk Actions Dropdown */}
+        <BulkActionsDropdown
+          selected={selectedStudentIds.length}
+          onUpgradeClick={() => setIsBulkUpgradeOpen(true)}
+          onClearSelection={() => setSelectedStudentIds([])}
+        />
 
         {/* Stats Cards */}
         <StudentStatsCards students={students} enrollments={enrollments} />
