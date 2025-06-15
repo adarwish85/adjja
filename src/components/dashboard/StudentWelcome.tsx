@@ -1,15 +1,11 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
 export const StudentWelcome = () => {
   const navigate = useNavigate();
-
-  return (
-    <Card className="bg-gradient-to-r from-bjj-navy to-bjj-navy-light text-white">
+  return <Card className="bg-gradient-to-r from-bjj-navy to-bjj-navy-light text-white">
       <CardContent className="p-6">
         <div className="flex flex-col space-y-4">
           {/* Header Section */}
@@ -36,26 +32,15 @@ export const StudentWelcome = () => {
           
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <Button 
-              onClick={() => navigate("/student/schedule")}
-              variant="outline" 
-              size="lg" 
-              className="border-white text-white hover:bg-white hover:text-bjj-navy"
-            >
+            <Button onClick={() => navigate("/student/schedule")} variant="outline" size="lg" className="border-white hover:bg-white text-zinc-950">
               <Calendar className="h-4 w-4 mr-2" />
               View Schedule
             </Button>
-            <Button 
-              onClick={() => navigate("/student/progress")}
-              variant="outline" 
-              size="lg" 
-              className="border-white text-white hover:bg-white hover:text-bjj-navy"
-            >
+            <Button onClick={() => navigate("/student/progress")} variant="outline" size="lg" className="border-white hover:bg-white text-zinc-950">
               View Progress
             </Button>
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
