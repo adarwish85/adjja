@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +40,8 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
     username: "",
     password: "",
     createAccount: !isEditing,
+    auth_user_id: coach?.auth_user_id || null,
+    is_upgraded_student: coach?.is_upgraded_student || false,
   });
 
   const updateFormData = (updates: Partial<typeof formData>) => {
@@ -127,18 +130,20 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
       return;
     }
     
-    // Clean and prepare submission data
+    // Clean and prepare submission data - FIXED: Include all coach fields
     const submissionData = {
       name: formData.name,
       email: formData.email,
       phone: formData.phone || null,
       belt: formData.belt,
       branch: formData.branch,
-      specialties: formData.specialties,
+      specialties: formData.specialties, // FIXED: Ensure specialties are included
       status: formData.status,
       students_count: formData.students_count,
-      assigned_classes: formData.assigned_classes,
+      assigned_classes: formData.assigned_classes, // FIXED: Ensure assigned_classes are included
       joined_date: formData.joined_date,
+      auth_user_id: formData.auth_user_id,
+      is_upgraded_student: formData.is_upgraded_student,
       // Only include account fields if creating account
       ...(formData.createAccount && {
         username: formData.username,

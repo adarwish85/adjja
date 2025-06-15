@@ -69,7 +69,8 @@ export const useCoaches = () => {
   const addCoach = async (coachData: CoachInput) => {
     try {
       const newCoach = await coachService.createCoach(coachData);
-      // Don't manually update state - let real-time sync handle it
+      // Refresh the coaches list after successful creation
+      await fetchCoaches();
       await coachService.updateCoachStudentCount(newCoach.name);
       return newCoach;
     } catch (error) {
@@ -89,7 +90,8 @@ export const useCoaches = () => {
       console.log("useCoaches: Updating coach with id:", id, "updates:", updates);
       const updatedCoach = await coachService.updateCoach(id, updates);
       
-      // Don't manually update state - let real-time sync handle it
+      // FIXED: Refresh the coaches list after successful update to reflect changes immediately
+      await fetchCoaches();
       
       // If the coach name changed, we need to update student assignments
       if (updates.name) {
@@ -111,7 +113,8 @@ export const useCoaches = () => {
       }
 
       await coachService.deleteCoach(id);
-      // Don't manually update state - let real-time sync handle it
+      // Refresh the coaches list after successful deletion
+      await fetchCoaches();
     } catch (error) {
       console.error("Error deleting coach:", error);
       toast.error("Failed to delete coach");

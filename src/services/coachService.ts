@@ -140,7 +140,8 @@ export const coachService = {
               joined_date: student.joined_date,
               created_at: student.joined_date,
               updated_at: student.joined_date,
-              is_upgraded_student: true
+              is_upgraded_student: true,
+              auth_user_id: student.auth_user_id
             };
           });
           
@@ -324,27 +325,37 @@ export const coachService = {
 
       console.log("Successfully updated student-coach:", studentData);
 
-      // Now handle coach-specific data in coach_profiles table
-      if (studentData.auth_user_id && (cleanUpdates.specialties || cleanUpdates.assigned_classes || cleanUpdates.belt)) {
+      // FIXED: Now handle coach-specific data in coach_profiles table
+      if (studentData.auth_user_id && (cleanUpdates.specialties !== undefined || cleanUpdates.assigned_classes !== undefined)) {
         console.log("Updating coach profile data for upgraded student...");
         
         const coachProfileUpdates: any = {};
-        if (cleanUpdates.specialties) coachProfileUpdates.specialties = cleanUpdates.specialties;
-        if (cleanUpdates.assigned_classes) coachProfileUpdates.assigned_classes = cleanUpdates.assigned_classes;
         
-        const { error: profileError } = await supabase
+        // FIXED: Include both specialties and assigned_classes in the profile update
+        if (cleanUpdates.specialties !== undefined) {
+          coachProfileUpdates.specialties = cleanUpdates.specialties;
+        }
+        if (cleanUpdates.assigned_classes !== undefined) {
+          coachProfileUpdates.assigned_classes = cleanUpdates.assigned_classes;
+        }
+        
+        console.log("Coach profile updates:", coachProfileUpdates);
+        
+        const { data: profileData, error: profileError } = await supabase
           .from("coach_profiles")
           .upsert({
             user_id: studentData.auth_user_id,
             ...coachProfileUpdates,
             updated_at: new Date().toISOString()
-          });
+          })
+          .select()
+          .single();
 
         if (profileError) {
           console.error("Error updating coach profile:", profileError);
-          // Don't throw here, main update was successful
+          throw new Error(`Failed to update coach profile: ${profileError.message}`);
         } else {
-          console.log("Successfully updated coach profile for upgraded student");
+          console.log("Successfully updated coach profile for upgraded student:", profileData);
         }
       }
 
@@ -363,7 +374,8 @@ export const coachService = {
         joined_date: studentData.joined_date,
         created_at: studentData.joined_date,
         updated_at: new Date().toISOString(),
-        is_upgraded_student: true
+        is_upgraded_student: true,
+        auth_user_id: studentData.auth_user_id
       };
 
       toast.success("Coach updated successfully");
