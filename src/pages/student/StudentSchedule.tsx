@@ -55,20 +55,23 @@ const StudentSchedule = () => {
     enabled: !!user
   });
 
+  // Always treat enrolledClasses as array for downstream logic.
+  const safeEnrolledClasses = Array.isArray(enrolledClasses) ? enrolledClasses : [];
+
   // RANGE calculation
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
   const weekEnd = addDays(weekStart, 6);
 
   // Compute all class sessions for the calendar view
   const sessionsByDay = useMemo(
-    () => getSessionsByDay(weekStart, weekEnd, enrolledClasses),
-    [weekStart, weekEnd, enrolledClasses]
+    () => getSessionsByDay(weekStart, weekEnd, safeEnrolledClasses),
+    [weekStart, weekEnd, safeEnrolledClasses]
   );
 
   // For Today
   const todaySessions = useMemo(
-    () => getTodaySessions(new Date(), enrolledClasses),
-    [enrolledClasses]
+    () => getTodaySessions(new Date(), safeEnrolledClasses),
+    [safeEnrolledClasses]
   );
 
   // Next session logic (show next closest session)
@@ -149,9 +152,9 @@ const StudentSchedule = () => {
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bjj-gold"></div>
               </div>
-            ) : enrolledClasses && enrolledClasses.length > 0 ? (
+            ) : safeEnrolledClasses && safeEnrolledClasses.length > 0 ? (
               <div className="grid md:grid-cols-2 gap-4">
-                {enrolledClasses.map((enrollment) => {
+                {safeEnrolledClasses.map((enrollment) => {
                   const classData = enrollment.classes as any;
                   return (
                     <Card key={enrollment.id} className="border border-gray-200">
