@@ -48,6 +48,22 @@ import { useToast, toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BeltPromotionModal } from "@/components/admin/student/BeltPromotionModal";
 
+// Add this Belt type and array above the component or near BeltPromotionModal usage.
+type Belt =
+  | "White Belt"
+  | "Blue Belt"
+  | "Purple Belt"
+  | "Brown Belt"
+  | "Black Belt";
+
+const BELT_ORDER: Belt[] = [
+  "White Belt",
+  "Blue Belt",
+  "Purple Belt",
+  "Brown Belt",
+  "Black Belt",
+];
+
 const AdminStudents = () => {
   const { students, loading, addStudent, updateStudent, deleteStudent, refetch } = useStudents();
   const { enrollments, enrollStudent, unenrollStudent } = useClassEnrollments();
@@ -627,7 +643,13 @@ const AdminStudents = () => {
         onOpenChange={open => {
           if (!open) setBeltPromotionStudent(null);
         }}
-        currentBelt={beltPromotionStudent?.belt || "White Belt"}
+        currentBelt={
+          BELT_ORDER.includes(
+            (beltPromotionStudent?.belt ?? "") as Belt
+          )
+            ? (beltPromotionStudent?.belt as Belt)
+            : "White Belt"
+        }
         currentStripes={beltPromotionStudent?.stripes || 0}
         onPromote={(belt, stripes, note) => {
           if (beltPromotionStudent) {
