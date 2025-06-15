@@ -46,19 +46,19 @@ export const useCoaches = () => {
   // Enhanced real-time sync with better callbacks
   useCoachesRealTimeSync({
     onCoachAdded: () => {
-      console.log("Real-time: Traditional coach added, refreshing...");
+      console.log("useCoaches: Real-time: Traditional coach added, refreshing...");
       fetchCoaches();
     },
     onCoachUpdated: () => {
-      console.log("Real-time: Traditional coach updated, refreshing...");
+      console.log("useCoaches: Real-time: Traditional coach updated, refreshing...");
       fetchCoaches();
     },
     onCoachRemoved: () => {
-      console.log("Real-time: Traditional coach removed, refreshing...");
+      console.log("useCoaches: Real-time: Traditional coach removed, refreshing...");
       fetchCoaches();
     },
     onStudentUpgraded: () => {
-      console.log("Real-time: Student upgraded to coach or role changed, refreshing...");
+      console.log("useCoaches: Real-time: Student upgraded to coach or role changed, refreshing...");
       // Add a small delay to ensure database consistency
       setTimeout(() => {
         fetchCoaches();
@@ -68,13 +68,16 @@ export const useCoaches = () => {
 
   const addCoach = async (coachData: CoachInput) => {
     try {
+      console.log("useCoaches: Adding coach...", coachData);
       const newCoach = await coachService.createCoach(coachData);
+      console.log("useCoaches: Coach added successfully:", newCoach);
+      
       // Refresh the coaches list after successful creation
       await fetchCoaches();
       await coachService.updateCoachStudentCount(newCoach.name);
       return newCoach;
     } catch (error) {
-      console.error("Error adding coach:", error);
+      console.error("useCoaches: Error adding coach:", error);
       toast.error(error instanceof Error ? error.message : "Failed to add coach");
       throw error;
     }
@@ -89,8 +92,10 @@ export const useCoaches = () => {
 
       console.log("useCoaches: Updating coach with id:", id, "updates:", updates);
       const updatedCoach = await coachService.updateCoach(id, updates);
+      console.log("useCoaches: Coach updated successfully:", updatedCoach);
       
-      // FIXED: Refresh the coaches list after successful update to reflect changes immediately
+      // Immediately refresh the coaches list after successful update to reflect changes
+      console.log("useCoaches: Refreshing coaches list after update...");
       await fetchCoaches();
       
       // If the coach name changed, we need to update student assignments
@@ -98,6 +103,7 @@ export const useCoaches = () => {
         await coachService.updateCoachStudentCount(updates.name);
       }
       
+      console.log("useCoaches: Update process completed successfully");
       return updatedCoach;
     } catch (error) {
       console.error("useCoaches: Error updating coach:", error);
@@ -112,11 +118,14 @@ export const useCoaches = () => {
         throw new Error("Coach ID is required for deletion");
       }
 
+      console.log("useCoaches: Deleting coach with id:", id);
       await coachService.deleteCoach(id);
+      console.log("useCoaches: Coach deleted successfully");
+      
       // Refresh the coaches list after successful deletion
       await fetchCoaches();
     } catch (error) {
-      console.error("Error deleting coach:", error);
+      console.error("useCoaches: Error deleting coach:", error);
       toast.error("Failed to delete coach");
       throw error;
     }
@@ -124,7 +133,7 @@ export const useCoaches = () => {
 
   const recalculateAllCoachStudentCounts = async () => {
     try {
-      console.log("Recalculating student counts for all coaches...");
+      console.log("useCoaches: Recalculating student counts for all coaches...");
       for (const coach of coaches) {
         await coachService.updateCoachStudentCount(coach.name);
       }
@@ -132,18 +141,19 @@ export const useCoaches = () => {
       await fetchCoaches();
       toast.success("Coach student counts updated");
     } catch (error) {
-      console.error("Error recalculating coach student counts:", error);
+      console.error("useCoaches: Error recalculating coach student counts:", error);
       toast.error("Failed to update coach student counts");
     }
   };
 
   const syncAllCoachClassAssignments = async () => {
     try {
+      console.log("useCoaches: Syncing all coach class assignments...");
       await coachService.syncCoachClassAssignments();
       // Refresh coaches data to get updated assignments
       await fetchCoaches();
     } catch (error) {
-      console.error("Error syncing coach class assignments:", error);
+      console.error("useCoaches: Error syncing coach class assignments:", error);
       toast.error("Failed to sync coach class assignments");
     }
   };

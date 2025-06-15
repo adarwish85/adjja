@@ -60,20 +60,20 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
   };
 
   const validateCurrentStep = () => {
-    console.log("Validating step:", currentStep);
-    console.log("Current form data:", formData);
+    console.log("MultiStepCoachForm: Validating step:", currentStep);
+    console.log("MultiStepCoachForm: Current form data:", formData);
     
     switch (currentStep) {
       case 1:
         const isStep1Valid = formData.name.trim() !== "" && formData.email.trim() !== "";
-        console.log("Step 1 validation - Name:", formData.name, "Email:", formData.email, "Valid:", isStep1Valid);
+        console.log("MultiStepCoachForm: Step 1 validation - Name:", formData.name, "Email:", formData.email, "Valid:", isStep1Valid);
         if (!isStep1Valid) {
           toast.error("Please fill in all required fields: Name and Email");
         }
         return isStep1Valid;
       case 2:
         const isStep2Valid = formData.belt.trim() !== "";
-        console.log("Step 2 validation - Belt:", formData.belt, "Valid:", isStep2Valid);
+        console.log("MultiStepCoachForm: Step 2 validation - Belt:", formData.belt, "Valid:", isStep2Valid);
         if (!isStep2Valid) {
           toast.error("Please select a belt rank");
         }
@@ -82,7 +82,7 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
         return true; // Class assignment is optional
       case 4:
         const isStep4Valid = !formData.createAccount || (formData.username.trim() !== "" && formData.password.trim() !== "");
-        console.log("Step 4 validation - Create account:", formData.createAccount, "Username:", formData.username, "Password:", formData.password ? "***" : "", "Valid:", isStep4Valid);
+        console.log("MultiStepCoachForm: Step 4 validation - Create account:", formData.createAccount, "Username:", formData.username, "Password:", formData.password ? "***" : "", "Valid:", isStep4Valid);
         if (!isStep4Valid) {
           toast.error("Please provide username and password for account creation");
         }
@@ -93,18 +93,18 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
   };
 
   const nextStep = () => {
-    console.log("Next step button clicked");
+    console.log("MultiStepCoachForm: Next step button clicked");
     const isValid = validateCurrentStep();
-    console.log("Is current step valid:", isValid);
+    console.log("MultiStepCoachForm: Is current step valid:", isValid);
     
     if (!isValid) {
-      console.log("Validation failed - cannot proceed to next step");
+      console.log("MultiStepCoachForm: Validation failed - cannot proceed to next step");
       return;
     }
     
     if (currentStep < steps.length) {
       const newStep = currentStep + 1;
-      console.log("Proceeding to step:", newStep);
+      console.log("MultiStepCoachForm: Proceeding to step:", newStep);
       setCurrentStep(newStep);
     }
   };
@@ -130,24 +130,24 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
       return;
     }
     
-    // Clean and prepare submission data - FIXED: Include all coach fields
+    // Prepare submission data with proper data structure
     const submissionData = {
-      name: formData.name,
-      email: formData.email,
+      name: formData.name.trim(),
+      email: formData.email.trim(),
       phone: formData.phone || null,
-      belt: formData.belt,
-      branch: formData.branch,
-      specialties: formData.specialties, // FIXED: Ensure specialties are included
+      belt: formData.belt.trim(),
+      branch: formData.branch.trim(),
+      specialties: Array.isArray(formData.specialties) ? formData.specialties : [],
       status: formData.status,
       students_count: formData.students_count,
-      assigned_classes: formData.assigned_classes, // FIXED: Ensure assigned_classes are included
+      assigned_classes: Array.isArray(formData.assigned_classes) ? formData.assigned_classes : [],
       joined_date: formData.joined_date,
       auth_user_id: formData.auth_user_id,
       is_upgraded_student: formData.is_upgraded_student,
       // Only include account fields if creating account
       ...(formData.createAccount && {
-        username: formData.username,
-        password: formData.password,
+        username: formData.username.trim(),
+        password: formData.password.trim(),
         createAccount: formData.createAccount,
       }),
     };
@@ -186,7 +186,7 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
           <CoachAccountStep
             formData={{
               ...formData,
-              email: formData.email // FIXED: Ensure email is passed properly
+              email: formData.email
             }}
             updateFormData={updateFormData}
             isEditing={isEditing}
