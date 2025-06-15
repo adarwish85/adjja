@@ -22,11 +22,38 @@ export const BulkUpgradeToCoachDialog = ({
 }: BulkUpgradeToCoachDialogProps) => {
   const [loading, setLoading] = useState(false);
 
+  // Helper: Checks if a given userId exists in auth.users
+  const checkAuthUserExists = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", userId)
+      .single();
+
+    // Auth user exists if profile exists, since `profiles.id = auth.users.id` by design
+    return Boolean(data && data.id === userId && !error);
+  };
+
   const handleUpgrade = async () => {
     setLoading(true);
     let successCount = 0;
     let failCount = 0;
-    for (const id of studentIds) {
+
+    for (let i = 0; i < studentIds.length; i++) {
+      const id = studentIds[i];
+      const name = studentNames[i];
+
+      // Check if the user exists in auth.users table (by checking existence in profiles)
+      const hasAuthAccount = await checkAuthUserExists(id);
+
+      if (!hasAuthAccount) {
+        toast.error(
+          `Cannot upgrade: ${name} does not have a registered Auth user account. Please create the account first.`
+        );
+        failCount += 1;
+        continue;
+      }
+
       // Supabase RPC only allows one at a time
       const { error } = await supabase.rpc("upgrade_user_to_coach", {
         p_user_id: id,
@@ -37,9 +64,7 @@ export const BulkUpgradeToCoachDialog = ({
         failCount += 1;
         // Show detailed error in toast
         toast.error(
-          `Failed to upgrade: ${studentNames[studentIds.indexOf(id)]}${
-            error && error.message ? ` (${error.message})` : ""
-          }`
+          `Failed to upgrade: ${name}${error && error.message ? ` (${error.message})` : ""}`
         );
       }
     }
