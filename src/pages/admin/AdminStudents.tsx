@@ -366,7 +366,7 @@ const AdminStudents = () => {
               <TableBody>
                 {filteredStudents.map((student) => {
                   const enrolledClasses = getStudentEnrolledClasses(student.id);
-                  const isCoach = student.coach === "Coach" || student.role === "Coach";
+                  const isCoach = student.coach === "Coach";
                   return (
                     <TableRow key={student.id} className={selectedStudentIds.includes(student.id) ? "bg-bjj-gold/10" : ""}>
                       <TableCell>
