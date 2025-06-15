@@ -1,27 +1,53 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Plus, X, User, Award, Calendar } from "lucide-react";
+import { Plus, X, User, Award, Calendar, Loader2 } from "lucide-react";
 import { useCoachProfile } from "@/hooks/useCoachProfile";
 
 export const CoachProfileForm = () => {
   const { coachProfile, loading, saveCoachProfile } = useCoachProfile();
   const [formData, setFormData] = useState({
-    bio: coachProfile?.bio || "",
-    rank: coachProfile?.rank || "",
-    years_experience: coachProfile?.years_experience || 0,
-    certifications: coachProfile?.certifications || [],
-    social_media: coachProfile?.social_media || {}
+    bio: "",
+    rank: "",
+    years_experience: 0,
+    certifications: [] as string[],
+    social_media: {}
   });
   const [newCertification, setNewCertification] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Sync form data with loaded coach profile
+  useEffect(() => {
+    if (coachProfile) {
+      console.log("Syncing form data with coach profile:", coachProfile);
+      setFormData({
+        bio: coachProfile.bio || "",
+        rank: coachProfile.rank || "",
+        years_experience: coachProfile.years_experience || 0,
+        certifications: coachProfile.certifications || [],
+        social_media: coachProfile.social_media || {}
+      });
+    }
+  }, [coachProfile]);
 
   const handleSave = async () => {
-    await saveCoachProfile(formData);
+    console.log("Attempting to save coach profile with data:", formData);
+    setIsSaving(true);
+    try {
+      const success = await saveCoachProfile(formData);
+      if (!success) {
+        console.error("Save operation returned false");
+      }
+    } catch (error) {
+      console.error("Error saving coach profile:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const addCertification = () => {
@@ -40,6 +66,17 @@ export const CoachProfileForm = () => {
       certifications: prev.certifications.filter((_, i) => i !== index)
     }));
   };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span className="ml-2">Loading coach profile...</span>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -116,8 +153,19 @@ export const CoachProfileForm = () => {
           </div>
         </div>
 
-        <Button onClick={handleSave} disabled={loading} className="w-full">
-          {loading ? "Saving..." : "Save Coach Profile"}
+        <Button 
+          onClick={handleSave} 
+          disabled={loading || isSaving} 
+          className="w-full"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save Coach Profile"
+          )}
         </Button>
       </CardContent>
     </Card>

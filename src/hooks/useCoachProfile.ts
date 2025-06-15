@@ -23,10 +23,15 @@ export const useCoachProfile = () => {
   const [loading, setLoading] = useState(false);
 
   const fetchCoachProfile = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log("No user ID available for fetching coach profile");
+      return;
+    }
     
     try {
       setLoading(true);
+      console.log("Fetching coach profile for user:", user.id);
+      
       const { data, error } = await supabase
         .from('coach_profiles')
         .select('*')
@@ -34,37 +39,62 @@ export const useCoachProfile = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching coach profile:", error);
         throw error;
       }
 
+      console.log("Coach profile fetched:", data);
       setCoachProfile(data);
     } catch (error) {
       console.error('Error fetching coach profile:', error);
+      toast.error("Failed to load coach profile");
     } finally {
       setLoading(false);
     }
   };
 
   const saveCoachProfile = async (updates: Partial<CoachProfile>) => {
-    if (!user?.id) return false;
+    if (!user?.id) {
+      console.error("No user ID available for saving coach profile");
+      toast.error("User not authenticated");
+      return false;
+    }
 
     try {
       setLoading(true);
-      const { error } = await supabase
+      console.log("Saving coach profile with updates:", updates);
+      
+      const profileData = {
+        user_id: user.id,
+        ...updates
+      };
+      
+      console.log("Final profile data to upsert:", profileData);
+      
+      const { data, error } = await supabase
         .from('coach_profiles')
-        .upsert({
-          user_id: user.id,
-          ...updates
-        });
+        .upsert(profileData, {
+          onConflict: 'user_id'
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error saving coach profile:', error);
+        toast.error(`Failed to save coach profile: ${error.message}`);
+        return false;
+      }
 
+      console.log("Coach profile saved successfully:", data);
       toast.success("Coach profile saved successfully");
-      await fetchCoachProfile();
+      
+      // Update local state with the saved data
+      setCoachProfile(data);
       return true;
     } catch (error) {
-      console.error('Error saving coach profile:', error);
-      toast.error("Failed to save coach profile");
+      console.error('Unexpected error saving coach profile:', error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      toast.error(`Failed to save coach profile: ${errorMessage}`);
       return false;
     } finally {
       setLoading(false);
