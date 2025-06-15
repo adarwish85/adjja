@@ -43,31 +43,33 @@ export const useCoaches = () => {
     }
   };
 
-  // Set up real-time sync
+  // Enhanced real-time sync with better callbacks
   useCoachesRealTimeSync({
     onCoachAdded: () => {
-      console.log("Real-time: Coach added, refreshing...");
+      console.log("Real-time: Traditional coach added, refreshing...");
       fetchCoaches();
     },
     onCoachUpdated: () => {
-      console.log("Real-time: Coach updated, refreshing...");
+      console.log("Real-time: Traditional coach updated, refreshing...");
       fetchCoaches();
     },
     onCoachRemoved: () => {
-      console.log("Real-time: Coach removed, refreshing...");
+      console.log("Real-time: Traditional coach removed, refreshing...");
       fetchCoaches();
     },
     onStudentUpgraded: () => {
-      console.log("Real-time: Student upgraded to coach, refreshing...");
-      fetchCoaches();
+      console.log("Real-time: Student upgraded to coach or role changed, refreshing...");
+      // Add a small delay to ensure database consistency
+      setTimeout(() => {
+        fetchCoaches();
+      }, 500);
     },
   });
 
   const addCoach = async (coachData: CoachInput) => {
     try {
       const newCoach = await coachService.createCoach(coachData);
-      setCoaches(prev => [...prev, newCoach]);
-      // Update student count after adding coach
+      // Don't manually update state - let real-time sync handle it
       await coachService.updateCoachStudentCount(newCoach.name);
       return newCoach;
     } catch (error) {
@@ -86,7 +88,8 @@ export const useCoaches = () => {
 
       console.log("useCoaches: Updating coach with id:", id, "updates:", updates);
       const updatedCoach = await coachService.updateCoach(id, updates);
-      setCoaches(prev => prev.map(coach => coach.id === id ? updatedCoach : coach));
+      
+      // Don't manually update state - let real-time sync handle it
       
       // If the coach name changed, we need to update student assignments
       if (updates.name) {
@@ -108,7 +111,7 @@ export const useCoaches = () => {
       }
 
       await coachService.deleteCoach(id);
-      setCoaches(prev => prev.filter(coach => coach.id !== id));
+      // Don't manually update state - let real-time sync handle it
     } catch (error) {
       console.error("Error deleting coach:", error);
       toast.error("Failed to delete coach");
@@ -142,6 +145,12 @@ export const useCoaches = () => {
     }
   };
 
+  // Manual refresh function for error recovery
+  const forceRefresh = async () => {
+    console.log("useCoaches: Manual refresh triggered");
+    await fetchCoaches();
+  };
+
   useEffect(() => {
     fetchCoaches();
   }, []);
@@ -154,6 +163,7 @@ export const useCoaches = () => {
     updateCoach,
     deleteCoach,
     refetch: fetchCoaches,
+    forceRefresh,
     recalculateAllCoachStudentCounts,
     syncAllCoachClassAssignments,
   };

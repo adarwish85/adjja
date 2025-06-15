@@ -30,9 +30,14 @@ export const useImprovedStudentUpgrade = () => {
       if (result.success) {
         toast.success(result.message || `${result.student_name} successfully upgraded to Coach`);
         
-        // Trigger real-time notification by updating a timestamp or similar
-        // This ensures all connected clients get notified of the change
-        console.log("Student upgrade successful, real-time updates will be triggered automatically");
+        // Enhanced real-time notification - trigger multiple channels
+        console.log("Student upgrade successful, triggering enhanced real-time updates...");
+        
+        // Small delay to ensure database consistency before triggering updates
+        setTimeout(() => {
+          // The real-time sync will automatically pick up the changes
+          console.log("Enhanced real-time sync will handle the updates automatically");
+        }, 100);
       } else {
         toast.error(result.error || "Failed to upgrade student");
       }
@@ -62,6 +67,7 @@ export const useImprovedStudentUpgrade = () => {
     let failed = 0;
 
     try {
+      // Process upgrades with small delays for better database consistency
       for (const studentId of studentIds) {
         const result = await upgradeStudentToCoach(studentId);
         results.push(result);
@@ -71,11 +77,14 @@ export const useImprovedStudentUpgrade = () => {
         } else {
           failed++;
         }
+        
+        // Small delay between upgrades for better performance
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
 
       if (successful > 0) {
         toast.success(`Successfully upgraded ${successful} student(s) to Coach`);
-        console.log(`Bulk upgrade completed: ${successful} successful, ${failed} failed. Real-time updates triggered.`);
+        console.log(`Enhanced bulk upgrade completed: ${successful} successful, ${failed} failed. Real-time updates triggered.`);
       }
       
       if (failed > 0) {

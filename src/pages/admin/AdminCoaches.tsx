@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2, Mail, Phone, Loader2, GraduationCap, RefreshCw } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Mail, Phone, Loader2, GraduationCap, RefreshCw, RotateCcw } from "lucide-react";
 import { MultiStepCoachForm } from "@/components/admin/coach/MultiStepCoachForm";
 import { EmptyCoachesState } from "@/components/admin/coach/EmptyCoachesState";
 import { useCoaches } from "@/hooks/useCoaches";
@@ -38,7 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const AdminCoaches = () => {
-  const { coaches, loading, error, addCoach, updateCoach, deleteCoach, refetch, recalculateAllCoachStudentCounts, syncAllCoachClassAssignments } = useCoaches();
+  const { coaches, loading, error, addCoach, updateCoach, deleteCoach, refetch, forceRefresh, recalculateAllCoachStudentCounts, syncAllCoachClassAssignments } = useCoaches();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCoach, setEditingCoach] = useState<Coach | null>(null);
@@ -101,6 +100,11 @@ const AdminCoaches = () => {
     refetch();
   };
 
+  const handleForceRefresh = () => {
+    console.log("AdminCoaches: Force refresh triggered");
+    forceRefresh();
+  };
+
   const getBeltColor = (belt: string) => {
     switch (belt.toLowerCase()) {
       case "black belt":
@@ -154,6 +158,15 @@ const AdminCoaches = () => {
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
+              </Button>
+
+              <Button 
+                variant="outline" 
+                onClick={handleForceRefresh}
+                className="text-orange-600 border-orange-600 hover:bg-orange-600 hover:text-white"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Force Refresh
               </Button>
               
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -211,6 +224,15 @@ const AdminCoaches = () => {
               className="text-bjj-navy border-bjj-navy hover:bg-bjj-navy hover:text-white"
             >
               Sync Class Assignments
+            </Button>
+
+            <Button 
+              variant="outline" 
+              onClick={handleForceRefresh}
+              className="text-orange-600 border-orange-600 hover:bg-orange-600 hover:text-white"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Force Refresh
             </Button>
             
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
