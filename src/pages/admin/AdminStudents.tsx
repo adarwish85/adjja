@@ -52,7 +52,6 @@ import { ClassEnrollmentModal } from "@/components/admin/student/ClassEnrollment
 import { StudentStatusDropdown } from "@/components/admin/student/StudentStatusDropdown";
 import { StudentStatsCards } from "@/components/admin/student/StudentStatsCards";
 import { StudentsSearchBar } from "@/components/admin/student/StudentsSearchBar";
-import { StudentsActionBar } from "@/components/admin/student/StudentsActionBar";
 import { StudentsTable } from "@/components/admin/student/StudentsTable";
 import { BulkActionsDropdown } from "@/components/admin/student/BulkActionsDropdown";
 
