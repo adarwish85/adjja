@@ -1,137 +1,93 @@
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { User, Settings, Lock, LogOut, Edit } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChangePasswordModal } from "./ChangePasswordModal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User, Settings, LogOut, Edit, Trophy } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { AccountSettingsModal } from "./AccountSettingsModal";
+import { toast } from "sonner";
 
-interface UserProfileDropdownProps {
-  onClose: () => void;
-}
-
-export const UserProfileDropdown = ({ onClose }: UserProfileDropdownProps) => {
-  const { user, signOut } = useAuth();
+export const UserProfileDropdown = () => {
+  const { user, userProfile } = useAuth();
   const navigate = useNavigate();
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [showChangePassword, setShowChangePassword] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
-
   const handleSignOut = async () => {
-    await signOut();
-    onClose();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      navigate("/login");
+      toast.success("Signed out successfully");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Error signing out");
+    }
   };
 
   const handleEditProfile = () => {
-    navigate('/edit-profile');
-    onClose();
+    // Navigate to athlete profile in edit mode
+    navigate("/student/profile");
   };
 
-  const handleChangePassword = () => {
-    setShowChangePassword(true);
-    onClose();
-  };
-
-  const handleAccountSettings = () => {
-    setShowAccountSettings(true);
-    onClose();
-  };
+  if (!user || !userProfile) {
+    return null;
+  }
 
   return (
     <>
-      <div ref={dropdownRef} className="absolute right-0 top-12 w-64 z-50">
-        <Card className="shadow-lg border bg-white">
-          <CardContent className="p-0">
-            {/* User Info Section */}
-            <div className="p-4 bg-gray-50">
-              <div className="flex items-center space-x-3">
-                <div className="h-12 w-12 bg-bjj-gold rounded-full flex items-center justify-center">
-                  <span className="text-white text-lg font-semibold">
-                    {user?.email?.charAt(0).toUpperCase() || 'U'}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-bjj-navy truncate">
-                    {user?.user_metadata?.name || 'Admin User'}
-                  </h4>
-                  <p className="text-sm text-bjj-gray truncate">
-                    {user?.email || 'admin@example.com'}
-                  </p>
-                </div>
-              </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={userProfile.profile_picture_url || ""} alt={userProfile.name || ""} />
+              <AvatarFallback>
+                {userProfile.name?.charAt(0).toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="end" forceMount>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">{userProfile.name}</p>
+              <p className="text-xs leading-none text-muted-foreground">
+                {userProfile.email}
+              </p>
             </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => navigate("/student/profile")}>
+            <User className="mr-2 h-4 w-4" />
+            <span>View Profile</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleEditProfile}>
+            <Trophy className="mr-2 h-4 w-4" />
+            <span>Edit Athlete Profile</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowAccountSettings(true)}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Account Settings</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleSignOut}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Sign Out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-            <Separator />
-
-            {/* Menu Items */}
-            <div className="p-2">
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-left hover:bg-gray-100"
-                onClick={handleEditProfile}
-              >
-                <Edit className="h-4 w-4 mr-3" />
-                Edit Profile
-              </Button>
-              
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-left hover:bg-gray-100"
-                onClick={handleChangePassword}
-              >
-                <Lock className="h-4 w-4 mr-3" />
-                Change Password
-              </Button>
-              
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-left hover:bg-gray-100"
-                onClick={handleAccountSettings}
-              >
-                <Settings className="h-4 w-4 mr-3" />
-                Account Settings
-              </Button>
-            </div>
-
-            <Separator />
-
-            <div className="p-2">
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-left text-red-600 hover:text-red-700 hover:bg-red-50"
-                onClick={handleSignOut}
-              >
-                <LogOut className="h-4 w-4 mr-3" />
-                Sign Out
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Modals */}
-      <ChangePasswordModal 
-        open={showChangePassword} 
-        onOpenChange={setShowChangePassword}
-      />
-
-      <AccountSettingsModal 
-        open={showAccountSettings} 
+      <AccountSettingsModal
+        open={showAccountSettings}
         onOpenChange={setShowAccountSettings}
       />
     </>
