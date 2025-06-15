@@ -49,6 +49,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BeltPromotionModal } from "@/components/admin/student/BeltPromotionModal";
 import { CourseEnrollmentModal } from "@/components/admin/student/CourseEnrollmentModal";
 import { ClassEnrollmentModal } from "@/components/admin/student/ClassEnrollmentModal";
+import { StudentStatusDropdown } from "@/components/admin/student/StudentStatusDropdown";
 
 // Add this Belt type and array above the component or near BeltPromotionModal usage.
 type Belt =
@@ -525,6 +526,29 @@ const AdminStudents = () => {
                             </div>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {/* Student status dropdown */}
+                        <StudentStatusDropdown
+                          value={student.status}
+                          onChange={async (nextStatus) => {
+                            if (student.status === nextStatus) return;
+                            try {
+                              await updateStudent(student.id, { status: nextStatus });
+                              toast({
+                                title: `Student status updated`,
+                                description: `${student.name} is now "${nextStatus.replace('-', ' ')}".`
+                              });
+                              if (typeof refetch === "function") refetch();
+                            } catch (e) {
+                              toast({
+                                variant: "destructive",
+                                title: "Failed to update status",
+                                description: e instanceof Error ? e.message : "Unknown error"
+                              });
+                            }
+                          }}
+                        />
                       </TableCell>
                       <TableCell>
                         {/* DROPDOWN MENU FOR ACTIONS */}
