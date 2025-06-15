@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Table,
@@ -10,6 +11,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Mail,
   Phone,
   Calendar,
@@ -17,6 +24,7 @@ import {
   Edit as EditIcon,
   Trash2 as Trash2Icon,
   ArrowDown,
+  GraduationCap,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { StudentStatusDropdown } from "@/components/admin/student/StudentStatusDropdown";
@@ -73,180 +81,204 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
   };
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>
-            {isSuperAdmin && (
-              <input
-                type="checkbox"
-                checked={
-                  filteredStudents.length > 0 &&
-                  filteredStudents
-                    .filter((s) => s.status === "active" && s.coach !== "Coach")
-                    .every((s) => selectedStudentIds.includes(s.id))
-                }
-                onChange={(e) => handleSelectAllChange(e.target.checked)}
-                aria-label="Select all"
-                className="accent-bjj-gold scale-125"
-              />
-            )}
-          </TableHead>
-          <TableHead>Student</TableHead>
-          <TableHead>Contact</TableHead>
-          <TableHead>Enrolled Classes</TableHead>
-          <TableHead>Belt & Stripes</TableHead>
-          <TableHead>Membership</TableHead>
-          <TableHead>Attendance</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {filteredStudents.map((student) => {
-          const enrolledClasses = getStudentEnrolledClasses(student.id);
-          const isCoach = student.coach === "Coach";
-          return (
-            <TableRow key={student.id} className={selectedStudentIds.includes(student.id) ? "bg-bjj-gold/10" : ""}>
-              <TableCell>
-                {isSuperAdmin && !isCoach && (
-                  <input
-                    type="checkbox"
-                    checked={selectedStudentIds.includes(student.id)}
-                    onChange={(e) => onCheckboxChange(student.id, e.target.checked)}
-                    aria-label={`Select ${student.name}`}
-                    className="accent-bjj-gold scale-125"
-                  />
-                )}
-              </TableCell>
-              <TableCell>
-                <div>
-                  <div className="font-medium text-bjj-navy">{student.name}</div>
-                  <div className="text-sm text-bjj-gray">
-                    Joined {new Date(student.joined_date).toLocaleDateString()}
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="space-y-1">
-                  <div className="flex items-center text-sm">
-                    <Mail className="h-3 w-3 mr-1 text-bjj-gray" />
-                    {student.email}
-                  </div>
-                  {student.phone && (
-                    <div className="flex items-center text-sm">
-                      <Phone className="h-3 w-3 mr-1 text-bjj-gray" />
-                      {student.phone}
-                    </div>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="space-y-1">
-                  {enrolledClasses.length > 0 ? (
-                    enrolledClasses.map((className, index) => (
-                      <Badge key={index} variant="outline" className="mr-1 mb-1">
-                        {className}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-sm text-gray-500">No classes</span>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="space-y-1">
-                  <Badge className={getBeltColor(student.belt)}>
-                    {student.belt}
-                  </Badge>
-                  <div className="text-sm text-bjj-gray">
-                    {student.stripes} stripe{student.stripes !== 1 ? "s" : ""}
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge variant="secondary" className="capitalize">
-                  {student.membership_type}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="space-y-1">
-                  <div className="font-medium">{student.attendance_rate}%</div>
-                  {student.last_attended && (
-                    <div className="flex items-center text-xs text-bjj-gray">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      Last: {new Date(student.last_attended).toLocaleDateString()}
-                    </div>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <StudentStatusDropdown
-                  value={student.status as "active" | "inactive" | "on-hold"}
-                  onChange={(next) => onStatusChange(student, next)}
+    <TooltipProvider>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>
+              {isSuperAdmin && (
+                <input
+                  type="checkbox"
+                  checked={
+                    filteredStudents.length > 0 &&
+                    filteredStudents
+                      .filter((s) => s.status === "active" && s.coach !== "Coach")
+                      .every((s) => selectedStudentIds.includes(s.id))
+                  }
+                  onChange={(e) => handleSelectAllChange(e.target.checked)}
+                  aria-label="Select all"
+                  className="accent-bjj-gold scale-125"
                 />
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="p-1 h-8 w-8" aria-label="More Actions">
-                      <MoreHorizontal className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="z-50 bg-white border rounded shadow min-w-[210px]">
-                    {!isCoach && (
+              )}
+            </TableHead>
+            <TableHead>Student</TableHead>
+            <TableHead>Contact</TableHead>
+            <TableHead>Enrolled Classes</TableHead>
+            <TableHead>Belt & Stripes</TableHead>
+            <TableHead>Membership</TableHead>
+            <TableHead>Attendance</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredStudents.map((student) => {
+            const enrolledClasses = getStudentEnrolledClasses(student.id);
+            const isCoach = student.coach === "Coach";
+            
+            return (
+              <TableRow 
+                key={student.id} 
+                className={`
+                  ${selectedStudentIds.includes(student.id) ? "bg-bjj-gold/10" : ""} 
+                  ${isCoach ? "bg-green-50 border-l-4 border-l-green-500" : ""}
+                `}
+              >
+                <TableCell>
+                  {isSuperAdmin && !isCoach && (
+                    <input
+                      type="checkbox"
+                      checked={selectedStudentIds.includes(student.id)}
+                      onChange={(e) => onCheckboxChange(student.id, e.target.checked)}
+                      aria-label={`Select ${student.name}`}
+                      className="accent-bjj-gold scale-125"
+                    />
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-bjj-navy">{student.name}</span>
+                      {isCoach && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold">
+                              <GraduationCap className="h-3 w-3 mr-1" />
+                              COACH
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>This student is also a coach</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                    <div className="text-sm text-bjj-gray">
+                      Joined {new Date(student.joined_date).toLocaleDateString()}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <div className="flex items-center text-sm">
+                      <Mail className="h-3 w-3 mr-1 text-bjj-gray" />
+                      {student.email}
+                    </div>
+                    {student.phone && (
+                      <div className="flex items-center text-sm">
+                        <Phone className="h-3 w-3 mr-1 text-bjj-gray" />
+                        {student.phone}
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    {enrolledClasses.length > 0 ? (
+                      enrolledClasses.map((className, index) => (
+                        <Badge key={index} variant="outline" className="mr-1 mb-1">
+                          {className}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-sm text-gray-500">No classes</span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <Badge className={getBeltColor(student.belt)}>
+                      {student.belt}
+                    </Badge>
+                    <div className="text-sm text-bjj-gray">
+                      {student.stripes} stripe{student.stripes !== 1 ? "s" : ""}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary" className="capitalize">
+                    {student.membership_type}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <div className="font-medium">{student.attendance_rate}%</div>
+                    {student.last_attended && (
+                      <div className="flex items-center text-xs text-bjj-gray">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        Last: {new Date(student.last_attended).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <StudentStatusDropdown
+                    value={student.status as "active" | "inactive" | "on-hold"}
+                    onChange={(next) => onStatusChange(student, next)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="p-1 h-8 w-8" aria-label="More Actions">
+                        <MoreHorizontal className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="z-50 bg-white border rounded shadow min-w-[210px]">
+                      {!isCoach && (
+                        <DropdownMenuItem
+                          onClick={() => onBeltPromotion(student)}
+                          className="flex items-center gap-2"
+                        >
+                          <span className="block w-3 h-3 rounded-full bg-bjj-gold mr-2"></span>
+                          Belt Promotion
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem
-                        onClick={() => onBeltPromotion(student)}
+                        onClick={() => onCourseEnroll(student)}
                         className="flex items-center gap-2"
                       >
-                        <span className="block w-3 h-3 rounded-full bg-bjj-gold mr-2"></span>
-                        Belt Promotion
+                        <span className="block w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
+                        Enroll to Online Course
                       </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem
-                      onClick={() => onCourseEnroll(student)}
-                      className="flex items-center gap-2"
-                    >
-                      <span className="block w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
-                      Enroll to Online Course
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => onClassEnroll(student)}
-                      className="flex items-center gap-2"
-                    >
-                      <span className="block w-3 h-3 rounded-full bg-emerald-500 mr-2"></span>
-                      Enroll to Class
-                    </DropdownMenuItem>
-                    {isCoach && (
                       <DropdownMenuItem
-                        onClick={() => onDowngradeToStudent(student)}
+                        onClick={() => onClassEnroll(student)}
                         className="flex items-center gap-2"
                       >
-                        <ArrowDown className="h-4 w-4 rotate-180" />
-                        Downgrade to Student
+                        <span className="block w-3 h-3 rounded-full bg-emerald-500 mr-2"></span>
+                        Enroll to Class
                       </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem
-                      onClick={() => onEditStudent(student)}
-                      className="flex items-center gap-2"
-                    >
-                      <EditIcon className="h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => onDeleteStudent(student)}
-                      className="flex items-center gap-2 text-red-600"
-                    >
-                      <Trash2Icon className="h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                      {isCoach && (
+                        <DropdownMenuItem
+                          onClick={() => onDowngradeToStudent(student)}
+                          className="flex items-center gap-2"
+                        >
+                          <ArrowDown className="h-4 w-4 rotate-180" />
+                          Downgrade to Student
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem
+                        onClick={() => onEditStudent(student)}
+                        className="flex items-center gap-2"
+                      >
+                        <EditIcon className="h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onDeleteStudent(student)}
+                        className="flex items-center gap-2 text-red-600"
+                      >
+                        <Trash2Icon className="h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </TooltipProvider>
   );
 };
