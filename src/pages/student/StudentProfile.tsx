@@ -8,9 +8,13 @@ import { StudentProfileCard } from "@/components/profile/StudentProfileCard";
 import { StudentProfileForm } from "@/components/profile/StudentProfileForm";
 import { ChangePasswordSection } from "@/components/profile/ChangePasswordSection";
 import { BeltProgressBar } from "@/components/profile/BeltProgressBar";
+import { BJJProfileForm } from "@/components/profile/BJJProfileForm";
+import { useBJJProfile } from "@/hooks/useBJJProfile";
+import { Button } from "@/components/ui/button";
 
 export default function StudentProfile() {
   const { user, userProfile } = useAuth();
+  const { bjjProfile, saveBJJProfile, loading: bjjLoading } = useBJJProfile();
   const [formState, setFormState] = useState<any>({
     name: "",
     email: "",
@@ -25,6 +29,7 @@ export default function StudentProfile() {
   const [loading, setLoading] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [passwordState, setPasswordState] = useState<"idle" | "saving" | "success" | "error">("idle");
+  const [bjjSaveState, setBjjSaveState] = useState<"idle" | "saving" | "success" | "error">("idle");
 
   useEffect(() => {
     if (user) fetchProfile();
@@ -133,6 +138,13 @@ export default function StudentProfile() {
     }
   }
 
+  async function handleBJJProfileSave() {
+    setBjjSaveState("saving");
+    const success = await saveBJJProfile(bjjProfile);
+    setBjjSaveState(success ? "success" : "error");
+    setTimeout(() => setBjjSaveState("idle"), 1500);
+  }
+
   async function handleChangePassword(oldPass: string, newPass: string) {
     setPasswordState("saving");
     try {
@@ -149,7 +161,7 @@ export default function StudentProfile() {
 
   return (
     <StudentLayout>
-      <div className="max-w-2xl mx-auto py-12 px-4 md:px-0 font-playfair">
+      <div className="max-w-4xl mx-auto py-12 px-4 md:px-0 font-playfair">
         <StudentProfileCard
           name={formState.name}
           profilePicture={formState.profile_picture_url}
@@ -159,6 +171,8 @@ export default function StudentProfile() {
           onAvatarEdit={handleAvatarEdit}
         />
         <BeltProgressBar belt={formState.belt} stripes={formState.stripes} />
+        
+        {/* Basic Profile Information */}
         <StudentProfileForm
           data={formState}
           onChange={handleFormChange}
@@ -166,6 +180,31 @@ export default function StudentProfile() {
           onSave={handleSave}
           saveState={saveState}
         />
+
+        {/* BJJ Athlete Profile */}
+        <div className="mt-8">
+          <BJJProfileForm
+            data={bjjProfile}
+            onChange={(data) => {
+              console.log('BJJ Profile form onChange called with:', data);
+              // Update the BJJ profile state through the hook
+              const { setBjjProfile } = useBJJProfile();
+              setBjjProfile(data);
+            }}
+            loading={bjjLoading}
+          />
+          <div className="mt-6 flex justify-end">
+            <Button
+              onClick={handleBJJProfileSave}
+              className="font-semibold bg-bjj-gold hover:bg-bjj-gold-dark text-white rounded-lg px-8 py-3 text-lg shadow-lg transition"
+              disabled={bjjLoading || bjjSaveState === "saving"}
+            >
+              {bjjSaveState === "saving" ? "Saving BJJ Profile..." : bjjSaveState === "success" ? "BJJ Profile Saved!" : "Save BJJ Profile"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Change Password Section */}
         <ChangePasswordSection
           onChangePassword={handleChangePassword}
           loading={passwordState === "saving"}
