@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Table,
@@ -183,7 +182,7 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
               </TableCell>
               <TableCell>
                 <StudentStatusDropdown
-                  value={student.status}
+                  value={student.status as "active" | "inactive" | "on-hold"}
                   onChange={(next) => onStatusChange(student, next)}
                 />
               </TableCell>

@@ -373,6 +373,7 @@ const AdminStudents = () => {
               isSuperAdmin={isSuperAdmin}
               getStudentEnrolledClasses={getStudentEnrolledClasses}
               onStatusChange={async (student, nextStatus) => {
+                // Ensure nextStatus is of proper type
                 if (student.status === nextStatus) return;
                 try {
                   await updateStudent(student.id, { status: nextStatus });
