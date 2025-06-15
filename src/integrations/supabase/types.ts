@@ -1830,6 +1830,10 @@ export type Database = {
           is_enrolled: boolean
         }[]
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_setting_value: {
         Args: { p_category: string; p_key: string; p_branch_id?: string }
         Returns: Json
