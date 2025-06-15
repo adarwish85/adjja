@@ -1,5 +1,4 @@
 
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +15,7 @@ import StudentAttendance from "./pages/student/StudentAttendance";
 import StudentNotes from "./pages/student/StudentNotes";
 import StudentSchedule from "./pages/student/StudentSchedule";
 import CoachDashboard from "./pages/coach/CoachDashboard";
+import CoachStudents from "./pages/coach/CoachStudents";
 import AdminDashboard from "./pages/SuperAdminDashboard";
 import AdminCoaches from "./pages/admin/AdminCoaches";
 import AdminStudents from "./pages/admin/AdminStudents";

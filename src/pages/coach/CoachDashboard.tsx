@@ -5,11 +5,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StudentCheckIn } from "@/components/coach/StudentCheckIn";
 import { CoachProfileForm } from "@/components/coach/CoachProfileForm";
 import { CoachNotes } from "@/components/coach/CoachNotes";
+import { MyStudentsView } from "@/components/coach/MyStudentsView";
 import { Users, UserCheck, BarChart3, StickyNote, User, Video, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useCoachStudents } from "@/hooks/useCoachStudents";
 
 const CoachDashboard = () => {
   const { userProfile } = useAuth();
+  const { stats } = useCoachStudents();
 
   return (
     <CoachLayout>
@@ -31,7 +34,7 @@ const CoachDashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">0</div>
+              <div className="text-2xl font-bold text-bjj-navy">{stats.totalStudents}</div>
             </CardContent>
           </Card>
           
@@ -43,7 +46,7 @@ const CoachDashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">0</div>
+              <div className="text-2xl font-bold text-bjj-navy">{stats.todayAttendance}</div>
             </CardContent>
           </Card>
           
@@ -73,8 +76,12 @@ const CoachDashboard = () => {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="checkin" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+        <Tabs defaultValue="students" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="students" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Students
+            </TabsTrigger>
             <TabsTrigger value="checkin" className="flex items-center gap-2">
               <UserCheck className="h-4 w-4" />
               Check-In
@@ -100,6 +107,10 @@ const CoachDashboard = () => {
               Analytics
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="students">
+            <MyStudentsView />
+          </TabsContent>
 
           <TabsContent value="checkin">
             <StudentCheckIn />
