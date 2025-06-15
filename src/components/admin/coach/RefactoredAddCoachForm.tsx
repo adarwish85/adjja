@@ -89,7 +89,10 @@ export const RefactoredAddCoachForm = ({ coach, onSubmit, isEditing = false }: R
       />
 
       <AddCoachAccountInfo 
-        formData={formData} 
+        formData={{
+          ...formData,
+          email: formData.email // Pass email to enable auth checking
+        }} 
         setFormData={setFormData}
         isEditing={isEditing}
       />

@@ -3,14 +3,15 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useCheckAuthUserByEmail } from "@/hooks/student-auth";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuthUserDetection } from "@/hooks/useAuthUserDetection";
 
 interface StudentAccountStepProps {
   formData: {
     username: string;
     password: string;
     createAccount: boolean;
-    email?: string; // Add email here for checking
+    email?: string;
   };
   updateFormData: (updates: any) => void;
   isEditing: boolean;
@@ -22,18 +23,28 @@ export const StudentAccountStep = ({
   isEditing,
 }: StudentAccountStepProps) => {
   const [hasAuthUser, setHasAuthUser] = useState(false);
-  const { checkAuthUserByEmail, checking } = useCheckAuthUserByEmail();
+  const { checkAuthUserByEmail, checking } = useAuthUserDetection();
 
   useEffect(() => {
     async function check() {
       if (formData.email) {
-        const exists = await checkAuthUserByEmail(formData.email);
-        setHasAuthUser(exists);
+        const result = await checkAuthUserByEmail(formData.email);
+        setHasAuthUser(result.hasAuthAccount);
+        
+        // If user already has auth account, disable the checkbox and set it as checked
+        if (result.hasAuthAccount) {
+          updateFormData({ createAccount: true });
+        }
       }
     }
-    // Only check if email exists
-    if (formData.email) check();
-  }, [formData.email, checkAuthUserByEmail]);
+    
+    if (formData.email) {
+      check();
+    }
+  }, [formData.email, checkAuthUserByEmail, updateFormData]);
+
+  const isCheckboxDisabled = hasAuthUser;
+  const shouldShowAsChecked = hasAuthUser || formData.createAccount;
 
   return (
     <div className="space-y-4">
@@ -41,23 +52,39 @@ export const StudentAccountStep = ({
         <input
           type="checkbox"
           id="createAccount"
-          checked={formData.createAccount}
-          onChange={(e) => updateFormData({ createAccount: e.target.checked })}
+          checked={shouldShowAsChecked}
+          onChange={(e) => !isCheckboxDisabled && updateFormData({ createAccount: e.target.checked })}
+          disabled={isCheckboxDisabled}
           className="rounded"
-          disabled={hasAuthUser}
         />
         <Label htmlFor="createAccount" className="text-sm font-medium">
-          {isEditing ? "Create student portal account" : "Create student portal account"}
+          {hasAuthUser ? "Already has portal access" : (isEditing ? "Create student portal account" : "Create student portal account")}
         </Label>
+        
         {hasAuthUser && (
-          <Badge variant="secondary" className="ml-2">Auth User Exists</Badge>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <Badge variant="secondary" className="ml-2">Portal Access Exists</Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>This student already has login credentials and can access the portal</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+        
+        {checking && (
+          <span className="text-sm text-gray-500 ml-2">Checking...</span>
         )}
       </div>
-      {formData.createAccount && hasAuthUser && (
-        <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-          This student already has portal access.
+      
+      {hasAuthUser && (
+        <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md">
+          This student already has portal access and can log in with their existing credentials.
         </div>
       )}
+      
       {formData.createAccount && !hasAuthUser && (
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -83,7 +110,8 @@ export const StudentAccountStep = ({
           </div>
         </div>
       )}
-      {!formData.createAccount && (
+      
+      {!formData.createAccount && !hasAuthUser && (
         <div className="text-sm text-gray-600 p-4 bg-gray-50 rounded-md">
           The student will be added without portal access. You can create an account later by editing the student.
         </div>

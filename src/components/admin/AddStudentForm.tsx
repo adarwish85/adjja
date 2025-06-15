@@ -1,8 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -13,6 +14,7 @@ import {
 import { Student } from "@/hooks/useStudents";
 import { useCoaches } from "@/hooks/useCoaches";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
+import { useAuthUserDetection } from "@/hooks/useAuthUserDetection";
 
 interface AddStudentFormProps {
   student?: Student;
@@ -28,6 +30,9 @@ const statusOptions = ["active", "inactive", "on-hold"];
 export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStudentFormProps) => {
   const { coaches, loading: coachesLoading } = useCoaches();
   const { activeSubscriptionPlans, isLoading: plansLoading } = useSubscriptionPlans();
+  const { checkAuthUserByEmail, checking } = useAuthUserDetection();
+  const [hasAuthUser, setHasAuthUser] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: student?.name || "",
     email: student?.email || "",
@@ -43,11 +48,29 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
     attendance_rate: student?.attendance_rate || 0,
     joined_date: student?.joined_date || new Date().toISOString().split('T')[0],
     last_attended: student?.last_attended || new Date().toISOString().split('T')[0],
-    // Fields for account creation (available for both new and existing students)
     username: "",
     password: "",
-    createAccount: !isEditing, // Default to true for new students, false for editing
+    createAccount: !isEditing,
   });
+
+  // Check auth user status when email changes
+  useEffect(() => {
+    async function check() {
+      if (formData.email) {
+        const result = await checkAuthUserByEmail(formData.email);
+        setHasAuthUser(result.hasAuthAccount);
+        
+        // If user already has auth account, set createAccount to true (checked but disabled)
+        if (result.hasAuthAccount) {
+          setFormData(prev => ({ ...prev, createAccount: true }));
+        }
+      }
+    }
+    
+    if (formData.email) {
+      check();
+    }
+  }, [formData.email, checkAuthUserByEmail]);
 
   // Get active coaches for the dropdown
   const activeCoaches = coaches.filter(coach => coach.status === "active");
@@ -102,6 +125,9 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
       [field]: value
     }));
   };
+
+  const isCheckboxDisabled = hasAuthUser;
+  const shouldShowAsChecked = hasAuthUser || formData.createAccount;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -162,22 +188,46 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
         </div>
       </div>
 
-      {/* Account Creation Section - Available for both new and existing students */}
+      {/* Account Creation Section - Enhanced with portal access detection */}
       <div className="border-t pt-4 space-y-4">
         <div className="flex items-center space-x-2">
           <input
             type="checkbox"
             id="createAccount"
-            checked={formData.createAccount}
-            onChange={(e) => handleChange("createAccount", e.target.checked)}
+            checked={shouldShowAsChecked}
+            onChange={(e) => !isCheckboxDisabled && handleChange("createAccount", e.target.checked)}
+            disabled={isCheckboxDisabled}
             className="rounded"
           />
           <Label htmlFor="createAccount" className="text-sm font-medium">
-            {isEditing ? "Create student portal account" : "Create student portal account"}
+            {hasAuthUser ? "Already has portal access" : (isEditing ? "Create student portal account" : "Create student portal account")}
           </Label>
+          
+          {hasAuthUser && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Badge variant="secondary" className="ml-2">Portal Access Exists</Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>This student already has login credentials and can access the portal</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          
+          {checking && (
+            <span className="text-sm text-gray-500 ml-2">Checking...</span>
+          )}
         </div>
         
-        {formData.createAccount && (
+        {hasAuthUser && (
+          <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md">
+            This student already has portal access and can log in with their existing credentials.
+          </div>
+        )}
+        
+        {formData.createAccount && !hasAuthUser && (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
@@ -201,6 +251,12 @@ export const AddStudentForm = ({ student, onSubmit, isEditing = false }: AddStud
                 required={formData.createAccount}
               />
             </div>
+          </div>
+        )}
+        
+        {!formData.createAccount && !hasAuthUser && (
+          <div className="text-sm text-gray-600 p-4 bg-gray-50 rounded-md">
+            The student will be added without portal access. You can create an account later by editing the student.
           </div>
         )}
       </div>
