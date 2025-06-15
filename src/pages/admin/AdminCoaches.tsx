@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2, Mail, Phone, Loader2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Mail, Phone, Loader2, GraduationCap } from "lucide-react";
 import { MultiStepCoachForm } from "@/components/admin/coach/MultiStepCoachForm";
 import { useCoaches } from "@/hooks/useCoaches";
 import { Coach } from "@/types/coach";
@@ -248,7 +249,15 @@ const AdminCoaches = () => {
                   <TableRow key={coach.id}>
                     <TableCell>
                       <div>
-                        <div className="font-medium text-bjj-navy">{coach.name}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-bjj-navy">{coach.name}</span>
+                          {coach.is_upgraded_student && (
+                            <Badge className="bg-blue-100 text-blue-800 text-xs">
+                              <GraduationCap className="h-3 w-3 mr-1" />
+                              Upgraded
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-sm text-bjj-gray">
                           Joined {new Date(coach.joined_date).toLocaleDateString()}
                         </div>
@@ -280,6 +289,9 @@ const AdminCoaches = () => {
                             {specialty}
                           </Badge>
                         ))}
+                        {coach.specialties.length === 0 && (
+                          <span className="text-gray-500 text-sm">None</span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>

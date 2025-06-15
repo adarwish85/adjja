@@ -4,25 +4,74 @@ import { Coach, CoachInput, CoachUpdate } from "@/types/coach";
 
 export const coachService = {
   async fetchCoaches(): Promise<Coach[]> {
-    const { data, error } = await supabase
-      .from("coaches")
-      .select("*")
-      .order("name");
+    try {
+      // Fetch from coaches table (traditional coaches)
+      const { data: coachesData, error: coachesError } = await supabase
+        .from("coaches")
+        .select("*")
+        .order("name");
 
-    if (error) throw error;
+      if (coachesError) throw coachesError;
 
-    // Type the data properly by ensuring status is correctly typed and adding assigned_classes
-    const typedCoaches: Coach[] = (data || []).map(coach => ({
-      ...coach,
-      status: coach.status as "active" | "inactive",
-      specialties: coach.specialties || [],
-      phone: coach.phone || null,
-      students_count: coach.students_count || 0,
-      joined_date: coach.joined_date || new Date().toISOString().split('T')[0],
-      assigned_classes: coach.assigned_classes || []
-    }));
+      // Fetch students who have been upgraded to coach role
+      const { data: upgradedStudents, error: studentsError } = await supabase
+        .from("students")
+        .select(`
+          id,
+          name,
+          email,
+          phone,
+          belt,
+          joined_date,
+          auth_user_id,
+          profiles:auth_user_id (
+            role_id,
+            user_roles:role_id (
+              name
+            )
+          )
+        `)
+        .not("auth_user_id", "is", null);
 
-    return typedCoaches;
+      if (studentsError) throw studentsError;
+
+      // Filter students who have coach role
+      const studentCoaches = (upgradedStudents || [])
+        .filter(student => 
+          student.profiles?.user_roles?.name === "Coach"
+        )
+        .map(student => ({
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          phone: student.phone || null,
+          belt: student.belt,
+          specialties: [], // Default empty array for upgraded students
+          branch: "Main", // Default branch
+          status: "active" as const,
+          students_count: 0, // Will be calculated separately
+          assigned_classes: [], // Will be populated by sync function
+          joined_date: student.joined_date,
+          created_at: student.joined_date,
+          updated_at: student.joined_date,
+          is_upgraded_student: true // Flag to identify upgraded students
+        }));
+
+      // Combine traditional coaches with upgraded student coaches
+      const allCoaches = [
+        ...(coachesData || []).map(coach => ({
+          ...coach,
+          is_upgraded_student: false
+        })),
+        ...studentCoaches
+      ];
+
+      // Sort by name
+      return allCoaches.sort((a, b) => a.name.localeCompare(b.name));
+    } catch (error) {
+      console.error("Error fetching coaches:", error);
+      throw error;
+    }
   },
 
   async createCoach(coachData: CoachInput): Promise<Coach> {

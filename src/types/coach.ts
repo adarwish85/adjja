@@ -1,22 +1,18 @@
-
 export interface Coach {
   id: string;
   name: string;
   email: string;
   phone: string | null;
   belt: string;
-  branch: string;
   specialties: string[];
+  branch: string;
   status: "active" | "inactive";
   students_count: number;
+  assigned_classes?: string[];
   joined_date: string;
-  assigned_classes: string[];
   created_at: string;
   updated_at: string;
-  // Optional fields for account creation
-  username?: string;
-  password?: string;
-  createAccount?: boolean;
+  is_upgraded_student?: boolean; // Flag to identify coaches upgraded from students
 }
 
 export type CoachInput = Omit<Coach, "id" | "created_at" | "updated_at">;
