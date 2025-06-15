@@ -41,19 +41,29 @@ export default function StudentProfile() {
   async function fetchProfile() {
     setLoading(true);
     try {
+      console.log('Fetching profile for user:', user?.id);
+      
       // Fetch profile info (from 'profiles' table)
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
 
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+      }
+
       // Fetch student info (for belt, branch, joined_date, stripes)
-      const { data: student } = await supabase
+      const { data: student, error: studentError } = await supabase
         .from('students')
         .select('*')
         .eq('email', user.email)
         .maybeSingle();
+
+      if (studentError) {
+        console.error('Student fetch error:', studentError);
+      }
 
       const profileData = {
         name: profile?.name || userProfile?.name || "",
@@ -61,27 +71,31 @@ export default function StudentProfile() {
         phone: profile?.phone || "",
         belt: student?.belt || "",
         branch: student?.branch || "",
-        birthdate: "", // Optionally add separate birthdate table
+        birthdate: profile?.birthdate || "",
         profile_picture_url: profile?.profile_picture_url || "",
         cover_photo_url: profile?.cover_photo_url || "",
         joined_date: student?.joined_date || "",
         stripes: student?.stripes ?? 0,
       };
 
+      console.log('Loaded profile data:', profileData);
       setFormState(profileData);
       setOriginalFormState({ ...profileData });
     } catch (e) {
+      console.error('Unexpected error loading profile:', e);
       toast.error("Failed to load profile");
     }
     setLoading(false);
   }
 
   function handleFormChange(changes: any) {
+    console.log('Form changes:', changes);
     const newFormState = { ...formState, ...changes };
     setFormState(newFormState);
     
     // Check if there are changes
     const hasFormChanges = JSON.stringify(newFormState) !== JSON.stringify(originalFormState);
+    console.log('Has changes:', hasFormChanges);
     setHasChanges(hasFormChanges);
   }
 
@@ -103,6 +117,7 @@ export default function StudentProfile() {
           .upload(fileName, file, { upsert: true });
         
         if (error) {
+          console.error('Cover photo upload error:', error);
           toast.error("Failed to upload cover photo");
           setLoading(false);
           return;
@@ -115,6 +130,7 @@ export default function StudentProfile() {
       };
       input.click();
     } catch (error) {
+      console.error('Cover photo selection error:', error);
       toast.error("Failed to select image");
       setLoading(false);
     }
@@ -138,6 +154,7 @@ export default function StudentProfile() {
           .upload(fileName, file, { upsert: true });
         
         if (error) {
+          console.error('Profile photo upload error:', error);
           toast.error("Failed to upload photo");
           setLoading(false);
           return;
@@ -150,6 +167,7 @@ export default function StudentProfile() {
       };
       input.click();
     } catch (error) {
+      console.error('Profile photo selection error:', error);
       toast.error("Failed to select image");
       setLoading(false);
     }
@@ -158,19 +176,30 @@ export default function StudentProfile() {
   async function handleSave() {
     setSaveState("saving");
     try {
+      console.log('Saving profile with data:', formState);
+      
+      // Prepare the data for saving (only include fields that exist in the profiles table)
+      const profileData = {
+        id: user.id,
+        name: formState.name,
+        email: formState.email,
+        phone: formState.phone || null,
+        birthdate: formState.birthdate || null,
+        profile_picture_url: formState.profile_picture_url || null,
+        cover_photo_url: formState.cover_photo_url || null,
+      };
+
       // Save to 'profiles'
       const { error: err1 } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          name: formState.name,
-          email: formState.email,
-          phone: formState.phone,
-          profile_picture_url: formState.profile_picture_url,
-          cover_photo_url: formState.cover_photo_url,
-        }, { onConflict: 'id' });
+        .upsert(profileData, { onConflict: 'id' });
       
-      if (err1) throw err1;
+      if (err1) {
+        console.error('Profile save error:', err1);
+        throw err1;
+      }
+      
+      console.log('Profile saved successfully');
       
       // Update original state to reflect saved changes
       setOriginalFormState({ ...formState });
@@ -180,8 +209,9 @@ export default function StudentProfile() {
       toast.success("✅ Profile updated successfully");
       setTimeout(() => setSaveState("idle"), 1500);
     } catch (e) {
+      console.error('Save error details:', e);
       setSaveState("error");
-      toast.error("Failed to save changes.");
+      toast.error(`Failed to save changes: ${e instanceof Error ? e.message : 'Unknown error'}`);
       setTimeout(() => setSaveState("idle"), 1500);
     }
   }
@@ -202,6 +232,7 @@ export default function StudentProfile() {
       toast.success("Password changed!");
       setTimeout(() => setPasswordState("idle"), 1500);
     } catch (e) {
+      console.error('Password change error:', e);
       setPasswordState("error");
       toast.error("Failed to change password.");
       setTimeout(() => setPasswordState("idle"), 1500);

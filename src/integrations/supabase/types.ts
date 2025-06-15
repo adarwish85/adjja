@@ -997,6 +997,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          birthdate: string | null
           cover_photo_url: string | null
           created_at: string | null
           email: string
@@ -1011,6 +1012,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          birthdate?: string | null
           cover_photo_url?: string | null
           created_at?: string | null
           email: string
@@ -1025,6 +1027,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          birthdate?: string | null
           cover_photo_url?: string | null
           created_at?: string | null
           email?: string
