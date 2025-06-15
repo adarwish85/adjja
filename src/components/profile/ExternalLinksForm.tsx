@@ -1,9 +1,12 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ExternalLink, Globe } from "lucide-react";
 
 interface ExternalLinksData {
+  instagram_url?: string;
+  facebook_url?: string;
   smoothcomp_url?: string;
   bjj_heroes_url?: string;
   other_link_1?: string;
@@ -37,10 +40,42 @@ export const ExternalLinksForm = ({ data, onChange }: ExternalLinksFormProps) =>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ExternalLink className="h-5 w-5 text-bjj-gold" />
-          External Profile Links
+          Social & External Links
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Instagram */}
+        <div className="space-y-2">
+          <Label htmlFor="instagram">Instagram Profile</Label>
+          <Input
+            id="instagram"
+            type="url"
+            value={data.instagram_url || ''}
+            onChange={(e) => handleChange('instagram_url', e.target.value)}
+            placeholder="https://instagram.com/your_profile"
+            className={!validateUrl(data.instagram_url || '') ? 'border-red-500' : ''}
+          />
+          {data.instagram_url && !validateUrl(data.instagram_url) && (
+            <p className="text-xs text-red-500">Please enter a valid URL</p>
+          )}
+        </div>
+
+        {/* Facebook */}
+        <div className="space-y-2">
+          <Label htmlFor="facebook">Facebook Profile</Label>
+          <Input
+            id="facebook"
+            type="url"
+            value={data.facebook_url || ''}
+            onChange={(e) => handleChange('facebook_url', e.target.value)}
+            placeholder="https://facebook.com/your_profile"
+            className={!validateUrl(data.facebook_url || '') ? 'border-red-500' : ''}
+          />
+          {data.facebook_url && !validateUrl(data.facebook_url) && (
+            <p className="text-xs text-red-500">Please enter a valid URL</p>
+          )}
+        </div>
+
         {/* Smoothcomp */}
         <div className="space-y-2">
           <Label htmlFor="smoothcomp">Smoothcomp Profile</Label>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
@@ -10,6 +11,7 @@ export interface UserProfile {
   role_id: string;
   role_name?: string;
   status: string;
+  profile_picture_url?: string;
 }
 
 export const useAuth = () => {
