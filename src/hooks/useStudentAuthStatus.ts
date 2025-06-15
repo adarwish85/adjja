@@ -3,8 +3,21 @@ import { useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Checks if an Auth user exists for given email or user id (UUID string)
+// Add: getProfileIdByEmail for correct mapping in upgrade flows.
 export function useStudentAuthStatus() {
   const [checking, setChecking] = useState(false);
+
+  // Get profile id for email (for cross-table mapping)
+  const getProfileIdByEmail = useCallback(async (email: string): Promise<string | null> => {
+    if (!email) return null;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+    if (error || !data || !data.id) return null;
+    return data.id;
+  }, []);
 
   // By email: fetches auth.users by matching email
   const checkAuthUserByEmail = useCallback(async (email: string) => {
@@ -41,5 +54,11 @@ export function useStudentAuthStatus() {
       return false;
     }
   }, []);
-  return { checkAuthUserByEmail, checkAuthUserById, checking };
+
+  return {
+    checkAuthUserByEmail,
+    checkAuthUserById,
+    getProfileIdByEmail,
+    checking
+  };
 }
