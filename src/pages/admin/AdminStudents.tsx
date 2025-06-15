@@ -36,6 +36,7 @@ import { MultiStepStudentForm } from "@/components/admin/student/MultiStepStuden
 import { useStudents, Student } from "@/hooks/useStudents";
 import { useClassEnrollments } from "@/hooks/useClassEnrollments";
 import { useClasses } from "@/hooks/useClasses";
+import { BulkUpgradeToCoachDialog } from "@/components/admin/student/BulkUpgradeToCoachDialog";
 
 const AdminStudents = () => {
   const { students, loading, addStudent, updateStudent, deleteStudent } = useStudents();
@@ -44,6 +45,8 @@ const AdminStudents = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [isBulkUpgradeOpen, setIsBulkUpgradeOpen] = useState(false);
 
   const filteredStudents = students.filter(
     (student) =>
@@ -188,6 +191,31 @@ const AdminStudents = () => {
     }
   };
 
+  const isSuperAdmin = true; // TODO: Use your role logic here - only show if user is Super Admin
+
+  const eligibleStudents = students.filter(s => s.status === "active" && s.belt && s.membership_type && s.email && s.coach !== "Coach");
+  const selectedStudentNames = students
+    .filter(student => selectedStudentIds.includes(student.id))
+    .map(student => student.name);
+
+  const handleCheckboxChange = (studentId: string, checked: boolean) => {
+    setSelectedStudentIds(prev => checked
+      ? [...prev, studentId]
+      : prev.filter(id => id !== studentId)
+    );
+  };
+
+  const handleSelectAllChange = (checked: boolean) => {
+    if (checked) {
+      const selectable = filteredStudents
+        .filter(student => student.status === "active" && student.coach !== "Coach")
+        .map(student => student.id);
+      setSelectedStudentIds(selectable);
+    } else {
+      setSelectedStudentIds([]);
+    }
+  };
+
   if (loading) {
     return (
       <SuperAdminLayout>
@@ -225,6 +253,25 @@ const AdminStudents = () => {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* ACTION BAR */}
+        {isSuperAdmin && selectedStudentIds.length > 0 && (
+          <div className="bg-bjj-gold/10 border border-bjj-gold rounded-lg px-4 py-2 mb-2 flex items-center justify-between">
+            <span className="text-bjj-navy font-medium">
+              {selectedStudentIds.length} student{selectedStudentIds.length > 1 ? "s" : ""} selected
+            </span>
+            <div className="flex gap-2">
+              <Button
+                className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy"
+                disabled={selectedStudentIds.length === 0}
+                onClick={() => setIsBulkUpgradeOpen(true)}
+              >
+                Upgrade to Coach
+              </Button>
+              <Button variant="outline" onClick={() => setSelectedStudentIds([])}>Clear Selection</Button>
+            </div>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -290,6 +337,22 @@ const AdminStudents = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>
+                    {isSuperAdmin && (
+                      <input
+                        type="checkbox"
+                        checked={
+                          filteredStudents.length > 0 &&
+                          filteredStudents
+                            .filter(s => s.status === "active" && s.coach !== "Coach")
+                            .every(s => selectedStudentIds.includes(s.id))
+                        }
+                        onChange={(e) => handleSelectAllChange(e.target.checked)}
+                        aria-label="Select all"
+                        className="accent-bjj-gold scale-125"
+                      />
+                    )}
+                  </TableHead>
                   <TableHead>Student</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Enrolled Classes</TableHead>
@@ -303,8 +366,20 @@ const AdminStudents = () => {
               <TableBody>
                 {filteredStudents.map((student) => {
                   const enrolledClasses = getStudentEnrolledClasses(student.id);
+                  const isCoach = student.coach === "Coach" || student.role === "Coach";
                   return (
-                    <TableRow key={student.id}>
+                    <TableRow key={student.id} className={selectedStudentIds.includes(student.id) ? "bg-bjj-gold/10" : ""}>
+                      <TableCell>
+                        {isSuperAdmin && !isCoach && (
+                          <input
+                            type="checkbox"
+                            checked={selectedStudentIds.includes(student.id)}
+                            onChange={(e) => handleCheckboxChange(student.id, e.target.checked)}
+                            aria-label={`Select ${student.name}`}
+                            className="accent-bjj-gold scale-125"
+                          />
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium text-bjj-navy">{student.name}</div>
@@ -437,6 +512,21 @@ const AdminStudents = () => {
             )}
           </DialogContent>
         </Dialog>
+        {/* Bulk Upgrade Dialog */}
+        <BulkUpgradeToCoachDialog 
+          open={isBulkUpgradeOpen} 
+          onOpenChange={(v) => {
+            setIsBulkUpgradeOpen(v);
+            if (!v) setSelectedStudentIds([]);
+          }}
+          studentIds={selectedStudentIds}
+          studentNames={selectedStudentNames}
+          onSuccess={() => {
+            setIsBulkUpgradeOpen(false);
+            setSelectedStudentIds([]);
+            // Optionally, refetch students data
+          }}
+        />
       </div>
     </SuperAdminLayout>
   );
