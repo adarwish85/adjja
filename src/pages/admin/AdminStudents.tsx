@@ -46,6 +46,7 @@ import {
 import { MoreHorizontal, Edit as EditIcon, Trash2 as Trash2Icon, ArrowDown } from "lucide-react";
 import { useToast, toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { BeltPromotionModal } from "@/components/admin/student/BeltPromotionModal";
 
 const AdminStudents = () => {
   const { students, loading, addStudent, updateStudent, deleteStudent, refetch } = useStudents();
@@ -247,6 +248,33 @@ const AdminStudents = () => {
         title: `Failed to downgrade ${student.name}`,
         description: (error as Error).message || "Unknown error",
       });
+    }
+  };
+
+  // State for belt promotion modal
+  const [beltPromotionStudent, setBeltPromotionStudent] = useState<Student | null>(null);
+  const [isPromoting, setIsPromoting] = useState(false);
+
+  // --- Handler to promote student ---
+  const handlePromoteBelt = async (student: Student, newBelt: string, newStripes: number, note?: string) => {
+    setIsPromoting(true);
+    try {
+      // Only allow promotion upwards
+      await updateStudent(student.id, { belt: newBelt, stripes: newStripes });
+      toast({
+        title: `Student promoted!`,
+        description: `${student.name} is now a ${newBelt} (${newStripes} stripe${newStripes !== 1 ? "s" : ""}).`
+      });
+      setBeltPromotionStudent(null);
+      if (typeof refetch === "function") refetch();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Promotion failed",
+        description: error instanceof Error ? error.message : "Unknown error"
+      });
+    } finally {
+      setIsPromoting(false);
     }
   };
 
@@ -490,13 +518,14 @@ const AdminStudents = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent className="z-50 bg-white border rounded shadow min-w-[190px]">
+                            {/* Belt Promotion menu item */}
                             {!isCoach && (
                               <DropdownMenuItem
-                                onClick={() => setSingleUpgradeDialogStudent(student)}
+                                onClick={() => setBeltPromotionStudent(student)}
                                 className="flex items-center gap-2"
                               >
-                                <ArrowDown className="h-4 w-4" />
-                                Upgrade to Coach
+                                <span className="block w-3 h-3 rounded-full bg-bjj-gold mr-2"></span>
+                                Belt Promotion
                               </DropdownMenuItem>
                             )}
                             {isCoach && (
@@ -591,6 +620,22 @@ const AdminStudents = () => {
             if (typeof refetch === "function") refetch();
           }}
         />
+
+      {/* Render the modal outside the Table for selected student */}
+      <BeltPromotionModal
+        open={!!beltPromotionStudent}
+        onOpenChange={open => {
+          if (!open) setBeltPromotionStudent(null);
+        }}
+        currentBelt={beltPromotionStudent?.belt || "White Belt"}
+        currentStripes={beltPromotionStudent?.stripes || 0}
+        onPromote={(belt, stripes, note) => {
+          if (beltPromotionStudent) {
+            handlePromoteBelt(beltPromotionStudent, belt, stripes, note);
+          }
+        }}
+        loading={isPromoting}
+      />
       </div>
     </SuperAdminLayout>
   );
