@@ -3,14 +3,8 @@ import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, Loader2, RefreshCw, RotateCcw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,12 +13,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2, Mail, Phone, Loader2, GraduationCap, RefreshCw, RotateCcw } from "lucide-react";
-import { MultiStepCoachForm } from "@/components/admin/coach/MultiStepCoachForm";
-import { EmptyCoachesState } from "@/components/admin/coach/EmptyCoachesState";
-import { useCoaches } from "@/hooks/useCoaches";
-import { Coach } from "@/types/coach";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +23,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { MultiStepCoachForm } from "@/components/admin/coach/MultiStepCoachForm";
+import { EmptyCoachesState } from "@/components/admin/coach/EmptyCoachesState";
+import { CoachesTable } from "@/components/admin/coach/CoachesTable";
+import { BulkCoachActionsDropdown } from "@/components/admin/coach/BulkCoachActionsDropdown";
+import { CoachNotificationModal } from "@/components/admin/coach/CoachNotificationModal";
+import { CoachClassAssignmentModal } from "@/components/admin/coach/CoachClassAssignmentModal";
+import { useCoaches } from "@/hooks/useCoaches";
+import { Coach } from "@/types/coach";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const AdminCoaches = () => {
   const { coaches, loading, error, addCoach, updateCoach, deleteCoach, refetch, forceRefresh, recalculateAllCoachStudentCounts, syncAllCoachClassAssignments } = useCoaches();
@@ -42,12 +40,118 @@ const AdminCoaches = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCoach, setEditingCoach] = useState<Coach | null>(null);
   const [deletingCoach, setDeletingCoach] = useState<Coach | null>(null);
+  
+  // Bulk selection state
+  const [selectedCoachIds, setSelectedCoachIds] = useState<string[]>([]);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isClassAssignmentModalOpen, setIsClassAssignmentModalOpen] = useState(false);
+  const [isStatusToggleDialogOpen, setIsStatusToggleDialogOpen] = useState(false);
+  const [isRemoveRoleDialogOpen, setIsRemoveRoleDialogOpen] = useState(false);
 
   const filteredCoaches = coaches.filter(
     (coach) =>
       coach.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       coach.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const selectedCoaches = coaches.filter(coach => selectedCoachIds.includes(coach.id));
+
+  // Bulk selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedCoachIds(filteredCoaches.map(coach => coach.id));
+    } else {
+      setSelectedCoachIds([]);
+    }
+  };
+
+  const handleSelectCoach = (coachId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedCoachIds(prev => [...prev, coachId]);
+    } else {
+      setSelectedCoachIds(prev => prev.filter(id => id !== coachId));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedCoachIds([]);
+  };
+
+  // Bulk action handlers
+  const handleSendNotification = async (title: string, message: string) => {
+    for (const coach of selectedCoaches) {
+      if (coach.is_upgraded_student && coach.auth_user_id) {
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: coach.auth_user_id,
+            title,
+            message,
+            type: "announcement"
+          });
+      }
+    }
+  };
+
+  const handleAssignClasses = async (classIds: string[]) => {
+    // Get class names for assignment
+    const { data: classes } = await supabase
+      .from("classes")
+      .select("name")
+      .in("id", classIds);
+
+    const classNames = classes?.map(c => c.name) || [];
+
+    for (const coach of selectedCoaches) {
+      const currentClasses = coach.assigned_classes || [];
+      const newClasses = [...new Set([...currentClasses, ...classNames])];
+      
+      await updateCoach(coach.id, { assigned_classes: newClasses });
+    }
+  };
+
+  const handleToggleStatus = async () => {
+    const activeCoaches = selectedCoaches.filter(c => c.status === "active");
+    const inactiveCoaches = selectedCoaches.filter(c => c.status === "inactive");
+    
+    // Toggle status for each coach
+    for (const coach of selectedCoaches) {
+      const newStatus = coach.status === "active" ? "inactive" : "active";
+      await updateCoach(coach.id, { status: newStatus });
+    }
+    
+    toast.success(`Status updated for ${selectedCoaches.length} coach${selectedCoaches.length > 1 ? 'es' : ''}`);
+    setSelectedCoachIds([]);
+    setIsStatusToggleDialogOpen(false);
+  };
+
+  const handleRemoveCoachRole = async () => {
+    let successCount = 0;
+    
+    for (const coach of selectedCoaches) {
+      if (coach.is_upgraded_student && coach.auth_user_id) {
+        try {
+          const { error } = await supabase.rpc('downgrade_coach_to_student', {
+            p_user_id: coach.auth_user_id
+          });
+          
+          if (!error) {
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`Failed to downgrade coach ${coach.name}:`, error);
+        }
+      }
+    }
+    
+    if (successCount > 0) {
+      toast.success(`Successfully downgraded ${successCount} coach${successCount > 1 ? 'es' : ''} to student${successCount > 1 ? 's' : ''}`);
+      refetch();
+    }
+    
+    setSelectedCoachIds([]);
+    setIsRemoveRoleDialogOpen(false);
+  };
 
   const handleAddCoach = async (newCoach: Omit<Coach, "id" | "created_at" | "updated_at">) => {
     try {
@@ -310,112 +414,26 @@ const AdminCoaches = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Coach</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Belt</TableHead>
-                  <TableHead>Specialties</TableHead>
-                  <TableHead>Assigned Classes</TableHead>
-                  <TableHead>Students</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCoaches.map((coach) => (
-                  <TableRow key={coach.id}>
-                    <TableCell>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-bjj-navy">{coach.name}</span>
-                          {coach.is_upgraded_student && (
-                            <Badge className="bg-blue-100 text-blue-800 text-xs">
-                              <GraduationCap className="h-3 w-3 mr-1" />
-                              Upgraded
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-sm text-bjj-gray">
-                          Joined {new Date(coach.joined_date).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center text-sm">
-                          <Mail className="h-3 w-3 mr-1 text-bjj-gray" />
-                          {coach.email}
-                        </div>
-                        {coach.phone && (
-                          <div className="flex items-center text-sm">
-                            <Phone className="h-3 w-3 mr-1 text-bjj-gray" />
-                            {coach.phone}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getBeltColor(coach.belt)}>
-                        {coach.belt}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {coach.specialties.map((specialty) => (
-                          <Badge key={specialty} variant="secondary" className="text-xs">
-                            {specialty}
-                          </Badge>
-                        ))}
-                        {coach.specialties.length === 0 && (
-                          <span className="text-gray-500 text-sm">None</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {coach.assigned_classes?.map((className) => (
-                          <Badge key={className} variant="outline" className="text-xs">
-                            {className}
-                          </Badge>
-                        )) || <span className="text-gray-500 text-sm">None</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{coach.students_count}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={coach.status === "active" ? "default" : "secondary"}
-                        className={coach.status === "active" ? "bg-green-100 text-green-800" : ""}
-                      >
-                        {coach.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setEditingCoach(coach)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeletingCoach(coach)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            {/* Bulk Actions */}
+            <BulkCoachActionsDropdown
+              selected={selectedCoachIds.length}
+              onSendNotificationClick={() => setIsNotificationModalOpen(true)}
+              onAssignClassClick={() => setIsClassAssignmentModalOpen(true)}
+              onToggleStatusClick={() => setIsStatusToggleDialogOpen(true)}
+              onRemoveCoachRoleClick={() => setIsRemoveRoleDialogOpen(true)}
+              onClearSelection={handleClearSelection}
+            />
+
+            {/* Coaches Table */}
+            <CoachesTable
+              coaches={filteredCoaches}
+              selectedCoachIds={selectedCoachIds}
+              onSelectAll={handleSelectAll}
+              onSelectCoach={handleSelectCoach}
+              onEditCoach={setEditingCoach}
+              onDeleteCoach={setDeletingCoach}
+              getBeltColor={getBeltColor}
+            />
           </CardContent>
         </Card>
 
@@ -455,6 +473,59 @@ const AdminCoaches = () => {
                 className="bg-red-600 hover:bg-red-700"
               >
                 Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Bulk Action Modals */}
+        <CoachNotificationModal
+          isOpen={isNotificationModalOpen}
+          onClose={() => setIsNotificationModalOpen(false)}
+          selectedCoaches={selectedCoaches}
+          onSend={handleSendNotification}
+        />
+
+        <CoachClassAssignmentModal
+          isOpen={isClassAssignmentModalOpen}
+          onClose={() => setIsClassAssignmentModalOpen(false)}
+          selectedCoaches={selectedCoaches}
+          onAssign={handleAssignClasses}
+        />
+
+        {/* Status Toggle Confirmation */}
+        <AlertDialog open={isStatusToggleDialogOpen} onOpenChange={setIsStatusToggleDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Toggle Coach Status</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to toggle the status for {selectedCoaches.length} selected coach{selectedCoaches.length > 1 ? 'es' : ''}?
+                This will activate inactive coaches and deactivate active coaches.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleToggleStatus}>
+                Toggle Status
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Remove Coach Role Confirmation */}
+        <AlertDialog open={isRemoveRoleDialogOpen} onOpenChange={setIsRemoveRoleDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove Coach Role</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to remove the coach role from {selectedCoaches.length} selected coach{selectedCoaches.length > 1 ? 'es' : ''}?
+                This will downgrade them back to student status.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleRemoveCoachRole} className="bg-red-600 hover:bg-red-700">
+                Remove Coach Role
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
