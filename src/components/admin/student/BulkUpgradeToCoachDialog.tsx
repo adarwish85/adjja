@@ -35,7 +35,12 @@ export const BulkUpgradeToCoachDialog = ({
         successCount += 1;
       } else {
         failCount += 1;
-        toast.error(`Failed to upgrade: ${studentNames[studentIds.indexOf(id)]}`);
+        // Show detailed error in toast
+        toast.error(
+          `Failed to upgrade: ${studentNames[studentIds.indexOf(id)]}${
+            error && error.message ? ` (${error.message})` : ""
+          }`
+        );
       }
     }
     if (successCount > 0) {
@@ -74,4 +79,3 @@ export const BulkUpgradeToCoachDialog = ({
     </Dialog>
   );
 };
-
