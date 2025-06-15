@@ -375,6 +375,139 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_feed_posts: {
+        Row: {
+          coach_id: string
+          content: string
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          post_type: string
+          target_classes: string[] | null
+          target_students: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          coach_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          post_type?: string
+          target_classes?: string[] | null
+          target_students?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          coach_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          post_type?: string
+          target_classes?: string[] | null
+          target_students?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      coach_notes: {
+        Row: {
+          class_id: string | null
+          coach_id: string
+          created_at: string | null
+          id: string
+          note_content: string
+          session_date: string | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          class_id?: string | null
+          coach_id: string
+          created_at?: string | null
+          id?: string
+          note_content: string
+          session_date?: string | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          class_id?: string | null
+          coach_id?: string
+          created_at?: string | null
+          id?: string
+          note_content?: string
+          session_date?: string | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_notes_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_class_performance"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "coach_notes_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coach_profiles: {
+        Row: {
+          bio: string | null
+          certifications: string[] | null
+          created_at: string | null
+          featured_media: Json | null
+          id: string
+          rank: string | null
+          social_media: Json | null
+          updated_at: string | null
+          user_id: string
+          years_experience: number | null
+        }
+        Insert: {
+          bio?: string | null
+          certifications?: string[] | null
+          created_at?: string | null
+          featured_media?: Json | null
+          id?: string
+          rank?: string | null
+          social_media?: Json | null
+          updated_at?: string | null
+          user_id: string
+          years_experience?: number | null
+        }
+        Update: {
+          bio?: string | null
+          certifications?: string[] | null
+          created_at?: string | null
+          featured_media?: Json | null
+          id?: string
+          rank?: string | null
+          social_media?: Json | null
+          updated_at?: string | null
+          user_id?: string
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
       coaches: {
         Row: {
           assigned_classes: string[] | null
@@ -1051,6 +1184,67 @@ export type Database = {
           },
         ]
       }
+      progress_videos: {
+        Row: {
+          class_id: string | null
+          coach_id: string
+          created_at: string | null
+          description: string | null
+          duration_seconds: number | null
+          id: string
+          student_id: string
+          updated_at: string | null
+          upload_date: string | null
+          video_url: string
+        }
+        Insert: {
+          class_id?: string | null
+          coach_id: string
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          student_id: string
+          updated_at?: string | null
+          upload_date?: string | null
+          video_url: string
+        }
+        Update: {
+          class_id?: string | null
+          coach_id?: string
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          student_id?: string
+          updated_at?: string | null
+          upload_date?: string | null
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_videos_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_class_performance"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "progress_videos_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progress_videos_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_questions: {
         Row: {
           correct_answer: string | null
@@ -1152,6 +1346,7 @@ export type Database = {
           belt: string
           branch: string
           coach: string
+          coach_user_id: string | null
           created_at: string
           email: string
           id: string
@@ -1173,6 +1368,7 @@ export type Database = {
           belt: string
           branch: string
           coach: string
+          coach_user_id?: string | null
           created_at?: string
           email: string
           id?: string
@@ -1194,6 +1390,7 @@ export type Database = {
           belt?: string
           branch?: string
           coach?: string
+          coach_user_id?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -1667,6 +1864,10 @@ export type Database = {
       update_student_payment_status: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      upgrade_user_to_coach: {
+        Args: { p_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
