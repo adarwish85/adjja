@@ -53,7 +53,6 @@ import { StudentStatusDropdown } from "@/components/admin/student/StudentStatusD
 import { StudentStatsCards } from "@/components/admin/student/StudentStatsCards";
 import { StudentsSearchBar } from "@/components/admin/student/StudentsSearchBar";
 import { StudentsActionBar } from "@/components/admin/student/StudentsActionBar";
-import { StudentsTable } from "@/components/admin/student/StudentsTable";
 
 // Add this Belt type and array above the component or near BeltPromotionModal usage.
 type Belt =
