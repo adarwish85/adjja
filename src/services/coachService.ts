@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Coach, CoachInput, CoachUpdate } from "@/types/coach";
@@ -6,82 +5,139 @@ import { Coach, CoachInput, CoachUpdate } from "@/types/coach";
 export const coachService = {
   async fetchCoaches(): Promise<Coach[]> {
     try {
-      // Fetch from coaches table (traditional coaches)
-      const { data: coachesData, error: coachesError } = await supabase
-        .from("coaches")
-        .select("*")
-        .order("name");
+      console.log("fetchCoaches: Starting to fetch coaches...");
+      
+      // Step 1: Fetch traditional coaches with simple query
+      let traditionalCoaches: Coach[] = [];
+      try {
+        console.log("fetchCoaches: Fetching traditional coaches...");
+        const { data: coachesData, error: coachesError } = await supabase
+          .from("coaches")
+          .select("*")
+          .order("name");
 
-      if (coachesError) throw coachesError;
+        if (coachesError) {
+          console.error("fetchCoaches: Error fetching traditional coaches:", coachesError);
+          throw coachesError;
+        }
 
-      // Fetch students who have been upgraded to coach role
-      const { data: upgradedStudents, error: studentsError } = await supabase
-        .from("students")
-        .select(`
-          id,
-          name,
-          email,
-          phone,
-          belt,
-          joined_date,
-          auth_user_id
-        `)
-        .not("auth_user_id", "is", null);
-
-      if (studentsError) throw studentsError;
-
-      // Get profiles with coach role for these students
-      const { data: coachProfiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select(`
-          id,
-          user_roles:role_id (
-            name
-          )
-        `)
-        .in("id", (upgradedStudents || []).map(s => s.auth_user_id).filter(Boolean));
-
-      if (profilesError) throw profilesError;
-
-      // Filter students who have coach role
-      const coachProfileIds = (coachProfiles || [])
-        .filter(profile => profile.user_roles?.name === "Coach")
-        .map(profile => profile.id);
-
-      const studentCoaches = (upgradedStudents || [])
-        .filter(student => student.auth_user_id && coachProfileIds.includes(student.auth_user_id))
-        .map(student => ({
-          id: student.id,
-          name: student.name,
-          email: student.email,
-          phone: student.phone || null,
-          belt: student.belt,
-          specialties: [], // Default empty array for upgraded students
-          branch: "Main", // Default branch
-          status: "active" as const,
-          students_count: 0, // Will be calculated separately
-          assigned_classes: [], // Will be populated by sync function
-          joined_date: student.joined_date,
-          created_at: student.joined_date,
-          updated_at: student.joined_date,
-          is_upgraded_student: true // Flag to identify upgraded students
-        }));
-
-      // Combine traditional coaches with upgraded student coaches
-      const allCoaches = [
-        ...(coachesData || []).map(coach => ({
+        traditionalCoaches = (coachesData || []).map(coach => ({
           ...coach,
-          status: coach.status as "active" | "inactive", // Type assertion for proper typing
+          status: coach.status as "active" | "inactive",
           is_upgraded_student: false
-        })),
-        ...studentCoaches
-      ];
+        }));
+        
+        console.log("fetchCoaches: Traditional coaches fetched:", traditionalCoaches.length);
+      } catch (error) {
+        console.error("fetchCoaches: Failed to fetch traditional coaches, continuing with empty array:", error);
+        // Continue with empty array rather than failing completely
+      }
 
+      // Step 2: Fetch upgraded student coaches with simpler approach
+      let upgradedStudentCoaches: Coach[] = [];
+      try {
+        console.log("fetchCoaches: Fetching students with auth accounts...");
+        
+        // First get students with auth_user_id
+        const { data: studentsWithAuth, error: studentsError } = await supabase
+          .from("students")
+          .select("id, name, email, phone, belt, joined_date, auth_user_id")
+          .not("auth_user_id", "is", null);
+
+        if (studentsError) {
+          console.error("fetchCoaches: Error fetching students with auth:", studentsError);
+          throw studentsError;
+        }
+
+        if (studentsWithAuth && studentsWithAuth.length > 0) {
+          console.log("fetchCoaches: Found students with auth accounts:", studentsWithAuth.length);
+          
+          // Get the Coach role ID first
+          const { data: coachRole, error: roleError } = await supabase
+            .from("user_roles")
+            .select("id")
+            .eq("name", "Coach")
+            .single();
+
+          if (roleError) {
+            console.error("fetchCoaches: Error fetching Coach role:", roleError);
+            throw roleError;
+          }
+
+          if (coachRole) {
+            console.log("fetchCoaches: Coach role ID found:", coachRole.id);
+            
+            // Get profiles with coach role
+            const authUserIds = studentsWithAuth.map(s => s.auth_user_id).filter(Boolean);
+            const { data: coachProfiles, error: profilesError } = await supabase
+              .from("profiles")
+              .select("id")
+              .eq("role_id", coachRole.id)
+              .in("id", authUserIds);
+
+            if (profilesError) {
+              console.error("fetchCoaches: Error fetching coach profiles:", profilesError);
+              throw profilesError;
+            }
+
+            if (coachProfiles && coachProfiles.length > 0) {
+              console.log("fetchCoaches: Found coach profiles:", coachProfiles.length);
+              
+              const coachProfileIds = coachProfiles.map(p => p.id);
+              
+              // Filter students who have coach role
+              upgradedStudentCoaches = studentsWithAuth
+                .filter(student => student.auth_user_id && coachProfileIds.includes(student.auth_user_id))
+                .map(student => ({
+                  id: student.id,
+                  name: student.name,
+                  email: student.email,
+                  phone: student.phone || null,
+                  belt: student.belt,
+                  specialties: [],
+                  branch: "Main",
+                  status: "active" as const,
+                  students_count: 0,
+                  assigned_classes: [],
+                  joined_date: student.joined_date,
+                  created_at: student.joined_date,
+                  updated_at: student.joined_date,
+                  is_upgraded_student: true
+                }));
+              
+              console.log("fetchCoaches: Upgraded student coaches:", upgradedStudentCoaches.length);
+            } else {
+              console.log("fetchCoaches: No students with coach role found");
+            }
+          } else {
+            console.log("fetchCoaches: Coach role not found in database");
+          }
+        } else {
+          console.log("fetchCoaches: No students with auth accounts found");
+        }
+      } catch (error) {
+        console.error("fetchCoaches: Failed to fetch upgraded student coaches, continuing without them:", error);
+        // Continue without upgraded coaches rather than failing completely
+      }
+
+      // Step 3: Combine and return results
+      const allCoaches = [...traditionalCoaches, ...upgradedStudentCoaches];
+      console.log("fetchCoaches: Total coaches found:", allCoaches.length);
+      
       // Sort by name
-      return allCoaches.sort((a, b) => a.name.localeCompare(b.name));
+      const sortedCoaches = allCoaches.sort((a, b) => a.name.localeCompare(b.name));
+      
+      // If no coaches found at all, return empty array (don't throw error)
+      if (sortedCoaches.length === 0) {
+        console.log("fetchCoaches: No coaches found, returning empty array");
+        return [];
+      }
+      
+      return sortedCoaches;
     } catch (error) {
-      console.error("Error fetching coaches:", error);
-      throw error;
+      console.error("fetchCoaches: Critical error in fetchCoaches:", error);
+      // Don't throw here, let the hook handle the error display
+      throw new Error(`Failed to fetch coaches: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 

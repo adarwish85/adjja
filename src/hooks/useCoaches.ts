@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Coach, CoachInput, CoachUpdate } from "@/types/coach";
@@ -7,15 +8,36 @@ import { useCoachesRealTimeSync } from "./useCoachesRealTimeSync";
 export const useCoaches = () => {
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchCoaches = async () => {
     try {
       setLoading(true);
+      setError(null);
+      console.log("useCoaches: Starting fetchCoaches...");
+      
       const data = await coachService.fetchCoaches();
+      console.log("useCoaches: Fetched coaches successfully:", data.length);
+      
       setCoaches(data);
+      
+      // Only show success message if we actually have coaches
+      if (data.length === 0) {
+        console.log("useCoaches: No coaches found - this is normal if none have been added yet");
+      }
     } catch (error) {
-      console.error("Error fetching coaches:", error);
-      toast.error("Failed to fetch coaches");
+      console.error("useCoaches: Error fetching coaches:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch coaches";
+      setError(errorMessage);
+      
+      // Show specific error messages based on the error
+      if (errorMessage.includes("Coach role does not exist")) {
+        toast.error("Coach role not found in database. Please contact administrator.");
+      } else if (errorMessage.includes("auth")) {
+        toast.error("Authentication error while fetching coaches. Please try refreshing the page.");
+      } else {
+        toast.error("Unable to load coaches. Please check your connection and try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -127,6 +149,7 @@ export const useCoaches = () => {
   return {
     coaches,
     loading,
+    error,
     addCoach,
     updateCoach,
     deleteCoach,
