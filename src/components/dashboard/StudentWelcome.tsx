@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,11 +7,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSmartAttendance } from "@/hooks/useSmartAttendance";
 import { StudentCheckInModal } from "@/components/attendance/StudentCheckInModal";
 import { useState } from "react";
-
 export const StudentWelcome = () => {
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
-  const { studentQuota } = useSmartAttendance();
+  const {
+    userProfile
+  } = useAuth();
+  const {
+    studentQuota
+  } = useSmartAttendance();
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
 
@@ -26,24 +28,19 @@ export const StudentWelcome = () => {
       'blue': 'bg-blue-600 text-white',
       'purple': 'bg-purple-600 text-white',
       'brown': 'bg-amber-800 text-white',
-      'black': 'bg-gray-900 text-white',
+      'black': 'bg-gray-900 text-white'
     };
-    
     const belt = beltName.toLowerCase().split(' ')[0];
     return beltColors[belt as keyof typeof beltColors] || 'bg-blue-600 text-white';
   };
-
   const handleCheckIn = () => {
     setShowCheckInModal(true);
   };
-
   const handleCheckInSuccess = () => {
     setIsCheckedIn(true);
     setShowCheckInModal(false);
   };
-
-  return (
-    <>
+  return <>
       <Card className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800 text-white shadow-xl border-0">
         <CardContent className="p-6 lg:p-8">
           {/* Top Row - Welcome & Rank */}
@@ -67,9 +64,7 @@ export const StudentWelcome = () => {
             </div>
             
             <div className="flex-shrink-0">
-              <Badge 
-                className={`${getBeltColor('Blue Belt')} px-4 py-2 text-sm font-semibold rounded-full shadow-lg border-0`}
-              >
+              <Badge className={`${getBeltColor('Blue Belt')} px-4 py-2 text-sm font-semibold rounded-full shadow-lg border-0`}>
                 <GraduationCap className="h-4 w-4 mr-2" />
                 Blue Belt - 2 Stripes
               </Badge>
@@ -99,49 +94,27 @@ export const StudentWelcome = () => {
 
               {/* Right Block - Check In CTA */}
               <div className="flex flex-col gap-3">
-                <Button 
-                  onClick={handleCheckIn}
-                  disabled={isCheckedIn}
-                  size="lg" 
-                  className={`
+                <Button onClick={handleCheckIn} disabled={isCheckedIn} size="lg" className={`
                     w-full lg:w-auto font-semibold text-base px-6 py-3 rounded-xl transition-all duration-200
-                    ${isCheckedIn 
-                      ? 'bg-green-600 text-white cursor-not-allowed opacity-90' 
-                      : 'bg-amber-500 hover:bg-amber-600 text-slate-900 hover:text-slate-900 shadow-lg hover:shadow-xl transform hover:scale-105'
-                    }
-                  `}
-                >
-                  {isCheckedIn ? (
-                    <>
+                    ${isCheckedIn ? 'bg-green-600 text-white cursor-not-allowed opacity-90' : 'bg-amber-500 hover:bg-amber-600 text-slate-900 hover:text-slate-900 shadow-lg hover:shadow-xl transform hover:scale-105'}
+                  `}>
+                  {isCheckedIn ? <>
                       <CheckCircle className="h-5 w-5 mr-2" />
                       ✅ Checked In
-                    </>
-                  ) : (
-                    <>
+                    </> : <>
                       <CheckCircle className="h-5 w-5 mr-2" />
                       Check In to Class
-                    </>
-                  )}
+                    </>}
                 </Button>
                 
                 {/* Secondary Actions */}
                 <div className="flex flex-col sm:flex-row gap-2 lg:gap-3">
-                  <Button 
-                    onClick={() => navigate("/student/schedule")} 
-                    variant="outline" 
-                    size="sm"
-                    className="flex-1 border-white/30 hover:border-white hover:bg-white/10 text-white hover:text-white font-medium transition-all duration-200"
-                  >
+                  <Button onClick={() => navigate("/student/schedule")} variant="outline" size="sm" className="flex-1 border-white/30 hover:border-white font-medium transition-all duration-200 text-slate-50 bg-gray-950 hover:bg-gray-800">
                     <Calendar className="h-4 w-4 mr-2" />
                     <span className="hidden sm:inline">View Schedule</span>
                     <span className="sm:hidden">Schedule</span>
                   </Button>
-                  <Button 
-                    onClick={() => navigate("/student/progress")} 
-                    variant="outline" 
-                    size="sm"
-                    className="flex-1 border-white/30 hover:border-white hover:bg-white/10 text-white hover:text-white font-medium transition-all duration-200"
-                  >
+                  <Button onClick={() => navigate("/student/progress")} variant="outline" size="sm" className="flex-1 border-white/30 hover:border-white text-white hover:text-white font-medium transition-all duration-200 bg-slate-950 hover:bg-slate-800">
                     <TrendingUp className="h-4 w-4 mr-2" />
                     <span className="hidden sm:inline">View Progress</span>
                     <span className="sm:hidden">Progress</span>
@@ -153,11 +126,6 @@ export const StudentWelcome = () => {
         </CardContent>
       </Card>
 
-      <StudentCheckInModal 
-        open={showCheckInModal} 
-        onOpenChange={setShowCheckInModal}
-        onSuccess={handleCheckInSuccess}
-      />
-    </>
-  );
+      <StudentCheckInModal open={showCheckInModal} onOpenChange={setShowCheckInModal} onSuccess={handleCheckInSuccess} />
+    </>;
 };
