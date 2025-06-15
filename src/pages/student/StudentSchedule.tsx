@@ -1,4 +1,3 @@
-
 import { StudentLayout } from "@/components/layouts/StudentLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { format, addDays, startOfWeek, isSameDay, parseISO } from "date-fns";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { getTodaySessions, getSessionsByDay, ScheduledClassSession } from "@/utils/classScheduleUtils";
+import { StudentWeeklyCalendar } from "@/components/student/StudentWeeklyCalendar";
+import { StudentTodayClasses } from "@/components/student/StudentTodayClasses";
 
 const StudentSchedule = () => {
   const { user } = useAuth();
@@ -53,52 +55,28 @@ const StudentSchedule = () => {
     enabled: !!user
   });
 
-  // Generate week view
-  const weekStart = startOfWeek(selectedDate);
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  // RANGE calculation
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
+  const weekEnd = addDays(weekStart, 6);
 
-  // Mock upcoming sessions - in real app, parse schedule field from classes
-  const getUpcomingSessions = () => {
-    if (!enrolledClasses) return [];
-    
-    // Mock schedule parsing - in real app, parse the schedule field properly
-    const sessions = enrolledClasses.flatMap(enrollment => {
-      const classData = enrollment.classes as any;
-      // Mock: assume schedule is "Mon/Wed/Fri 7:00 PM" format
-      const scheduleParts = classData.schedule?.split(' ') || [];
-      const days = scheduleParts[0]?.split('/') || [];
-      const time = scheduleParts[1] || '7:00';
-      const period = scheduleParts[2] || 'PM';
-      
-      return days.map((day: string) => ({
-        id: `${enrollment.id}-${day}`,
-        classId: classData.id,
-        className: classData.name,
-        instructor: classData.instructor,
-        location: classData.location,
-        time: `${time} ${period}`,
-        duration: classData.duration,
-        level: classData.level,
-        day: day.trim(),
-        dayOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(day.substring(0, 3))
-      }));
-    });
+  // Compute all class sessions for the calendar view
+  const sessionsByDay = useMemo(
+    () => getSessionsByDay(weekStart, weekEnd, enrolledClasses),
+    [weekStart, weekEnd, enrolledClasses]
+  );
 
-    return sessions;
-  };
+  // For Today
+  const todaySessions = useMemo(
+    () => getTodaySessions(new Date(), enrolledClasses),
+    [enrolledClasses]
+  );
 
-  const upcomingSessions = getUpcomingSessions();
-
-  const getSessionsForDate = (date: Date) => {
-    const dayOfWeek = date.getDay();
-    return upcomingSessions.filter(session => session.dayOfWeek === dayOfWeek);
-  };
-
-  const nextSession = upcomingSessions.find(session => {
-    const today = new Date();
-    const sessionDay = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][today.getDay()];
-    return session.day.startsWith(sessionDay.substring(0, 3));
-  });
+  // Next session logic (show next closest session)
+  const now = new Date();
+  const flatSessions = Object.values(sessionsByDay).flat();
+  const nextSession = flatSessions
+    .filter(session => session.startTime >= now)
+    .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())[0];
 
   return (
     <StudentLayout>
@@ -130,7 +108,7 @@ const StudentSchedule = () => {
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
-                      {nextSession.time}
+                      {nextSession.timeLabel}
                     </span>
                     <span className="flex items-center gap-1">
                       <MapPin className="h-4 w-4" />
@@ -143,84 +121,17 @@ const StudentSchedule = () => {
             </CardContent>
           </Card>
         )}
-
-        {/* Week View */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <CalendarDays className="h-5 w-5" />
-                Weekly Schedule
-              </CardTitle>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedDate(addDays(selectedDate, -7))}
-                >
-                  Previous Week
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedDate(new Date())}
-                >
-                  Today
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedDate(addDays(selectedDate, 7))}
-                >
-                  Next Week
-                </Button>
-              </div>
-            </div>
-            <CardDescription>
-              Week of {format(weekStart, 'MMM dd, yyyy')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-7 gap-2">
-              {weekDays.map((day, index) => {
-                const sessionsForDay = getSessionsForDate(day);
-                const isToday = isSameDay(day, new Date());
-                
-                return (
-                  <div
-                    key={index}
-                    className={`p-3 border rounded-lg min-h-[120px] ${
-                      isToday ? 'border-bjj-gold bg-bjj-gold/5' : 'border-gray-200'
-                    }`}
-                  >
-                    <div className="text-center mb-2">
-                      <div className="text-xs font-medium text-bjj-gray">
-                        {format(day, 'EEE')}
-                      </div>
-                      <div className={`text-lg font-bold ${
-                        isToday ? 'text-bjj-gold' : 'text-bjj-navy'
-                      }`}>
-                        {format(day, 'd')}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-1">
-                      {sessionsForDay.map(session => (
-                        <div
-                          key={session.id}
-                          className="bg-bjj-navy text-white p-2 rounded text-xs"
-                        >
-                          <div className="font-medium truncate">{session.className}</div>
-                          <div className="text-bjj-gold">{session.time}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        
+        {/* Today's Classes */}
+        <StudentTodayClasses sessions={todaySessions} />
+        
+        {/* Weekly Calendar */}
+        <StudentWeeklyCalendar
+          weekStart={weekStart}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          sessionsByDay={sessionsByDay}
+        />
 
         {/* All Enrolled Classes */}
         <Card>
