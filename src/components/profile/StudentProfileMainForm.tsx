@@ -2,10 +2,8 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { User, Mail, Phone, Calendar, Save } from "lucide-react";
+import { User, Mail, Phone, Calendar } from "lucide-react";
 
 interface StudentProfileMainFormProps {
   data: {
@@ -16,18 +14,14 @@ interface StudentProfileMainFormProps {
   };
   onChange: (data: any) => void;
   loading: boolean;
-  onSave: () => Promise<void>;
-  saveState: "idle" | "saving" | "success" | "error";
-  hasChanges?: boolean;
+  disabled?: boolean;
 }
 
 export function StudentProfileMainForm({
   data,
   onChange,
   loading,
-  onSave,
-  saveState,
-  hasChanges = false
+  disabled = false
 }: StudentProfileMainFormProps) {
   const [local, setLocal] = useState({ ...data });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -72,6 +66,8 @@ export function StudentProfileMainForm({
   };
 
   const handleChange = (field: string, value: string) => {
+    if (disabled) return;
+    
     const newLocal = { ...local, [field]: value };
     setLocal(newLocal);
     
@@ -80,27 +76,6 @@ export function StudentProfileMainForm({
     
     // Always pass data to parent for change tracking
     onChange(newLocal);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Final validation before save
-    const isNameValid = validateField('name', local.name);
-    const isEmailValid = validateField('email', local.email);
-    const isPhoneValid = validateField('phone', local.phone || '');
-    
-    if (!isNameValid || !isEmailValid || !isPhoneValid) {
-      toast.error("Please fix the validation errors before saving");
-      return;
-    }
-
-    try {
-      await onSave();
-    } catch (error) {
-      console.error('Save error:', error);
-      toast.error("Failed to save profile. Please try again.");
-    }
   };
 
   return (
@@ -112,7 +87,7 @@ export function StudentProfileMainForm({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
             {/* Full Name */}
             <div className="space-y-2">
@@ -127,8 +102,9 @@ export function StudentProfileMainForm({
                   onChange={e => handleChange('name', e.target.value)}
                   className={`pl-10 h-12 border-2 rounded-xl ${
                     validationErrors.name ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-bjj-gold'
-                  }`}
+                  } ${disabled ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                   placeholder="Enter your full name"
+                  disabled={disabled}
                   required
                 />
               </div>
@@ -151,8 +127,9 @@ export function StudentProfileMainForm({
                   onChange={e => handleChange('email', e.target.value)}
                   className={`pl-10 h-12 border-2 rounded-xl ${
                     validationErrors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-bjj-gold'
-                  }`}
+                  } ${disabled ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                   placeholder="Enter your email address"
+                  disabled={disabled}
                   required
                 />
               </div>
@@ -174,8 +151,9 @@ export function StudentProfileMainForm({
                   onChange={e => handleChange('phone', e.target.value)}
                   className={`pl-10 h-12 border-2 rounded-xl ${
                     validationErrors.phone ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-bjj-gold'
-                  }`}
+                  } ${disabled ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                   placeholder="Enter your phone number"
+                  disabled={disabled}
                 />
               </div>
               {validationErrors.phone && (
@@ -195,26 +173,15 @@ export function StudentProfileMainForm({
                   type="date"
                   value={local.birthdate || ""}
                   onChange={e => handleChange('birthdate', e.target.value)}
-                  className="pl-10 h-12 border-2 border-gray-200 focus:border-bjj-gold rounded-xl"
+                  className={`pl-10 h-12 border-2 rounded-xl ${
+                    disabled ? 'bg-gray-50 cursor-not-allowed border-gray-200' : 'border-gray-200 focus:border-bjj-gold'
+                  }`}
+                  disabled={disabled}
                 />
               </div>
             </div>
           </div>
-
-          {/* Save Button - Sticky when changes are made */}
-          {hasChanges && (
-            <div className="sticky bottom-6 flex justify-end pt-6 border-t border-gray-100">
-              <Button
-                type="submit"
-                className="font-semibold bg-bjj-gold hover:bg-bjj-gold-dark text-white rounded-xl px-8 py-4 text-lg shadow-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
-                disabled={loading || saveState === "saving" || Object.keys(validationErrors).length > 0}
-              >
-                <Save className="h-5 w-5" />
-                {saveState === "saving" ? "Saving..." : saveState === "success" ? "Saved!" : "Save Changes"}
-              </Button>
-            </div>
-          )}
-        </form>
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { StudentLayout } from "@/components/layouts/StudentLayout";
 import { toast } from "sonner";
@@ -11,6 +10,7 @@ import { ChangePasswordSection } from "@/components/profile/ChangePasswordSectio
 import { BJJProfileForm } from "@/components/profile/BJJProfileForm";
 import { useBJJProfile } from "@/hooks/useBJJProfile";
 import { Button } from "@/components/ui/button";
+import { Edit, Save, X } from "lucide-react";
 
 export default function StudentProfileContainer() {
   const { user, userProfile } = useAuth();
@@ -28,15 +28,25 @@ export default function StudentProfileContainer() {
     stripes: 0,
   });
   const [loading, setLoading] = useState(false);
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [passwordState, setPasswordState] = useState<"idle" | "saving" | "success" | "error">("idle");
-  const [bjjSaveState, setBjjSaveState] = useState<"idle" | "saving" | "success" | "error">("idle");
+  const [isEditing, setIsEditing] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [originalFormState, setOriginalFormState] = useState<any>({});
+  const [originalBjjProfile, setOriginalBjjProfile] = useState<any>({});
+  const [saveAllState, setSaveAllState] = useState<"idle" | "saving" | "success" | "error">("idle");
 
   useEffect(() => {
     if (user) fetchProfile();
   }, [user]);
+
+  // Track changes in BJJ profile
+  useEffect(() => {
+    if (isEditing) {
+      const bjjHasChanges = JSON.stringify(bjjProfile) !== JSON.stringify(originalBjjProfile);
+      const personalHasChanges = JSON.stringify(formState) !== JSON.stringify(originalFormState);
+      setHasChanges(bjjHasChanges || personalHasChanges);
+    }
+  }, [bjjProfile, formState, originalBjjProfile, originalFormState, isEditing]);
 
   async function fetchProfile() {
     setLoading(true);
@@ -81,6 +91,7 @@ export default function StudentProfileContainer() {
       console.log('Loaded profile data:', profileData);
       setFormState(profileData);
       setOriginalFormState({ ...profileData });
+      setOriginalBjjProfile({ ...bjjProfile });
     } catch (e) {
       console.error('Unexpected error loading profile:', e);
       toast.error("Failed to load profile");
@@ -92,11 +103,73 @@ export default function StudentProfileContainer() {
     console.log('Form changes:', changes);
     const newFormState = { ...formState, ...changes };
     setFormState(newFormState);
+  }
 
-    // Check if there are changes
-    const hasFormChanges = JSON.stringify(newFormState) !== JSON.stringify(originalFormState);
-    console.log('Has changes:', hasFormChanges);
-    setHasChanges(hasFormChanges);
+  function handleBjjProfileChange(changes: any) {
+    console.log('BJJ profile changes:', changes);
+    setBjjProfile(changes);
+  }
+
+  function handleEditToggle() {
+    if (isEditing) {
+      // Cancel edit - revert changes
+      setFormState({ ...originalFormState });
+      setBjjProfile({ ...originalBjjProfile });
+      setHasChanges(false);
+    } else {
+      // Store current state as original when starting edit
+      setOriginalFormState({ ...formState });
+      setOriginalBjjProfile({ ...bjjProfile });
+    }
+    setIsEditing(!isEditing);
+  }
+
+  async function handleSaveAll() {
+    setSaveAllState("saving");
+    try {
+      console.log('Saving all profile data...');
+
+      // Save personal profile data
+      const profileData = {
+        id: user.id,
+        name: formState.name,
+        email: formState.email,
+        phone: formState.phone || null,
+        birthdate: formState.birthdate || null,
+        profile_picture_url: formState.profile_picture_url || null,
+        cover_photo_url: formState.cover_photo_url || null,
+      };
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert(profileData, { onConflict: 'id' });
+
+      if (profileError) {
+        console.error('Profile save error:', profileError);
+        throw profileError;
+      }
+
+      // Save BJJ profile data
+      const bjjSuccess = await saveBJJProfile(bjjProfile);
+      if (!bjjSuccess) {
+        throw new Error('Failed to save BJJ profile');
+      }
+
+      // Update original states
+      setOriginalFormState({ ...formState });
+      setOriginalBjjProfile({ ...bjjProfile });
+      setHasChanges(false);
+      setIsEditing(false);
+
+      setSaveAllState("success");
+      toast.success("✅ All profile changes saved successfully");
+      setTimeout(() => setSaveAllState("idle"), 1500);
+    } catch (e) {
+      console.error('Save all error:', e);
+      setSaveAllState("error");
+      toast.error(`Failed to save changes: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      setTimeout(() => setSaveAllState("idle"), 1500);
+    }
   }
 
   async function handleCoverPhotoEdit() {
@@ -173,56 +246,6 @@ export default function StudentProfileContainer() {
     }
   }
 
-  async function handleSave() {
-    setSaveState("saving");
-    try {
-      console.log('Saving profile with data:', formState);
-
-      // Prepare the data for saving (only include fields that exist in the profiles table)
-      const profileData = {
-        id: user.id,
-        name: formState.name,
-        email: formState.email,
-        phone: formState.phone || null,
-        birthdate: formState.birthdate || null,
-        profile_picture_url: formState.profile_picture_url || null,
-        cover_photo_url: formState.cover_photo_url || null,
-      };
-
-      // Save to 'profiles'
-      const { error: err1 } = await supabase
-        .from('profiles')
-        .upsert(profileData, { onConflict: 'id' });
-
-      if (err1) {
-        console.error('Profile save error:', err1);
-        throw err1;
-      }
-
-      console.log('Profile saved successfully');
-
-      // Update original state to reflect saved changes
-      setOriginalFormState({ ...formState });
-      setHasChanges(false);
-
-      setSaveState("success");
-      toast.success("✅ Profile updated successfully");
-      setTimeout(() => setSaveState("idle"), 1500);
-    } catch (e) {
-      console.error('Save error details:', e);
-      setSaveState("error");
-      toast.error(`Failed to save changes: ${e instanceof Error ? e.message : 'Unknown error'}`);
-      setTimeout(() => setSaveState("idle"), 1500);
-    }
-  }
-
-  async function handleBJJProfileSave() {
-    setBjjSaveState("saving");
-    const success = await saveBJJProfile(bjjProfile);
-    setBjjSaveState(success ? "success" : "error");
-    setTimeout(() => setBjjSaveState("idle"), 1500);
-  }
-
   async function handleChangePassword(oldPass: string, newPass: string) {
     setPasswordState("saving");
     try {
@@ -245,13 +268,47 @@ export default function StudentProfileContainer() {
         {/* Cover Photo & Profile Header */}
         <StudentProfileHeader
           formState={formState}
-          onCoverPhotoEdit={handleCoverPhotoEdit}
-          onAvatarEdit={handleAvatarEdit}
+          onCoverPhotoEdit={isEditing ? handleCoverPhotoEdit : undefined}
+          onAvatarEdit={isEditing ? handleAvatarEdit : undefined}
           loading={loading}
         />
 
         {/* Main Content Area with Facebook-style layout */}
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+          {/* Edit/Save Controls */}
+          <div className="flex justify-end mb-6">
+            {!isEditing ? (
+              <Button
+                onClick={handleEditToggle}
+                className="font-semibold bg-bjj-gold hover:bg-bjj-gold-dark text-white rounded-xl px-6 py-3 flex items-center gap-2"
+              >
+                <Edit className="h-5 w-5" />
+                Edit Profile
+              </Button>
+            ) : (
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handleEditToggle}
+                  className="font-semibold rounded-xl px-6 py-3 flex items-center gap-2"
+                >
+                  <X className="h-5 w-5" />
+                  Cancel
+                </Button>
+                {hasChanges && (
+                  <Button
+                    onClick={handleSaveAll}
+                    className="font-semibold bg-bjj-gold hover:bg-bjj-gold-dark text-white rounded-xl px-6 py-3 flex items-center gap-2"
+                    disabled={saveAllState === "saving"}
+                  >
+                    <Save className="h-5 w-5" />
+                    {saveAllState === "saving" ? "Saving..." : saveAllState === "success" ? "Saved!" : "Save All Changes"}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar - Profile Info (30%) */}
             <div className="lg:col-span-4 xl:col-span-3">
@@ -267,9 +324,7 @@ export default function StudentProfileContainer() {
                 data={formState}
                 onChange={handleFormChange}
                 loading={loading}
-                onSave={handleSave}
-                saveState={saveState}
-                hasChanges={hasChanges}
+                disabled={!isEditing}
               />
 
               {/* BJJ Athlete Profile */}
@@ -277,21 +332,13 @@ export default function StudentProfileContainer() {
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">BJJ Athlete Profile</h2>
                 <BJJProfileForm
                   data={bjjProfile}
-                  onChange={setBjjProfile}
+                  onChange={handleBjjProfileChange}
                   loading={bjjLoading}
+                  disabled={!isEditing}
                 />
-                <div className="mt-6 flex justify-end">
-                  <Button
-                    onClick={handleBJJProfileSave}
-                    className="font-semibold bg-bjj-gold hover:bg-bjj-gold-dark text-white rounded-lg px-8 py-3 text-lg shadow-lg transition"
-                    disabled={bjjLoading || bjjSaveState === "saving"}
-                  >
-                    {bjjSaveState === "saving" ? "Saving BJJ Profile..." : bjjSaveState === "success" ? "BJJ Profile Saved!" : "Save BJJ Profile"}
-                  </Button>
-                </div>
               </div>
 
-              {/* Change Password Section */}
+              {/* Change Password Section - Keep separate */}
               <ChangePasswordSection
                 onChangePassword={handleChangePassword}
                 loading={passwordState === "saving"}

@@ -22,6 +22,7 @@ interface BJJProfileFormProps {
   data: BJJProfileData;
   onChange: (data: BJJProfileData) => void;
   loading?: boolean;
+  disabled?: boolean;
 }
 
 const beltRanks = ['White', 'Blue', 'Purple', 'Brown', 'Black'];
@@ -38,8 +39,10 @@ const popularSubmissions = [
   'Toe Hold', 'Calf Slicer', 'Omoplata', 'Gogoplata', 'Ezekiel Choke'
 ];
 
-export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps) => {
+export const BJJProfileForm = ({ data, onChange, loading, disabled = false }: BJJProfileFormProps) => {
   const handleChange = (field: keyof BJJProfileData, value: string | number) => {
+    if (disabled) return;
+    
     console.log(`BJJProfileForm updating ${field} to:`, value);
     const updatedData = { ...data, [field]: value };
     onChange(updatedData);
@@ -73,7 +76,10 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
             value={data.weight_kg || ''}
             onChange={(e) => handleChange('weight_kg', parseFloat(e.target.value) || 0)}
             placeholder="e.g., 72.5"
-            className="h-12 border-2 border-gray-200 focus:border-bjj-gold rounded-xl"
+            className={`h-12 border-2 rounded-xl ${
+              disabled ? 'bg-gray-50 cursor-not-allowed border-gray-200' : 'border-gray-200 focus:border-bjj-gold'
+            }`}
+            disabled={disabled}
           />
         </div>
         
@@ -91,7 +97,10 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
             value={data.height_cm || ''}
             onChange={(e) => handleChange('height_cm', parseFloat(e.target.value) || 0)}
             placeholder="e.g., 175"
-            className="h-12 border-2 border-gray-200 focus:border-bjj-gold rounded-xl"
+            className={`h-12 border-2 rounded-xl ${
+              disabled ? 'bg-gray-50 cursor-not-allowed border-gray-200' : 'border-gray-200 focus:border-bjj-gold'
+            }`}
+            disabled={disabled}
           />
         </div>
       </div>
@@ -105,8 +114,11 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
         <Select
           value={data.belt_rank || ''}
           onValueChange={(value) => handleChange('belt_rank', value)}
+          disabled={disabled}
         >
-          <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-bjj-gold rounded-xl">
+          <SelectTrigger className={`h-12 border-2 rounded-xl ${
+            disabled ? 'bg-gray-50 cursor-not-allowed border-gray-200' : 'border-gray-200 focus:border-bjj-gold'
+          }`}>
             <SelectValue placeholder="Select your belt rank" />
           </SelectTrigger>
           <SelectContent>
@@ -129,8 +141,11 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
           <Select
             value={data.favorite_position || ''}
             onValueChange={(value) => handleChange('favorite_position', value)}
+            disabled={disabled}
           >
-            <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-bjj-gold rounded-xl">
+            <SelectTrigger className={`h-12 border-2 rounded-xl ${
+              disabled ? 'bg-gray-50 cursor-not-allowed border-gray-200' : 'border-gray-200 focus:border-bjj-gold'
+            }`}>
               <SelectValue placeholder="Select favorite position" />
             </SelectTrigger>
             <SelectContent>
@@ -152,8 +167,11 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
           <Select
             value={data.favorite_submission || ''}
             onValueChange={(value) => handleChange('favorite_submission', value)}
+            disabled={disabled}
           >
-            <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-bjj-gold rounded-xl">
+            <SelectTrigger className={`h-12 border-2 rounded-xl ${
+              disabled ? 'bg-gray-50 cursor-not-allowed border-gray-200' : 'border-gray-200 focus:border-bjj-gold'
+            }`}>
               <SelectValue placeholder="Select favorite submission" />
             </SelectTrigger>
             <SelectContent>
@@ -183,7 +201,11 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
               value={data.instagram_url || ''}
               onChange={(e) => handleChange('instagram_url', e.target.value)}
               placeholder="https://instagram.com/username"
-              className={`h-12 border-2 rounded-xl ${!validateUrl(data.instagram_url || '') ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-bjj-gold'}`}
+              className={`h-12 border-2 rounded-xl ${
+                !validateUrl(data.instagram_url || '') ? 'border-red-500 focus:border-red-500' : 
+                disabled ? 'bg-gray-50 cursor-not-allowed border-gray-200' : 'border-gray-200 focus:border-bjj-gold'
+              }`}
+              disabled={disabled}
             />
             {data.instagram_url && !validateUrl(data.instagram_url) && (
               <p className="text-xs text-red-500">Please enter a valid URL</p>
@@ -198,7 +220,11 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
               value={data.facebook_url || ''}
               onChange={(e) => handleChange('facebook_url', e.target.value)}
               placeholder="https://facebook.com/username"
-              className={`h-12 border-2 rounded-xl ${!validateUrl(data.facebook_url || '') ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-bjj-gold'}`}
+              className={`h-12 border-2 rounded-xl ${
+                !validateUrl(data.facebook_url || '') ? 'border-red-500 focus:border-red-500' : 
+                disabled ? 'bg-gray-50 cursor-not-allowed border-gray-200' : 'border-gray-200 focus:border-bjj-gold'
+              }`}
+              disabled={disabled}
             />
             {data.facebook_url && !validateUrl(data.facebook_url) && (
               <p className="text-xs text-red-500">Please enter a valid URL</p>
@@ -220,7 +246,10 @@ export const BJJProfileForm = ({ data, onChange, loading }: BJJProfileFormProps)
           onChange={(e) => handleChange('about_me', e.target.value)}
           placeholder="Tell us about your BJJ journey, achievements, goals, etc..."
           maxLength={1000}
-          className="border-2 border-gray-200 focus:border-bjj-gold rounded-xl resize-none"
+          className={`border-2 rounded-xl resize-none ${
+            disabled ? 'bg-gray-50 cursor-not-allowed border-gray-200' : 'border-gray-200 focus:border-bjj-gold'
+          }`}
+          disabled={disabled}
         />
         <p className="text-xs text-gray-500">
           {(data.about_me || '').length}/1000 characters
