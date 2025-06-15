@@ -50,6 +50,10 @@ import { BeltPromotionModal } from "@/components/admin/student/BeltPromotionModa
 import { CourseEnrollmentModal } from "@/components/admin/student/CourseEnrollmentModal";
 import { ClassEnrollmentModal } from "@/components/admin/student/ClassEnrollmentModal";
 import { StudentStatusDropdown } from "@/components/admin/student/StudentStatusDropdown";
+import { StudentStatsCards } from "@/components/admin/student/StudentStatsCards";
+import { StudentsSearchBar } from "@/components/admin/student/StudentsSearchBar";
+import { StudentsActionBar } from "@/components/admin/student/StudentsActionBar";
+import { StudentsTable } from "@/components/admin/student/StudentsTable";
 
 // Add this Belt type and array above the component or near BeltPromotionModal usage.
 type Belt =
@@ -341,294 +345,69 @@ const AdminStudents = () => {
 
         {/* ACTION BAR */}
         {isSuperAdmin && selectedStudentIds.length > 0 && (
-          <div className="bg-bjj-gold/10 border border-bjj-gold rounded-lg px-4 py-2 mb-2 flex items-center justify-between">
-            <span className="text-bjj-navy font-medium">
-              {selectedStudentIds.length} student{selectedStudentIds.length > 1 ? "s" : ""} selected
-            </span>
-            <div className="flex gap-2">
-              <Button
-                className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy"
-                disabled={selectedStudentIds.length === 0}
-                onClick={() => setIsBulkUpgradeOpen(true)}
-              >
-                Upgrade to Coach
-              </Button>
-              <Button variant="outline" onClick={() => setSelectedStudentIds([])}>Clear Selection</Button>
-            </div>
-          </div>
+          <StudentsActionBar
+            selectedStudentCount={selectedStudentIds.length}
+            onUpgradeClick={() => setIsBulkUpgradeOpen(true)}
+            onClearSelection={() => setSelectedStudentIds([])}
+          />
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-bjj-gray">Total Students</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">{students.length}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-bjj-gray">Active Students</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">
-                {students.filter(s => s.status === "active").length}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-bjj-gray">Avg Attendance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">
-                {students.length > 0 ? Math.round(students.reduce((sum, student) => sum + student.attendance_rate, 0) / students.length) : 0}%
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-bjj-gray">Total Enrollments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">
-                {enrollments.filter(e => e.status === "active").length}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <StudentStatsCards students={students} enrollments={enrollments} />
 
         {/* Search and Filters */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>All Students</CardTitle>
-              <div className="flex items-center space-x-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search students or classes..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-64"
-                  />
-                </div>
-              </div>
+              <StudentsSearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    {isSuperAdmin && (
-                      <input
-                        type="checkbox"
-                        checked={
-                          filteredStudents.length > 0 &&
-                          filteredStudents
-                            .filter(s => s.status === "active" && s.coach !== "Coach")
-                            .every(s => selectedStudentIds.includes(s.id))
-                        }
-                        onChange={(e) => handleSelectAllChange(e.target.checked)}
-                        aria-label="Select all"
-                        className="accent-bjj-gold scale-125"
-                      />
-                    )}
-                  </TableHead>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Enrolled Classes</TableHead>
-                  <TableHead>Belt & Stripes</TableHead>
-                  <TableHead>Membership</TableHead>
-                  <TableHead>Attendance</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredStudents.map((student) => {
-                  const enrolledClasses = getStudentEnrolledClasses(student.id);
-                  const isCoach = student.coach === "Coach";
-
-                  return (
-                    <TableRow key={student.id} className={selectedStudentIds.includes(student.id) ? "bg-bjj-gold/10" : ""}>
-                      <TableCell>
-                        {isSuperAdmin && !isCoach && (
-                          <input
-                            type="checkbox"
-                            checked={selectedStudentIds.includes(student.id)}
-                            onChange={(e) => handleCheckboxChange(student.id, e.target.checked)}
-                            aria-label={`Select ${student.name}`}
-                            className="accent-bjj-gold scale-125"
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium text-bjj-navy">{student.name}</div>
-                          <div className="text-sm text-bjj-gray">
-                            Joined {new Date(student.joined_date).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center text-sm">
-                            <Mail className="h-3 w-3 mr-1 text-bjj-gray" />
-                            {student.email}
-                          </div>
-                          {student.phone && (
-                            <div className="flex items-center text-sm">
-                              <Phone className="h-3 w-3 mr-1 text-bjj-gray" />
-                              {student.phone}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {enrolledClasses.length > 0 ? (
-                            enrolledClasses.map((className, index) => (
-                              <Badge key={index} variant="outline" className="mr-1 mb-1">
-                                {className}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-sm text-gray-500">No classes</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <Badge className={getBeltColor(student.belt)}>
-                            {student.belt}
-                          </Badge>
-                          <div className="text-sm text-bjj-gray">
-                            {student.stripes} stripe{student.stripes !== 1 ? 's' : ''}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="capitalize">
-                          {student.membership_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">{student.attendance_rate}%</div>
-                          {student.last_attended && (
-                            <div className="flex items-center text-xs text-bjj-gray">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              Last: {new Date(student.last_attended).toLocaleDateString()}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {/* Student status dropdown */}
-                        <StudentStatusDropdown
-                          value={student.status}
-                          onChange={async (nextStatus) => {
-                            if (student.status === nextStatus) return;
-                            try {
-                              await updateStudent(student.id, { status: nextStatus });
-                              toast({
-                                title: `Student status updated`,
-                                description: `${student.name} is now "${nextStatus.replace('-', ' ')}".`
-                              });
-                              if (typeof refetch === "function") refetch();
-                            } catch (e) {
-                              toast({
-                                variant: "destructive",
-                                title: "Failed to update status",
-                                description: e instanceof Error ? e.message : "Unknown error"
-                              });
-                            }
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {/* DROPDOWN MENU FOR ACTIONS */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="p-1 h-8 w-8" aria-label="More Actions">
-                              <MoreHorizontal className="h-5 w-5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="z-50 bg-white border rounded shadow min-w-[210px]">
-                            {/* Belt Promotion menu item */}
-                            {!isCoach && (
-                              <DropdownMenuItem
-                                onClick={() => setBeltPromotionStudent(student)}
-                                className="flex items-center gap-2"
-                              >
-                                <span className="block w-3 h-3 rounded-full bg-bjj-gold mr-2"></span>
-                                Belt Promotion
-                              </DropdownMenuItem>
-                            )}
-                            {/* New: Online Course Enrollment */}
-                            <DropdownMenuItem
-                              onClick={() => setCourseEnrollmentModal({ open: true, studentId: student.id })}
-                              className="flex items-center gap-2"
-                            >
-                              <span className="block w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
-                              Enroll to Online Course
-                            </DropdownMenuItem>
-                            {/* New: Academy Class Enrollment */}
-                            <DropdownMenuItem
-                              onClick={() => setClassEnrollmentModal({ open: true, studentId: student.id })}
-                              className="flex items-center gap-2"
-                            >
-                              <span className="block w-3 h-3 rounded-full bg-emerald-500 mr-2"></span>
-                              Enroll to Class
-                            </DropdownMenuItem>
-                            {/* Existing items */}
-                            {isCoach && (
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  if (window.confirm(`Downgrade "${student.name}" to Student?`)) {
-                                    handleDowngradeToStudent(student);
-                                  }
-                                }}
-                                className="flex items-center gap-2"
-                              >
-                                <ArrowDown className="h-4 w-4 rotate-180" />
-                                Downgrade to Student
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                              onClick={() => setEditingStudent(student)}
-                              className="flex items-center gap-2"
-                            >
-                              <EditIcon className="h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    `Are you sure you want to delete "${student.name}"? This cannot be undone.`
-                                  )
-                                ) {
-                                  handleDeleteStudent(student.id);
-                                }
-                              }}
-                              className="flex items-center gap-2 text-red-600"
-                            >
-                              <Trash2Icon className="h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <StudentsTable
+              students={students}
+              filteredStudents={filteredStudents}
+              selectedStudentIds={selectedStudentIds}
+              onCheckboxChange={handleCheckboxChange}
+              handleSelectAllChange={handleSelectAllChange}
+              isSuperAdmin={isSuperAdmin}
+              getStudentEnrolledClasses={getStudentEnrolledClasses}
+              onStatusChange={async (student, nextStatus) => {
+                if (student.status === nextStatus) return;
+                try {
+                  await updateStudent(student.id, { status: nextStatus });
+                  toast({
+                    title: `Student status updated`,
+                    description: `${student.name} is now "${nextStatus.replace('-', ' ')}".`
+                  });
+                  if (typeof refetch === "function") refetch();
+                } catch (e) {
+                  toast({
+                    variant: "destructive",
+                    title: "Failed to update status",
+                    description: e instanceof Error ? e.message : "Unknown error"
+                  });
+                }
+              }}
+              onEditStudent={setEditingStudent}
+              onDeleteStudent={(student) => {
+                if (
+                  window.confirm(
+                    `Are you sure you want to delete "${student.name}"? This cannot be undone.`
+                  )
+                ) {
+                  handleDeleteStudent(student.id);
+                }
+              }}
+              onBeltPromotion={setBeltPromotionStudent}
+              onCourseEnroll={student => setCourseEnrollmentModal({ open: true, studentId: student.id })}
+              onClassEnroll={student => setClassEnrollmentModal({ open: true, studentId: student.id })}
+              onDowngradeToStudent={student => {
+                if (window.confirm(`Downgrade "${student.name}" to Student?`)) {
+                  handleDowngradeToStudent(student);
+                }
+              }}
+            />
           </CardContent>
         </Card>
 
