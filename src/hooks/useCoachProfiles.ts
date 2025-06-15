@@ -32,7 +32,7 @@ export const useCoachProfiles = () => {
           throw new Error("Could not find auth user for this coach");
         }
 
-        // Update or create coach profile
+        // Update or create coach profile with ALL coach-specific data
         const { error: profileError } = await supabase
           .from("coach_profiles")
           .upsert({
@@ -40,6 +40,8 @@ export const useCoachProfiles = () => {
             bio: profileData.bio,
             years_experience: profileData.years_experience,
             certifications: profileData.certifications,
+            specialties: profileData.specialties,
+            assigned_classes: profileData.assigned_classes,
             updated_at: new Date().toISOString()
           });
 

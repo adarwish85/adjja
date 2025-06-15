@@ -95,28 +95,54 @@ export const coachService = {
           const coachProfileIds = profilesWithCoachRole.map(p => p.id);
           
           // Filter students who are coaches (either marked as Coach OR have Coach role)
-          upgradedStudentCoaches = studentsData
+          const coachStudents = studentsData
             .filter(student => {
               const isMarkedAsCoach = student.coach === "Coach";
               const hasCoachRole = student.auth_user_id && coachProfileIds.includes(student.auth_user_id);
               return isMarkedAsCoach || hasCoachRole;
-            })
-            .map(student => ({
+            });
+
+          // Get coach profile data for these students
+          const coachStudentIds = coachStudents.map(s => s.auth_user_id).filter(Boolean);
+          let coachProfilesData: any[] = [];
+          
+          if (coachStudentIds.length > 0) {
+            const { data: profiles, error: profilesError } = await supabase
+              .from("coach_profiles")
+              .select("*")
+              .in("user_id", coachStudentIds);
+
+            if (!profilesError && profiles) {
+              coachProfilesData = profiles;
+            }
+          }
+
+          // Create a map of auth_user_id to coach profile data
+          const profileMap = new Map();
+          coachProfilesData.forEach(profile => {
+            profileMap.set(profile.user_id, profile);
+          });
+
+          upgradedStudentCoaches = coachStudents.map(student => {
+            const coachProfile = profileMap.get(student.auth_user_id) || {};
+            
+            return {
               id: student.id,
               name: student.name,
               email: student.email,
               phone: student.phone || null,
               belt: student.belt,
-              specialties: [],
+              specialties: coachProfile.specialties || [],
               branch: "Main",
               status: "active" as const,
               students_count: 0,
-              assigned_classes: [],
+              assigned_classes: coachProfile.assigned_classes || [],
               joined_date: student.joined_date,
               created_at: student.joined_date,
               updated_at: student.joined_date,
               is_upgraded_student: true
-            }));
+            };
+          });
           
           console.log("fetchCoaches: Upgraded student coaches:", upgradedStudentCoaches.length);
         } else {
@@ -277,9 +303,8 @@ export const coachService = {
         studentUpdates.status = cleanUpdates.status;
       }
       
-      // Store coach-specific data in the coach field or create a coach profile
+      // For upgraded student-coaches, ensure they're marked as a coach
       if (cleanUpdates.specialties || cleanUpdates.assigned_classes) {
-        // For now, ensure they're marked as a coach
         studentUpdates.coach = "Coach";
       }
       
@@ -298,6 +323,30 @@ export const coachService = {
       }
 
       console.log("Successfully updated student-coach:", studentData);
+
+      // Now handle coach-specific data in coach_profiles table
+      if (studentData.auth_user_id && (cleanUpdates.specialties || cleanUpdates.assigned_classes || cleanUpdates.belt)) {
+        console.log("Updating coach profile data for upgraded student...");
+        
+        const coachProfileUpdates: any = {};
+        if (cleanUpdates.specialties) coachProfileUpdates.specialties = cleanUpdates.specialties;
+        if (cleanUpdates.assigned_classes) coachProfileUpdates.assigned_classes = cleanUpdates.assigned_classes;
+        
+        const { error: profileError } = await supabase
+          .from("coach_profiles")
+          .upsert({
+            user_id: studentData.auth_user_id,
+            ...coachProfileUpdates,
+            updated_at: new Date().toISOString()
+          });
+
+        if (profileError) {
+          console.error("Error updating coach profile:", profileError);
+          // Don't throw here, main update was successful
+        } else {
+          console.log("Successfully updated coach profile for upgraded student");
+        }
+      }
 
       // Convert student data back to coach format
       const typedCoach: Coach = {
