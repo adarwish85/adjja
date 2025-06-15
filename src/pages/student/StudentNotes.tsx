@@ -73,6 +73,40 @@ const StudentNotes = () => {
     enabled: !!user
   });
 
+  // Create delete mutation that properly invalidates the cache
+  const deleteMutation = useMutation({
+    mutationFn: async (noteId: string) => {
+      // Mock delete operation - in real app, this would be a Supabase delete
+      return { success: true, deletedId: noteId };
+    },
+    onSuccess: () => {
+      toast.success("Note deleted!");
+      // Invalidate and refetch the notes query to update the UI immediately
+      queryClient.invalidateQueries({ queryKey: ['student-notes'] });
+    },
+    onError: () => {
+      toast.error("Failed to delete note");
+    }
+  });
+
+  // Create save mutation that properly invalidates the cache
+  const saveMutation = useMutation({
+    mutationFn: async (noteData: { title: string; content: string; tags: string; id?: string }) => {
+      // Mock save operation - in real app, this would be a Supabase insert/update
+      return { success: true, ...noteData };
+    },
+    onSuccess: () => {
+      toast.success(editingNote ? "Note updated!" : "Note created!");
+      setIsCreateModalOpen(false);
+      resetForm();
+      // Invalidate and refetch the notes query to update the UI immediately
+      queryClient.invalidateQueries({ queryKey: ['student-notes'] });
+    },
+    onError: () => {
+      toast.error("Failed to save note");
+    }
+  });
+
   // Filter notes based on search and tags
   const filteredNotes = notes.filter(note => {
     const matchesSearch = note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -95,11 +129,12 @@ const StudentNotes = () => {
       return;
     }
 
-    // Mock implementation - in real app, save to Supabase
-    toast.success(editingNote ? "Note updated!" : "Note created!");
-    setIsCreateModalOpen(false);
-    resetForm();
-    queryClient.invalidateQueries({ queryKey: ['student-notes'] });
+    saveMutation.mutate({
+      title: noteForm.title,
+      content: noteForm.content,
+      tags: noteForm.tags,
+      id: editingNote?.id
+    });
   };
 
   const handleEdit = (note: Note) => {
@@ -113,9 +148,7 @@ const StudentNotes = () => {
   };
 
   const handleDelete = async (noteId: string) => {
-    // Mock implementation
-    toast.success("Note deleted!");
-    queryClient.invalidateQueries({ queryKey: ['student-notes'] });
+    deleteMutation.mutate(noteId);
   };
 
   return (
@@ -176,8 +209,11 @@ const StudentNotes = () => {
                 <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleSubmit}>
-                  {editingNote ? 'Update Note' : 'Create Note'}
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={saveMutation.isPending}
+                >
+                  {saveMutation.isPending ? 'Saving...' : (editingNote ? 'Update Note' : 'Create Note')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -238,6 +274,7 @@ const StudentNotes = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEdit(note)}
+                        disabled={deleteMutation.isPending}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -245,6 +282,7 @@ const StudentNotes = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(note.id)}
+                        disabled={deleteMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
