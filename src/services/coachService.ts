@@ -251,28 +251,86 @@ export const coachService = {
       toast.success("Coach account created successfully");
     }
     
-    const { data, error } = await supabase
+    // ENHANCED: Try to update in coaches table first, then fallback to students table
+    console.log("Attempting to update in coaches table first...");
+    const { data: coachData, error: coachError } = await supabase
       .from("coaches")
       .update(cleanUpdates)
       .eq("id", id)
       .select()
       .single();
 
-    if (error) {
-      console.error("Supabase update error:", error);
-      throw error;
+    if (coachError) {
+      console.log("Coach not found in coaches table, trying students table...");
+      
+      // If the coach doesn't exist in coaches table, try updating in students table
+      // This handles upgraded student-coaches
+      const studentUpdates: any = {};
+      
+      // Map coach fields to student fields
+      if (cleanUpdates.name) studentUpdates.name = cleanUpdates.name;
+      if (cleanUpdates.email) studentUpdates.email = cleanUpdates.email;
+      if (cleanUpdates.phone !== undefined) studentUpdates.phone = cleanUpdates.phone;
+      if (cleanUpdates.belt) studentUpdates.belt = cleanUpdates.belt;
+      if (cleanUpdates.branch) studentUpdates.branch = cleanUpdates.branch;
+      if (cleanUpdates.status) {
+        studentUpdates.status = cleanUpdates.status;
+      }
+      
+      // Store coach-specific data in the coach field or create a coach profile
+      if (cleanUpdates.specialties || cleanUpdates.assigned_classes) {
+        // For now, ensure they're marked as a coach
+        studentUpdates.coach = "Coach";
+      }
+      
+      console.log("Updating student record with:", studentUpdates);
+      
+      const { data: studentData, error: studentError } = await supabase
+        .from("students")
+        .update(studentUpdates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (studentError) {
+        console.error("Failed to update in both coaches and students tables:", studentError);
+        throw new Error(`Failed to update coach: ${studentError.message}`);
+      }
+
+      console.log("Successfully updated student-coach:", studentData);
+
+      // Convert student data back to coach format
+      const typedCoach: Coach = {
+        id: studentData.id,
+        name: studentData.name,
+        email: studentData.email,
+        phone: studentData.phone || null,
+        belt: studentData.belt,
+        specialties: cleanUpdates.specialties || [],
+        branch: studentData.branch,
+        status: studentData.status as "active" | "inactive",
+        students_count: 0,
+        assigned_classes: cleanUpdates.assigned_classes || [],
+        joined_date: studentData.joined_date,
+        created_at: studentData.joined_date,
+        updated_at: new Date().toISOString(),
+        is_upgraded_student: true
+      };
+
+      toast.success("Coach updated successfully");
+      return typedCoach;
     }
 
-    console.log("Successfully updated coach:", data);
+    console.log("Successfully updated traditional coach:", coachData);
 
     const typedCoach: Coach = {
-      ...data,
-      status: data.status as "active" | "inactive",
-      specialties: data.specialties || [],
-      phone: data.phone || null,
-      students_count: data.students_count || 0,
-      joined_date: data.joined_date || new Date().toISOString().split('T')[0],
-      assigned_classes: data.assigned_classes || []
+      ...coachData,
+      status: coachData.status as "active" | "inactive",
+      specialties: coachData.specialties || [],
+      phone: coachData.phone || null,
+      students_count: coachData.students_count || 0,
+      joined_date: coachData.joined_date || new Date().toISOString().split('T')[0],
+      assigned_classes: coachData.assigned_classes || []
     };
 
     toast.success("Coach updated successfully");
@@ -280,12 +338,31 @@ export const coachService = {
   },
 
   async deleteCoach(id: string): Promise<void> {
-    const { error } = await supabase
+    // ENHANCED: Try deleting from coaches table first, then students table
+    console.log("Attempting to delete from coaches table first...");
+    const { error: coachError } = await supabase
       .from("coaches")
       .delete()
       .eq("id", id);
 
-    if (error) throw error;
+    if (coachError) {
+      console.log("Coach not found in coaches table, trying students table...");
+      
+      // If not found in coaches table, try students table
+      const { error: studentError } = await supabase
+        .from("students")
+        .delete()
+        .eq("id", id);
+
+      if (studentError) {
+        console.error("Failed to delete from both tables:", studentError);
+        throw new Error(`Failed to delete coach: ${studentError.message}`);
+      }
+      
+      console.log("Successfully deleted student-coach");
+    } else {
+      console.log("Successfully deleted traditional coach");
+    }
 
     toast.success("Coach deleted successfully");
   },

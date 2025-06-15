@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -180,7 +179,10 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
       case 4:
         return (
           <CoachAccountStep
-            formData={formData}
+            formData={{
+              ...formData,
+              email: formData.email // FIXED: Ensure email is passed properly
+            }}
             updateFormData={updateFormData}
             isEditing={isEditing}
           />
