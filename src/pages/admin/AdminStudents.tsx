@@ -47,6 +47,8 @@ import { MoreHorizontal, Edit as EditIcon, Trash2 as Trash2Icon, ArrowDown } fro
 import { useToast, toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BeltPromotionModal } from "@/components/admin/student/BeltPromotionModal";
+import { CourseEnrollmentModal } from "@/components/admin/student/CourseEnrollmentModal";
+import { ClassEnrollmentModal } from "@/components/admin/student/ClassEnrollmentModal";
 
 // Add this Belt type and array above the component or near BeltPromotionModal usage.
 type Belt =
@@ -294,6 +296,10 @@ const AdminStudents = () => {
     }
   };
 
+  // Add modal state hooks for dialogs just below beltPromotionStudent
+  const [courseEnrollmentModal, setCourseEnrollmentModal] = useState<{ open: boolean; studentId: string | null }>({ open: false, studentId: null });
+  const [classEnrollmentModal, setClassEnrollmentModal] = useState<{ open: boolean; studentId: string | null }>({ open: false, studentId: null });
+
   if (loading) {
     return (
       <SuperAdminLayout>
@@ -521,11 +527,6 @@ const AdminStudents = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(student.status)}>
-                          {student.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
                         {/* DROPDOWN MENU FOR ACTIONS */}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -533,7 +534,7 @@ const AdminStudents = () => {
                               <MoreHorizontal className="h-5 w-5" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent className="z-50 bg-white border rounded shadow min-w-[190px]">
+                          <DropdownMenuContent className="z-50 bg-white border rounded shadow min-w-[210px]">
                             {/* Belt Promotion menu item */}
                             {!isCoach && (
                               <DropdownMenuItem
@@ -544,6 +545,23 @@ const AdminStudents = () => {
                                 Belt Promotion
                               </DropdownMenuItem>
                             )}
+                            {/* New: Online Course Enrollment */}
+                            <DropdownMenuItem
+                              onClick={() => setCourseEnrollmentModal({ open: true, studentId: student.id })}
+                              className="flex items-center gap-2"
+                            >
+                              <span className="block w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
+                              Enroll to Online Course
+                            </DropdownMenuItem>
+                            {/* New: Academy Class Enrollment */}
+                            <DropdownMenuItem
+                              onClick={() => setClassEnrollmentModal({ open: true, studentId: student.id })}
+                              className="flex items-center gap-2"
+                            >
+                              <span className="block w-3 h-3 rounded-full bg-emerald-500 mr-2"></span>
+                              Enroll to Class
+                            </DropdownMenuItem>
+                            {/* Existing items */}
                             {isCoach && (
                               <DropdownMenuItem
                                 onClick={() => {
@@ -579,7 +597,6 @@ const AdminStudents = () => {
                               <Trash2Icon className="h-4 w-4" />
                               Delete
                             </DropdownMenuItem>
-                            {/* Future actions (belt promotion, enroll, freeze) will go here */}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -657,6 +674,27 @@ const AdminStudents = () => {
           }
         }}
         loading={isPromoting}
+      />
+
+      {/* Course Enrollment Modal (single student) */}
+      <CourseEnrollmentModal
+        open={courseEnrollmentModal.open}
+        studentId={courseEnrollmentModal.studentId || ""}
+        onOpenChange={open => setCourseEnrollmentModal(v => ({ ...v, open }))}
+        onEnrolled={() => {
+          setCourseEnrollmentModal({ open: false, studentId: null });
+          if (typeof refetch === "function") refetch();
+        }}
+      />
+      {/* Class Enrollment Modal (single student) */}
+      <ClassEnrollmentModal
+        open={classEnrollmentModal.open}
+        studentId={classEnrollmentModal.studentId || ""}
+        onOpenChange={open => setClassEnrollmentModal(v => ({ ...v, open }))}
+        onEnrolled={() => {
+          setClassEnrollmentModal({ open: false, studentId: null });
+          if (typeof refetch === "function") refetch();
+        }}
       />
       </div>
     </SuperAdminLayout>
