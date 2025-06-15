@@ -17,6 +17,8 @@ export const useCoachProfiles = () => {
   const saveCoachProfile = async (coachId: string, profileData: CoachProfileData, isUpgradedStudent: boolean = false) => {
     setLoading(true);
     try {
+      console.log("Saving coach profile for coach:", coachId, "Data:", profileData, "IsUpgraded:", isUpgradedStudent);
+      
       if (isUpgradedStudent) {
         // For upgraded student-coaches, we need to store some data in coach_profiles
         // and some in the students table
@@ -40,14 +42,14 @@ export const useCoachProfiles = () => {
             bio: profileData.bio,
             years_experience: profileData.years_experience,
             certifications: profileData.certifications,
-            specialties: profileData.specialties,
-            assigned_classes: profileData.assigned_classes,
+            specialties: Array.isArray(profileData.specialties) ? profileData.specialties : [],
+            assigned_classes: Array.isArray(profileData.assigned_classes) ? profileData.assigned_classes : [],
             updated_at: new Date().toISOString()
           });
 
         if (profileError) {
           console.error("Error updating coach profile:", profileError);
-          throw profileError;
+          throw new Error(`Failed to update coach profile: ${profileError.message}`);
         }
 
         console.log("Successfully updated coach profile for upgraded student");
@@ -56,15 +58,15 @@ export const useCoachProfiles = () => {
         const { error } = await supabase
           .from("coaches")
           .update({
-            specialties: profileData.specialties,
-            assigned_classes: profileData.assigned_classes,
+            specialties: Array.isArray(profileData.specialties) ? profileData.specialties : [],
+            assigned_classes: Array.isArray(profileData.assigned_classes) ? profileData.assigned_classes : [],
             updated_at: new Date().toISOString()
           })
           .eq("id", coachId);
 
         if (error) {
           console.error("Error updating traditional coach:", error);
-          throw error;
+          throw new Error(`Failed to update coach: ${error.message}`);
         }
 
         console.log("Successfully updated traditional coach");
@@ -74,7 +76,8 @@ export const useCoachProfiles = () => {
       return true;
     } catch (error) {
       console.error("Error saving coach profile:", error);
-      toast.error("Failed to update coach profile");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      toast.error(`Failed to update coach profile: ${errorMessage}`);
       return false;
     } finally {
       setLoading(false);
@@ -83,6 +86,8 @@ export const useCoachProfiles = () => {
 
   const getCoachProfile = async (coachId: string, isUpgradedStudent: boolean = false) => {
     try {
+      console.log("Getting coach profile for:", coachId, "IsUpgraded:", isUpgradedStudent);
+      
       if (isUpgradedStudent) {
         // Get data from both students table and coach_profiles
         const { data: student, error: studentError } = await supabase
@@ -92,6 +97,7 @@ export const useCoachProfiles = () => {
           .single();
 
         if (studentError || !student?.auth_user_id) {
+          console.log("No auth user found for upgraded student coach");
           return null;
         }
 
@@ -102,11 +108,21 @@ export const useCoachProfiles = () => {
           .single();
 
         if (profileError) {
-          console.log("No coach profile found for upgraded student");
-          return null;
+          console.log("No coach profile found for upgraded student, returning defaults");
+          return {
+            specialties: [],
+            assigned_classes: [],
+            bio: null,
+            years_experience: 0,
+            certifications: []
+          };
         }
 
-        return profile;
+        return {
+          ...profile,
+          specialties: profile.specialties || [],
+          assigned_classes: profile.assigned_classes || []
+        };
       } else {
         // Get data from coaches table
         const { data: coach, error } = await supabase
@@ -120,7 +136,10 @@ export const useCoachProfiles = () => {
           return null;
         }
 
-        return coach;
+        return {
+          specialties: coach.specialties || [],
+          assigned_classes: coach.assigned_classes || []
+        };
       }
     } catch (error) {
       console.error("Error getting coach profile:", error);

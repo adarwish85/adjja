@@ -471,6 +471,7 @@ export type Database = {
       }
       coach_profiles: {
         Row: {
+          assigned_classes: string[] | null
           bio: string | null
           certifications: string[] | null
           created_at: string | null
@@ -478,11 +479,13 @@ export type Database = {
           id: string
           rank: string | null
           social_media: Json | null
+          specialties: string[] | null
           updated_at: string | null
           user_id: string
           years_experience: number | null
         }
         Insert: {
+          assigned_classes?: string[] | null
           bio?: string | null
           certifications?: string[] | null
           created_at?: string | null
@@ -490,11 +493,13 @@ export type Database = {
           id?: string
           rank?: string | null
           social_media?: Json | null
+          specialties?: string[] | null
           updated_at?: string | null
           user_id: string
           years_experience?: number | null
         }
         Update: {
+          assigned_classes?: string[] | null
           bio?: string | null
           certifications?: string[] | null
           created_at?: string | null
@@ -502,6 +507,7 @@ export type Database = {
           id?: string
           rank?: string | null
           social_media?: Json | null
+          specialties?: string[] | null
           updated_at?: string | null
           user_id?: string
           years_experience?: number | null

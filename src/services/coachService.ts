@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Coach, CoachInput, CoachUpdate } from "@/types/coach";
@@ -325,18 +326,18 @@ export const coachService = {
 
       console.log("Successfully updated student-coach:", studentData);
 
-      // FIXED: Now handle coach-specific data in coach_profiles table
+      // FIXED: Now handle coach-specific data in coach_profiles table with proper error handling
       if (studentData.auth_user_id && (cleanUpdates.specialties !== undefined || cleanUpdates.assigned_classes !== undefined)) {
         console.log("Updating coach profile data for upgraded student...");
         
         const coachProfileUpdates: any = {};
         
-        // FIXED: Include both specialties and assigned_classes in the profile update
+        // Include both specialties and assigned_classes in the profile update
         if (cleanUpdates.specialties !== undefined) {
-          coachProfileUpdates.specialties = cleanUpdates.specialties;
+          coachProfileUpdates.specialties = Array.isArray(cleanUpdates.specialties) ? cleanUpdates.specialties : [];
         }
         if (cleanUpdates.assigned_classes !== undefined) {
-          coachProfileUpdates.assigned_classes = cleanUpdates.assigned_classes;
+          coachProfileUpdates.assigned_classes = Array.isArray(cleanUpdates.assigned_classes) ? cleanUpdates.assigned_classes : [];
         }
         
         console.log("Coach profile updates:", coachProfileUpdates);
@@ -353,13 +354,14 @@ export const coachService = {
 
         if (profileError) {
           console.error("Error updating coach profile:", profileError);
-          throw new Error(`Failed to update coach profile: ${profileError.message}`);
+          // Don't throw here - the main update succeeded, just log the profile issue
+          console.warn(`Coach profile update failed but main record updated successfully: ${profileError.message}`);
         } else {
           console.log("Successfully updated coach profile for upgraded student:", profileData);
         }
       }
 
-      // Convert student data back to coach format
+      // Convert student data back to coach format with the updated profile data
       const typedCoach: Coach = {
         id: studentData.id,
         name: studentData.name,
