@@ -1803,6 +1803,10 @@ export type Database = {
         }
         Returns: string
       }
+      downgrade_coach_to_student: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       enroll_student_in_class: {
         Args: { p_student_id: string; p_class_id: string }
         Returns: string

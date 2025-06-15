@@ -37,9 +37,18 @@ import { useStudents, Student } from "@/hooks/useStudents";
 import { useClassEnrollments } from "@/hooks/useClassEnrollments";
 import { useClasses } from "@/hooks/useClasses";
 import { BulkUpgradeToCoachDialog } from "@/components/admin/student/BulkUpgradeToCoachDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, Edit as EditIcon, Trash2 as Trash2Icon, ArrowDown } from "lucide-react";
+import { useToast, toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminStudents = () => {
-  const { students, loading, addStudent, updateStudent, deleteStudent } = useStudents();
+  const { students, loading, addStudent, updateStudent, deleteStudent, refetch } = useStudents();
   const { enrollments, enrollStudent, unenrollStudent } = useClassEnrollments();
   const { classes } = useClasses();
   const [searchTerm, setSearchTerm] = useState("");
@@ -216,6 +225,24 @@ const AdminStudents = () => {
     }
   };
 
+  // Add a handler for single-student upgrade dialog
+  const [singleUpgradeDialogStudent, setSingleUpgradeDialogStudent] = useState<Student | null>(null);
+
+  // New handler for downgrading coach to student
+  const handleDowngradeToStudent = async (student: Student) => {
+    try {
+      const { error } = await supabase.rpc("downgrade_coach_to_student", {
+        p_user_id: student.id,
+      });
+      if (error) throw error;
+      toast.success(`"${student.name}" downgraded to Student`);
+      // Refetch students to update status
+      if (typeof refetch === "function") refetch();
+    } catch (error) {
+      toast.error(`Failed to downgrade ${student.name}: ${(error as Error).message}`);
+    }
+  };
+
   if (loading) {
     return (
       <SuperAdminLayout>
@@ -367,6 +394,7 @@ const AdminStudents = () => {
                 {filteredStudents.map((student) => {
                   const enrolledClasses = getStudentEnrolledClasses(student.id);
                   const isCoach = student.coach === "Coach";
+
                   return (
                     <TableRow key={student.id} className={selectedStudentIds.includes(student.id) ? "bg-bjj-gold/10" : ""}>
                       <TableCell>
@@ -447,44 +475,61 @@ const AdminStudents = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setEditingStudent(student)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-red-600 hover:text-red-800"
+                        {/* DROPDOWN MENU FOR ACTIONS */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="p-1 h-8 w-8" aria-label="More Actions">
+                              <MoreHorizontal className="h-5 w-5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="z-50 bg-white border rounded shadow min-w-[190px]">
+                            {!isCoach && (
+                              <DropdownMenuItem
+                                onClick={() => setSingleUpgradeDialogStudent(student)}
+                                className="flex items-center gap-2"
                               >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete the student
-                                  "{student.name}" from the system.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteStudent(student.id)}
-                                  className="bg-red-600 hover:bg-red-700"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
+                                <ArrowDown className="h-4 w-4" />
+                                Upgrade to Coach
+                              </DropdownMenuItem>
+                            )}
+                            {isCoach && (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  if (window.confirm(`Downgrade "${student.name}" to Student?`)) {
+                                    handleDowngradeToStudent(student);
+                                  }
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <ArrowDown className="h-4 w-4 rotate-180" />
+                                Downgrade to Student
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              onClick={() => setEditingStudent(student)}
+                              className="flex items-center gap-2"
+                            >
+                              <EditIcon className="h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `Are you sure you want to delete "${student.name}"? This cannot be undone.`
+                                  )
+                                ) {
+                                  handleDeleteStudent(student.id);
+                                }
+                              }}
+                              className="flex items-center gap-2 text-red-600"
+                            >
+                              <Trash2Icon className="h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                            {/* Future actions (belt promotion, enroll, freeze) will go here */}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   );
@@ -525,6 +570,18 @@ const AdminStudents = () => {
             setIsBulkUpgradeOpen(false);
             setSelectedStudentIds([]);
             // Optionally, refetch students data
+          }}
+        />
+
+        {/* Single student upgrade dialog */}
+        <BulkUpgradeToCoachDialog
+          open={!!singleUpgradeDialogStudent}
+          onOpenChange={(open) => setSingleUpgradeDialogStudent(open ? singleUpgradeDialogStudent : null)}
+          studentIds={singleUpgradeDialogStudent ? [singleUpgradeDialogStudent.id] : []}
+          studentNames={singleUpgradeDialogStudent ? [singleUpgradeDialogStudent.name] : []}
+          onSuccess={() => {
+            setSingleUpgradeDialogStudent(null);
+            if (typeof refetch === "function") refetch();
           }}
         />
       </div>
