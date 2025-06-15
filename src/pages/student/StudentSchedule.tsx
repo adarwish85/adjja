@@ -1,3 +1,4 @@
+
 import { StudentLayout } from "@/components/layouts/StudentLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,14 @@ import { useState, useMemo } from "react";
 import { getTodaySessions, getSessionsByDay, ScheduledClassSession } from "@/utils/classScheduleUtils";
 import { StudentWeeklyCalendar } from "@/components/student/StudentWeeklyCalendar";
 import { StudentTodayClasses } from "@/components/student/StudentTodayClasses";
+import { StudentCheckInModal } from "@/components/attendance/StudentCheckInModal";
+import { useSmartAttendance } from "@/hooks/useSmartAttendance";
 
 const StudentSchedule = () => {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const { checkIn } = useSmartAttendance();
 
   // Fetch enrolled classes
   const { data: enrolledClasses, isLoading } = useQuery({
@@ -81,6 +86,14 @@ const StudentSchedule = () => {
     .filter(session => session.startTime >= now)
     .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())[0];
 
+  const handleCheckIn = async (session: ScheduledClassSession) => {
+    try {
+      await checkIn({ classId: session.classId });
+    } catch (error) {
+      console.error('Check-in error:', error);
+    }
+  };
+
   return (
     <StudentLayout>
       <div className="p-4 lg:p-6 space-y-6">
@@ -91,42 +104,114 @@ const StudentSchedule = () => {
           </div>
         </div>
 
-        {/* Next Session Card */}
-        {nextSession && (
-          <Card className="border-bjj-gold">
+        {/* Next Session and Today's Classes - Side by Side */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Next Session Card */}
+          {nextSession ? (
+            <Card className="border-bjj-gold">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-bjj-gold">
+                  <Clock className="h-5 w-5" />
+                  Next Session
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-bjj-navy">{nextSession.className}</h3>
+                    <div className="flex items-center gap-4 mt-2 text-bjj-gray">
+                      <span className="flex items-center gap-1">
+                        <User className="h-4 w-4" />
+                        {nextSession.instructor}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {nextSession.timeLabel}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-4 w-4" />
+                        {nextSession.location}
+                      </span>
+                    </div>
+                  </div>
+                  <Badge variant="secondary">{nextSession.level}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-bjj-navy">
+                  <Clock className="h-5 w-5" />
+                  Next Session
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-bjj-gray">
+                  <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No upcoming sessions</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
+          {/* Today's Classes Card with Check-in */}
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-bjj-gold">
-                <Clock className="h-5 w-5" />
-                Next Session
+              <CardTitle className="flex items-center gap-2 text-bjj-navy">
+                <CalendarDays className="h-5 w-5" />
+                Today's Classes
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-bjj-navy">{nextSession.className}</h3>
-                  <div className="flex items-center gap-4 mt-2 text-bjj-gray">
-                    <span className="flex items-center gap-1">
-                      <User className="h-4 w-4" />
-                      {nextSession.instructor}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      {nextSession.timeLabel}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {nextSession.location}
-                    </span>
-                  </div>
+              {todaySessions.length > 0 ? (
+                <div className="space-y-3">
+                  {todaySessions.map(session => {
+                    // Check-in allowed if now >= startTime and now < endTime - 15min
+                    const canCheckIn =
+                      now >= session.startTime &&
+                      now <= new Date(session.endTime.getTime() - 15 * 60 * 1000);
+                    
+                    return (
+                      <div key={session.classId + session.timeLabel} className="border rounded-lg p-3 flex justify-between items-center bg-bjj-navy/5">
+                        <div>
+                          <div className="font-medium text-bjj-navy">{session.className}</div>
+                          <div className="flex items-center gap-3 mt-1 text-sm text-bjj-gray">
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {session.instructor}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {session.timeLabel}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {session.location}
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="bg-bjj-gold text-white hover:bg-bjj-gold/90"
+                          disabled={!canCheckIn}
+                          onClick={() => handleCheckIn(session)}
+                        >
+                          {canCheckIn ? "Check In" : "Not Open"}
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
-                <Badge variant="secondary">{nextSession.level}</Badge>
-              </div>
+              ) : (
+                <div className="text-center py-8 text-bjj-gray">
+                  <CalendarDays className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No classes scheduled today</p>
+                </div>
+              )}
             </CardContent>
           </Card>
-        )}
-        
-        {/* Today's Classes */}
-        <StudentTodayClasses sessions={todaySessions} />
+        </div>
         
         {/* Weekly Calendar */}
         <StudentWeeklyCalendar
@@ -212,6 +297,12 @@ const StudentSchedule = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Check-in Modal */}
+        <StudentCheckInModal 
+          open={showCheckInModal} 
+          onOpenChange={setShowCheckInModal} 
+        />
       </div>
     </StudentLayout>
   );
