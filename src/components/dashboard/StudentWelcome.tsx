@@ -2,19 +2,29 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, MapPin, Calendar, CheckCircle, TrendingUp, GraduationCap } from "lucide-react";
+import { Clock, MapPin, Calendar, CheckCircle, TrendingUp, GraduationCap, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartAttendance } from "@/hooks/useSmartAttendance";
+import { useClassReminder } from "@/hooks/useClassReminder";
 import { StudentCheckInModal } from "@/components/attendance/StudentCheckInModal";
-import { useState } from "react";
+import { ClassReminder } from "@/components/dashboard/ClassReminder";
+import { useState, useEffect } from "react";
 
 export const StudentWelcome = () => {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
   const { studentQuota } = useSmartAttendance();
+  const { todaysClasses, shouldShowReminder, checkInStatus } = useClassReminder();
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
+
+  // Request notification permission on component mount
+  useEffect(() => {
+    if (Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   // Extract first name from the user's name
   const firstName = userProfile?.name?.split(' ')[0] || 'Student';
@@ -33,11 +43,20 @@ export const StudentWelcome = () => {
   };
 
   const handleCheckIn = () => {
-    setShowCheckInModal(true);
+    if (checkInStatus.canCheckIn) {
+      setShowCheckInModal(true);
+    }
   };
 
   return (
     <>
+      {/* Class Reminder */}
+      {shouldShowReminder && (
+        <div className="mb-6">
+          <ClassReminder classes={todaysClasses} />
+        </div>
+      )}
+
       <Card className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800 text-white shadow-2xl border-0 overflow-hidden">
         <CardContent className="p-0">
           {/* Hero Section */}
@@ -106,16 +125,26 @@ export const StudentWelcome = () => {
 
                 {/* Right: Action Buttons */}
                 <div className="space-y-4">
+                  {/* Check-in Status Message */}
+                  {!checkInStatus.canCheckIn && checkInStatus.reason && (
+                    <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-500/10 rounded-lg p-3">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>{checkInStatus.reason}</span>
+                    </div>
+                  )}
+
                   {/* Primary CTA */}
                   <Button 
                     onClick={handleCheckIn}
-                    disabled={isCheckedIn}
+                    disabled={!checkInStatus.canCheckIn || isCheckedIn}
                     size="lg"
                     className={`
                       w-full font-bold text-lg px-8 py-4 rounded-xl transition-all duration-300 shadow-lg
                       ${isCheckedIn 
                         ? 'bg-green-600 hover:bg-green-600 text-white cursor-not-allowed opacity-90' 
-                        : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 hover:text-slate-900 shadow-amber-500/25 hover:shadow-amber-500/40 hover:shadow-xl transform hover:scale-[1.02]'
+                        : checkInStatus.canCheckIn
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 hover:text-slate-900 shadow-amber-500/25 hover:shadow-amber-500/40 hover:shadow-xl transform hover:scale-[1.02]'
+                        : 'bg-gray-600 hover:bg-gray-600 text-gray-300 cursor-not-allowed'
                       }
                     `}
                   >
@@ -124,10 +153,15 @@ export const StudentWelcome = () => {
                         <CheckCircle className="h-6 w-6 mr-3" />
                         ✅ Checked In
                       </>
-                    ) : (
+                    ) : checkInStatus.canCheckIn ? (
                       <>
                         <CheckCircle className="h-6 w-6 mr-3" />
                         Check In to Class
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-6 w-6 mr-3" />
+                        Check-In Unavailable
                       </>
                     )}
                   </Button>
