@@ -26,34 +26,46 @@ const Login = () => {
   const [resetEmail, setResetEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
+  const [hasRedirected, setHasRedirected] = useState(false);
 
-  // Redirect if already logged in - based on user role
+  // Enhanced redirect logic with better role detection
   useEffect(() => {
-    console.log('Login page - user:', !!user, 'userProfile:', userProfile, 'loading:', loading);
+    console.log('🔄 Login: Auth state check - user:', !!user, 'userProfile:', userProfile, 'loading:', loading, 'hasRedirected:', hasRedirected);
     
-    if (user && userProfile && !loading) {
+    // Only proceed if we have both user and profile, not loading, and haven't redirected yet
+    if (user && userProfile && !loading && !hasRedirected) {
       const userRole = userProfile.role_name?.toLowerCase();
-      console.log('User logged in with role:', userRole, 'redirecting...');
+      console.log('👤 Login: User authenticated with role:', userRole, 'redirecting...');
       
-      // Use a longer timeout to ensure profile is fully loaded
+      // Set flag to prevent multiple redirects
+      setHasRedirected(true);
+      
+      // Use a timeout to ensure all state updates are complete
       setTimeout(() => {
-        // Improved role-based routing with case-insensitive matching
+        // Enhanced role-based routing with better debugging
         if (userRole === 'student') {
-          console.log('Redirecting to student dashboard');
+          console.log('🎓 Login: Redirecting to student dashboard');
           navigate("/dashboard", { replace: true });
         } else if (userRole === 'coach') {
-          console.log('Redirecting to coach dashboard');
+          console.log('👨‍🏫 Login: Redirecting to coach dashboard');
           navigate("/coach", { replace: true });
         } else if (userRole === 'super admin' || userRole === 'admin' || userRole === 'superadmin') {
-          console.log('Redirecting to admin dashboard');
+          console.log('👑 Login: Redirecting to admin dashboard');
           navigate("/admin", { replace: true });
         } else {
-          console.log('Unknown role:', userRole, 'redirecting to home');
+          console.log('❓ Login: Unknown role:', userRole, 'redirecting to home');
           navigate("/", { replace: true });
         }
-      }, 300);
+      }, 100); // Short delay to ensure state consistency
     }
-  }, [user, userProfile, loading, navigate]);
+  }, [user, userProfile, loading, navigate, hasRedirected]);
+
+  // Reset redirect flag when user changes
+  useEffect(() => {
+    if (!user) {
+      setHasRedirected(false);
+    }
+  }, [user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,15 +73,15 @@ const Login = () => {
 
     setIsSubmitting(true);
     try {
-      console.log('Attempting login for:', loginData.emailOrUsername);
+      console.log('🔐 Login: Attempting login for:', loginData.emailOrUsername);
       const { data, error } = await signIn(loginData.emailOrUsername, loginData.password);
       if (data && !error) {
-        console.log("Login successful, waiting for profile to load and redirect...");
+        console.log("✅ Login: Login successful, waiting for profile to load and redirect...");
         // Clear the form on successful login
         setLoginData({ emailOrUsername: "", password: "" });
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("❌ Login: Login error:", error);
     } finally {
       setIsSubmitting(false);
     }

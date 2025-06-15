@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
@@ -21,7 +20,7 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   const createFallbackProfile = (user: User, suggestedRole: string = 'Student'): UserProfile => {
-    console.log('Creating fallback profile for user:', user.id, 'with suggested role:', suggestedRole);
+    console.log('🔄 useAuth: Creating fallback profile for user:', user.id, 'with suggested role:', suggestedRole);
     return {
       id: user.id,
       name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
@@ -32,9 +31,49 @@ export const useAuth = () => {
     };
   };
 
+  const verifyUserRole = async (userId: string, userEmail?: string): Promise<string | null> => {
+    console.log('🔍 useAuth: Verifying role for user:', userId, 'email:', userEmail);
+    
+    try {
+      // Check if user is upgraded student-coach
+      const { data: studentData, error: studentError } = await supabase
+        .from('students')
+        .select('coach, auth_user_id')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (!studentError && studentData) {
+        console.log('👨‍🎓 useAuth: Found student record:', studentData);
+        if (studentData.coach === 'Coach') {
+          console.log('🎯 useAuth: Student is marked as Coach - should have Coach role');
+          return 'Coach';
+        }
+      }
+
+      // Check profile role
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role_id, user_roles!inner(name)')
+        .eq('id', userId)
+        .single();
+
+      if (!profileError && profileData) {
+        const roleName = (profileData.user_roles as any)?.name;
+        console.log('👤 useAuth: Profile role found:', roleName);
+        return roleName;
+      }
+
+      console.log('⚠️ useAuth: No role found in verification');
+      return null;
+    } catch (error) {
+      console.error('❌ useAuth: Error in role verification:', error);
+      return null;
+    }
+  };
+
   const fetchUserProfile = async (userId: string, userEmail?: string) => {
     try {
-      console.log('Fetching profile for user:', userId, 'email:', userEmail);
+      console.log('📥 useAuth: Starting profile fetch for user:', userId, 'email:', userEmail);
       
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) => 
@@ -58,38 +97,41 @@ export const useAuth = () => {
 
       const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
 
-      console.log('Profile query result:', { profile, error });
+      console.log('📋 useAuth: Profile query result:', { profile, error });
 
       if (error) {
-        console.error('Error fetching user profile:', error);
+        console.error('❌ useAuth: Error fetching user profile:', error);
         
         // If it's a timeout or database recursion error, return fallback
         if (error.message?.includes('timeout') || 
             error.message?.includes('recursion') || 
             error.code === 'PGRST301' ||
             error.code === '42P17') {
-          console.log('Database issue detected, using fallback profile');
+          console.log('⚠️ useAuth: Database issue detected, using fallback profile');
           
-          // Special handling for Ahmed's email - force Super Admin role
-          if (userEmail === 'ahmeddarwesh@gmail.com') {
-            console.log('Detected Ahmed\'s email, setting Super Admin role');
-            return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, 'Super Admin');
-          }
+          // Verify role independently
+          const verifiedRole = await verifyUserRole(userId, userEmail);
+          const fallbackRole = verifiedRole || (userEmail === 'ahmeddarwesh@gmail.com' ? 'Super Admin' : 'Student');
           
-          const suggestedRole = user?.user_metadata?.role || 'Student';
-          return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, suggestedRole);
+          console.log('🔧 useAuth: Using verified role for fallback:', fallbackRole);
+          return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, fallbackRole);
         }
         
         // If profile doesn't exist, try to create one (with error handling)
         if (error.code === 'PGRST116') {
           try {
-            console.log('Profile not found, attempting to create...');
+            console.log('🔨 useAuth: Profile not found, attempting to create...');
+            
+            // Verify role first
+            const verifiedRole = await verifyUserRole(userId, userEmail);
+            let roleToAssign = verifiedRole || 'Student';
             
             // Special handling for Ahmed's email
-            let roleToAssign = 'Student';
             if (userEmail === 'ahmeddarwesh@gmail.com') {
               roleToAssign = 'Super Admin';
             }
+            
+            console.log('🎯 useAuth: Creating profile with role:', roleToAssign);
             
             // Get the appropriate role with timeout
             const roleQuery = supabase
@@ -135,55 +177,68 @@ export const useAuth = () => {
 
               if (!createError && newProfile) {
                 const userRole = Array.isArray(newProfile.user_roles) ? newProfile.user_roles[0] : newProfile.user_roles;
-                return {
+                const finalProfile = {
                   ...newProfile,
                   role_name: userRole?.name || roleToAssign
                 } as UserProfile;
+                
+                console.log('✅ useAuth: Created new profile:', finalProfile);
+                return finalProfile;
               }
             }
           } catch (createError) {
-            console.error('Error creating profile, using fallback:', createError);
+            console.error('❌ useAuth: Error creating profile, using fallback:', createError);
           }
         }
         
-        // Return fallback profile if all else fails
-        // Special handling for Ahmed's email
-        if (userEmail === 'ahmeddarwesh@gmail.com') {
-          console.log('Fallback for Ahmed, setting Super Admin role');
-          return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, 'Super Admin');
-        }
+        // Return fallback profile if all else fails with verified role
+        const verifiedRole = await verifyUserRole(userId, userEmail);
+        const fallbackRole = verifiedRole || (userEmail === 'ahmeddarwesh@gmail.com' ? 'Super Admin' : 'Student');
         
-        const suggestedRole = user?.user_metadata?.role || 'Student';
-        return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, suggestedRole);
+        console.log('🔧 useAuth: Final fallback with verified role:', fallbackRole);
+        return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, fallbackRole);
       }
 
       const userRole = Array.isArray(profile.user_roles) ? profile.user_roles[0] : profile.user_roles;
       
+      let finalRoleName = userRole?.name || 'Student';
+      
+      // Verify role matches student coach status
+      const verifiedRole = await verifyUserRole(userId, userEmail);
+      if (verifiedRole && verifiedRole !== finalRoleName) {
+        console.log('🔄 useAuth: Role mismatch detected. Profile role:', finalRoleName, 'Verified role:', verifiedRole);
+        finalRoleName = verifiedRole;
+      }
+      
       const userProfile = {
         ...profile,
-        role_name: userRole?.name || 'Student'
+        role_name: finalRoleName
       } as UserProfile;
 
-      console.log('Successfully fetched profile:', userProfile);
+      console.log('✅ useAuth: Successfully fetched and verified profile:', userProfile);
       
       // Double check for Ahmed's email and override role if needed
       if (userEmail === 'ahmeddarwesh@gmail.com' && userProfile.role_name !== 'Super Admin') {
-        console.log('Overriding role for Ahmed to Super Admin');
+        console.log('🔧 useAuth: Overriding role for Ahmed to Super Admin');
         userProfile.role_name = 'Super Admin';
       }
       
       return userProfile;
     } catch (error) {
-      console.error('Critical error in fetchUserProfile:', error);
+      console.error('💥 useAuth: Critical error in fetchUserProfile:', error);
       
       // Special handling for Ahmed's email in catch block
       if (userEmail === 'ahmeddarwesh@gmail.com') {
-        console.log('Critical error fallback for Ahmed, setting Super Admin role');
+        console.log('🔧 useAuth: Critical error fallback for Ahmed, setting Super Admin role');
         return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, 'Super Admin');
       }
       
-      const suggestedRole = user?.user_metadata?.role || 'Student';
-      return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, suggestedRole);
+      // Try to verify role even in error case
+      const verifiedRole = await verifyUserRole(userId, userEmail);
+      const fallbackRole = verifiedRole || 'Student';
+      
+      console.log('🔧 useAuth: Critical error fallback with verified role:', fallbackRole);
+      return createFallbackProfile({ id: userId, email: userEmail, user_metadata: user?.user_metadata } as User, fallbackRole);
     }
   };
 
@@ -191,10 +246,12 @@ export const useAuth = () => {
     let mounted = true;
     let authTimeout: NodeJS.Timeout;
 
+    console.log('🔄 useAuth: Setting up auth state management');
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.id);
+        console.log("🔔 useAuth: Auth state changed:", event, session?.user?.id);
         
         if (!mounted) return;
 
@@ -203,13 +260,14 @@ export const useAuth = () => {
         
         if (session?.user) {
           try {
+            console.log('👤 useAuth: Fetching profile for authenticated user');
             const profile = await fetchUserProfile(session.user.id, session.user.email);
             if (mounted) {
               setUserProfile(profile);
-              console.log('Profile set:', profile);
+              console.log('✅ useAuth: Profile set:', profile);
             }
           } catch (error) {
-            console.error('Error setting profile:', error);
+            console.error('❌ useAuth: Error setting profile:', error);
             if (mounted) {
               // Set fallback profile to prevent infinite loading
               const fallbackRole = session.user.email === 'ahmeddarwesh@gmail.com' ? 'Super Admin' : 'Student';
@@ -218,6 +276,7 @@ export const useAuth = () => {
           }
         } else {
           if (mounted) {
+            console.log('🚪 useAuth: User logged out, clearing profile');
             setUserProfile(null);
           }
         }
@@ -231,19 +290,21 @@ export const useAuth = () => {
     // Get initial session with timeout
     const getInitialSession = async () => {
       try {
+        console.log('🔍 useAuth: Checking for existing session');
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!mounted) return;
 
-        console.log("Initial session:", session?.user?.id);
+        console.log("📋 useAuth: Initial session:", session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('👤 useAuth: Processing initial session user');
           const profile = await fetchUserProfile(session.user.id, session.user.email);
           if (mounted) {
             setUserProfile(profile);
-            console.log('Initial profile set:', profile);
+            console.log('✅ useAuth: Initial profile set:', profile);
           }
         }
         
@@ -251,7 +312,7 @@ export const useAuth = () => {
           setLoading(false);
         }
       } catch (error) {
-        console.error('Error getting initial session:', error);
+        console.error('❌ useAuth: Error getting initial session:', error);
         if (mounted) {
           setLoading(false);
         }
@@ -263,7 +324,7 @@ export const useAuth = () => {
     // Safety timeout - never stay loading forever
     authTimeout = setTimeout(() => {
       if (mounted) {
-        console.log('Auth timeout reached, stopping loading');
+        console.log('⏰ useAuth: Auth timeout reached, stopping loading');
         setLoading(false);
       }
     }, 15000);
@@ -278,6 +339,7 @@ export const useAuth = () => {
   const signInWithEmail = async (email: string, password: string) => {
     try {
       setLoading(true);
+      console.log('🔐 useAuth: Attempting email sign in for:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -285,11 +347,11 @@ export const useAuth = () => {
 
       if (error) throw error;
 
-      console.log("Sign in successful, waiting for profile...");
+      console.log("✅ useAuth: Sign in successful, waiting for profile...");
       toast.success("Signed in successfully");
       return { data, error: null };
     } catch (error) {
-      console.error("Error signing in:", error);
+      console.error("❌ useAuth: Error signing in:", error);
       toast.error(error instanceof Error ? error.message : "Failed to sign in");
       return { data: null, error };
     } finally {
@@ -300,6 +362,7 @@ export const useAuth = () => {
   const signInWithUsername = async (username: string, password: string) => {
     try {
       setLoading(true);
+      console.log('🔐 useAuth: Attempting username sign in for:', username);
       // First, find the user by username to get their email
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -311,10 +374,11 @@ export const useAuth = () => {
         throw new Error("Username not found");
       }
 
+      console.log('📧 useAuth: Found email for username:', profile.email);
       // Then sign in with email
       return await signInWithEmail(profile.email, password);
     } catch (error) {
-      console.error("Error signing in with username:", error);
+      console.error("❌ useAuth: Error signing in with username:", error);
       toast.error(error instanceof Error ? error.message : "Failed to sign in");
       return { data: null, error };
     } finally {
@@ -323,6 +387,7 @@ export const useAuth = () => {
   };
 
   const signIn = async (emailOrUsername: string, password: string) => {
+    console.log('🔑 useAuth: Sign in attempt for:', emailOrUsername);
     // Check if input looks like an email
     const isEmail = emailOrUsername.includes('@');
     
@@ -359,6 +424,7 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
+      console.log('🚪 useAuth: Signing out user');
       // Clear local state first to prevent UI issues
       setUserProfile(null);
       setUser(null);

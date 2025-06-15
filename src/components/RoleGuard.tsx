@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -12,10 +12,14 @@ interface RoleGuardProps {
 const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
   const { userProfile, loading, user } = useAuth();
   const navigate = useNavigate();
+  const [hasValidated, setHasValidated] = useState(false);
 
   useEffect(() => {
+    console.log('🛡️ RoleGuard: Validating access - user:', !!user, 'profile:', userProfile, 'loading:', loading, 'allowedRoles:', allowedRoles);
+    
     if (!loading && user) {
       if (!userProfile) {
+        console.log('❌ RoleGuard: User exists but no profile found, redirecting to login');
         // User exists but no profile found
         navigate("/login");
         return;
@@ -25,22 +29,39 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
       // Case-insensitive role matching
       const hasPermission = allowedRoles.some(role => role.toLowerCase() === userRole);
 
-      console.log('RoleGuard - User role:', userRole, 'Allowed roles:', allowedRoles, 'Has permission:', hasPermission);
+      console.log('🔍 RoleGuard: User role:', userRole, 'Allowed roles:', allowedRoles, 'Has permission:', hasPermission);
 
-      if (!hasPermission) {
-        // Redirect to appropriate dashboard based on role
+      if (!hasPermission && !hasValidated) {
+        setHasValidated(true);
+        console.log('🚫 RoleGuard: Access denied, redirecting based on role');
+        
+        // Enhanced redirect logic with better role detection
         if (userRole === 'student') {
-          navigate("/dashboard");
+          console.log('🎓 RoleGuard: Redirecting student to dashboard');
+          navigate("/dashboard", { replace: true });
         } else if (userRole === 'coach') {
-          navigate("/coach");
+          console.log('👨‍🏫 RoleGuard: Redirecting coach to coach dashboard');
+          navigate("/coach", { replace: true });
         } else if (userRole === 'super admin' || userRole === 'admin' || userRole === 'superadmin') {
-          navigate("/admin");
+          console.log('👑 RoleGuard: Redirecting admin to admin dashboard');
+          navigate("/admin", { replace: true });
         } else {
-          navigate(redirectTo || "/access-denied");
+          console.log('❓ RoleGuard: Unknown role, using fallback redirect');
+          navigate(redirectTo || "/access-denied", { replace: true });
         }
+      } else if (hasPermission) {
+        console.log('✅ RoleGuard: Access granted for role:', userRole);
+        setHasValidated(true);
       }
     }
-  }, [userProfile, loading, user, navigate, allowedRoles, redirectTo]);
+  }, [userProfile, loading, user, navigate, allowedRoles, redirectTo, hasValidated]);
+
+  // Reset validation when user changes
+  useEffect(() => {
+    if (!user) {
+      setHasValidated(false);
+    }
+  }, [user]);
 
   if (loading) {
     return (
