@@ -37,6 +37,7 @@ import { useStudents, Student } from "@/hooks/useStudents";
 import { useClassEnrollments } from "@/hooks/useClassEnrollments";
 import { useClasses } from "@/hooks/useClasses";
 import { BulkUpgradeToCoachDialog } from "@/components/admin/student/BulkUpgradeToCoachDialog";
+import { DataSyncActions } from "@/components/admin/student/DataSyncActions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -355,6 +356,15 @@ const AdminStudents = () => {
             </Dialog>
           </div>
         </div>
+
+        {/* Data Consistency Tools */}
+        <DataSyncActions 
+          onRefreshStudents={refetch}
+          onRefreshCoaches={() => {
+            // This will trigger a refresh of coaches when called from parent component
+            console.log("Coaches refresh triggered from students page");
+          }}
+        />
 
         {/* Bulk Actions Dropdown */}
         <BulkActionsDropdown

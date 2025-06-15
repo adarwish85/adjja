@@ -18,20 +18,39 @@ export const useImprovedStudentUpgrade = () => {
   const upgradeStudentToCoach = useCallback(async (studentId: string): Promise<UpgradeResult> => {
     setLoading(true);
     try {
+      console.log("Starting student upgrade process for:", studentId);
+      
       const { data, error } = await supabase.rpc('upgrade_student_to_coach_with_autofix', {
         p_student_id: studentId
       });
 
       if (error) throw error;
 
-      // Properly type the response as UpgradeResult
       const result = data as unknown as UpgradeResult;
 
       if (result.success) {
+        console.log("Upgrade successful, updating student coach field...");
+        
+        // Critical fix: Update the student's coach field to "Coach" for proper detection
+        const { error: updateError } = await supabase
+          .from("students")
+          .update({ 
+            coach: "Coach",
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", studentId);
+
+        if (updateError) {
+          console.error("Error updating student coach field:", updateError);
+          // Don't fail the whole operation, but log the issue
+        } else {
+          console.log("Successfully updated student coach field");
+        }
+
         toast.success(result.message || `${result.student_name} successfully upgraded to Coach`);
         
-        // Enhanced real-time notification - trigger multiple channels
-        console.log("Student upgrade successful, triggering enhanced real-time updates...");
+        // Enhanced real-time notification with multiple triggers
+        console.log("Student upgrade successful, triggering comprehensive real-time updates...");
         
         // Small delay to ensure database consistency before triggering updates
         setTimeout(() => {
@@ -67,6 +86,8 @@ export const useImprovedStudentUpgrade = () => {
     let failed = 0;
 
     try {
+      console.log("Starting bulk upgrade for students:", studentIds);
+      
       // Process upgrades with small delays for better database consistency
       for (const studentId of studentIds) {
         const result = await upgradeStudentToCoach(studentId);

@@ -29,6 +29,7 @@ import {
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { StudentStatusDropdown } from "@/components/admin/student/StudentStatusDropdown";
 import { Student } from "@/hooks/useStudents";
+import { useStudentCoachDetection } from "@/hooks/useStudentCoachDetection";
 
 interface StudentsTableProps {
   students: Student[];
@@ -63,6 +64,9 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
   onClassEnroll,
   onDowngradeToStudent,
 }) => {
+  // Use the new coach detection hook
+  const { isStudentCoach } = useStudentCoachDetection(students);
+
   const getBeltColor = (belt: string) => {
     switch (belt.toLowerCase()) {
       case "black belt":
@@ -92,7 +96,7 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
                   checked={
                     filteredStudents.length > 0 &&
                     filteredStudents
-                      .filter((s) => s.status === "active" && s.coach !== "Coach")
+                      .filter((s) => s.status === "active" && !isStudentCoach(s.id))
                       .every((s) => selectedStudentIds.includes(s.id))
                   }
                   onChange={(e) => handleSelectAllChange(e.target.checked)}
@@ -114,7 +118,7 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
         <TableBody>
           {filteredStudents.map((student) => {
             const enrolledClasses = getStudentEnrolledClasses(student.id);
-            const isCoach = student.coach === "Coach";
+            const isCoach = isStudentCoach(student.id);
             
             return (
               <TableRow 

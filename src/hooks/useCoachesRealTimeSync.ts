@@ -80,9 +80,9 @@ export const useCoachesRealTimeSync = ({
       )
       .subscribe();
 
-    // Listen to students table changes (auth_user_id linking for potential coaches)
+    // CRITICAL: Listen to students table changes for coach field updates
     const studentsChannel = supabase
-      .channel('students-auth-coach-changes')
+      .channel('students-coach-field-changes')
       .on(
         'postgres_changes',
         {
@@ -91,7 +91,12 @@ export const useCoachesRealTimeSync = ({
           table: 'students'
         },
         (payload) => {
-          console.log('Real-time: Student auth updated:', payload);
+          console.log('Real-time: Student updated:', payload);
+          // Check if coach field was changed
+          if (payload.new.coach !== payload.old.coach) {
+            console.log('Real-time: Student coach field changed, refreshing coaches...');
+            onStudentUpgraded?.();
+          }
           // Check if auth_user_id was added/changed (student got account)
           if (payload.new.auth_user_id !== payload.old.auth_user_id) {
             console.log('Real-time: Student auth linking changed, checking for coach role...');
@@ -109,7 +114,7 @@ export const useCoachesRealTimeSync = ({
         (payload) => {
           console.log('Real-time: New student added:', payload);
           // New students might potentially become coaches
-          if (payload.new.auth_user_id) {
+          if (payload.new.auth_user_id || payload.new.coach === "Coach") {
             onStudentUpgraded?.();
           }
         }
