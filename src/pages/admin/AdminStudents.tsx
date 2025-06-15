@@ -235,11 +235,18 @@ const AdminStudents = () => {
         p_user_id: student.id,
       });
       if (error) throw error;
-      toast.success(`"${student.name}" downgraded to Student`);
+      toast({
+        title: `"${student.name}" downgraded to Student`,
+        description: "The user now has student privileges.",
+      });
       // Refetch students to update status
       if (typeof refetch === "function") refetch();
     } catch (error) {
-      toast.error(`Failed to downgrade ${student.name}: ${(error as Error).message}`);
+      toast({
+        variant: "destructive",
+        title: `Failed to downgrade ${student.name}`,
+        description: (error as Error).message || "Unknown error",
+      });
     }
   };
 
