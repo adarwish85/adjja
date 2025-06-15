@@ -24,7 +24,8 @@ export const useImprovedStudentUpgrade = () => {
 
       if (error) throw error;
 
-      const result = data as UpgradeResult;
+      // Properly type the response as UpgradeResult
+      const result = data as unknown as UpgradeResult;
 
       if (result.success) {
         toast.success(result.message || `${result.student_name} successfully upgraded to Coach`);
