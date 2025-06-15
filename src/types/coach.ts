@@ -14,6 +14,7 @@ export interface Coach {
   created_at: string;
   updated_at: string;
   is_upgraded_student?: boolean; // Flag to identify coaches upgraded from students
+  auth_user_id?: string | null; // Add the missing auth_user_id property
 }
 
 // Add account-related properties to CoachInput

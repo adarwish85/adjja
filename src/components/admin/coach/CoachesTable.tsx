@@ -43,9 +43,9 @@ export const CoachesTable: React.FC<CoachesTableProps> = ({
           <TableHead className="w-12">
             <Checkbox
               checked={allSelected}
-              indeterminate={someSelected}
               onCheckedChange={onSelectAll}
               aria-label="Select all coaches"
+              className={someSelected ? "opacity-50" : ""}
             />
           </TableHead>
           <TableHead>Coach</TableHead>
