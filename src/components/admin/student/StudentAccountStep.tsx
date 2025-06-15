@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useStudentAuthStatus } from "@/hooks/useStudentAuthStatus";
+import { useCheckAuthUserByEmail } from "@/hooks/student-auth";
 
 interface StudentAccountStepProps {
   formData: {
@@ -22,7 +22,7 @@ export const StudentAccountStep = ({
   isEditing,
 }: StudentAccountStepProps) => {
   const [hasAuthUser, setHasAuthUser] = useState(false);
-  const { checkAuthUserByEmail, checking } = useStudentAuthStatus();
+  const { checkAuthUserByEmail, checking } = useCheckAuthUserByEmail();
 
   useEffect(() => {
     async function check() {

@@ -1343,6 +1343,7 @@ export type Database = {
       students: {
         Row: {
           attendance_rate: number
+          auth_user_id: string | null
           belt: string
           branch: string
           coach: string
@@ -1365,6 +1366,7 @@ export type Database = {
         }
         Insert: {
           attendance_rate?: number
+          auth_user_id?: string | null
           belt: string
           branch: string
           coach: string
@@ -1387,6 +1389,7 @@ export type Database = {
         }
         Update: {
           attendance_rate?: number
+          auth_user_id?: string | null
           belt?: string
           branch?: string
           coach?: string
@@ -1855,6 +1858,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      sync_student_auth_links: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          student_id: string
+          student_email: string
+          auth_user_id: string
+          action: string
+        }[]
+      }
       unenroll_student_from_class: {
         Args: { p_student_id: string; p_class_id: string }
         Returns: boolean
@@ -1873,9 +1885,24 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      upgrade_student_to_coach_with_autofix: {
+        Args: { p_student_id: string }
+        Returns: Json
+      }
       upgrade_user_to_coach: {
         Args: { p_user_id: string }
         Returns: boolean
+      }
+      validate_student_auth_links: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          student_id: string
+          student_name: string
+          student_email: string
+          has_auth_account: boolean
+          auth_user_id: string
+          issue_description: string
+        }[]
       }
     }
     Enums: {

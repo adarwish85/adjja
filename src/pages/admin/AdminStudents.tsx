@@ -31,7 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2, Mail, Phone, Calendar } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Mail, Phone, Calendar, RefreshCw } from "lucide-react";
 import { MultiStepStudentForm } from "@/components/admin/student/MultiStepStudentForm";
 import { useStudents, Student } from "@/hooks/useStudents";
 import { useClassEnrollments } from "@/hooks/useClassEnrollments";
@@ -54,6 +54,7 @@ import { StudentStatsCards } from "@/components/admin/student/StudentStatsCards"
 import { StudentsSearchBar } from "@/components/admin/student/StudentsSearchBar";
 import { StudentsTable } from "@/components/admin/student/StudentsTable";
 import { BulkActionsDropdown } from "@/components/admin/student/BulkActionsDropdown";
+import { StudentAuthValidationDialog } from "@/components/admin/student/StudentAuthValidationDialog";
 
 // Add this Belt type and array above the component or near BeltPromotionModal usage.
 type Belt =
@@ -80,6 +81,7 @@ const AdminStudents = () => {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [isBulkUpgradeOpen, setIsBulkUpgradeOpen] = useState(false);
+  const [isValidationDialogOpen, setIsValidationDialogOpen] = useState(false);
 
   const filteredStudents = students.filter(
     (student) =>
@@ -324,23 +326,34 @@ const AdminStudents = () => {
             <p className="text-bjj-gray">Manage academy students and class enrollments</p>
           </div>
           
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-white">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Student
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Add New Student</DialogTitle>
-                <DialogDescription>
-                  Enter the student's information using the multi-step wizard.
-                </DialogDescription>
-              </DialogHeader>
-              <MultiStepStudentForm onSubmit={handleAddStudent} />
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsValidationDialogOpen(true)}
+              className="text-bjj-navy border-bjj-navy"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Validate Auth Links
+            </Button>
+            
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-white">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Student
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Add New Student</DialogTitle>
+                  <DialogDescription>
+                    Enter the student's information using the multi-step wizard.
+                  </DialogDescription>
+                </DialogHeader>
+                <MultiStepStudentForm onSubmit={handleAddStudent} />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Bulk Actions Dropdown */}
@@ -440,7 +453,7 @@ const AdminStudents = () => {
           onSuccess={() => {
             setIsBulkUpgradeOpen(false);
             setSelectedStudentIds([]);
-            // Optionally, refetch students data
+            if (typeof refetch === "function") refetch();
           }}
         />
 
@@ -456,48 +469,57 @@ const AdminStudents = () => {
           }}
         />
 
-      {/* Render the modal outside the Table for selected student */}
-      <BeltPromotionModal
-        open={!!beltPromotionStudent}
-        onOpenChange={open => {
-          if (!open) setBeltPromotionStudent(null);
-        }}
-        currentBelt={
-          BELT_ORDER.includes(
-            (beltPromotionStudent?.belt ?? "") as Belt
-          )
-            ? (beltPromotionStudent?.belt as Belt)
-            : "White Belt"
-        }
-        currentStripes={beltPromotionStudent?.stripes || 0}
-        onPromote={(belt, stripes, note) => {
-          if (beltPromotionStudent) {
-            handlePromoteBelt(beltPromotionStudent, belt, stripes, note);
-          }
-        }}
-        loading={isPromoting}
-      />
+        {/* Auth Validation Dialog */}
+        <StudentAuthValidationDialog
+          open={isValidationDialogOpen}
+          onOpenChange={setIsValidationDialogOpen}
+          onComplete={() => {
+            if (typeof refetch === "function") refetch();
+          }}
+        />
 
-      {/* Course Enrollment Modal (single student) */}
-      <CourseEnrollmentModal
-        open={courseEnrollmentModal.open}
-        studentId={courseEnrollmentModal.studentId || ""}
-        onOpenChange={open => setCourseEnrollmentModal(v => ({ ...v, open }))}
-        onEnrolled={() => {
-          setCourseEnrollmentModal({ open: false, studentId: null });
-          if (typeof refetch === "function") refetch();
-        }}
-      />
-      {/* Class Enrollment Modal (single student) */}
-      <ClassEnrollmentModal
-        open={classEnrollmentModal.open}
-        studentId={classEnrollmentModal.studentId || ""}
-        onOpenChange={open => setClassEnrollmentModal(v => ({ ...v, open }))}
-        onEnrolled={() => {
-          setClassEnrollmentModal({ open: false, studentId: null });
-          if (typeof refetch === "function") refetch();
-        }}
-      />
+        {/* Render the modal outside the Table for selected student */}
+        <BeltPromotionModal
+          open={!!beltPromotionStudent}
+          onOpenChange={open => {
+            if (!open) setBeltPromotionStudent(null);
+          }}
+          currentBelt={
+            BELT_ORDER.includes(
+              (beltPromotionStudent?.belt ?? "") as Belt
+            )
+              ? (beltPromotionStudent?.belt as Belt)
+              : "White Belt"
+          }
+          currentStripes={beltPromotionStudent?.stripes || 0}
+          onPromote={(belt, stripes, note) => {
+            if (beltPromotionStudent) {
+              handlePromoteBelt(beltPromotionStudent, belt, stripes, note);
+            }
+          }}
+          loading={isPromoting}
+        />
+
+        {/* Course Enrollment Modal (single student) */}
+        <CourseEnrollmentModal
+          open={courseEnrollmentModal.open}
+          studentId={courseEnrollmentModal.studentId || ""}
+          onOpenChange={open => setCourseEnrollmentModal(v => ({ ...v, open }))}
+          onEnrolled={() => {
+            setCourseEnrollmentModal({ open: false, studentId: null });
+            if (typeof refetch === "function") refetch();
+          }}
+        />
+        {/* Class Enrollment Modal (single student) */}
+        <ClassEnrollmentModal
+          open={classEnrollmentModal.open}
+          studentId={classEnrollmentModal.studentId || ""}
+          onOpenChange={open => setClassEnrollmentModal(v => ({ ...v, open }))}
+          onEnrolled={() => {
+            setClassEnrollmentModal({ open: false, studentId: null });
+            if (typeof refetch === "function") refetch();
+          }}
+        />
       </div>
     </SuperAdminLayout>
   );

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useStudentAuthStatus } from "./useStudentAuthStatus";
+import { useStudentAuthStatus, useCheckAuthUserByEmail } from "./useStudentAuthStatus";
 
 export interface Student {
   id: string;
@@ -72,8 +72,8 @@ export const useStudents = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Import the helper
-  const authStatusHelper = useStudentAuthStatus();
+  // Import the refactored auth helpers
+  const { checkAuthUserByEmail } = useCheckAuthUserByEmail();
 
   const fetchStudents = async () => {
     try {
@@ -119,7 +119,7 @@ export const useStudents = () => {
       // Check for existing auth user before creating one
       if (studentData.createAccount && studentData.username && studentData.password) {
         // Use email for existing check
-        const alreadyExists = await authStatusHelper.checkAuthUserByEmail(studentData.email);
+        const alreadyExists = await checkAuthUserByEmail(studentData.email);
         if (alreadyExists) {
           toast.error("An Auth user already exists for this email. You cannot create another account for this student.");
           throw new Error("Auth user already exists for this email.");
@@ -141,6 +141,10 @@ export const useStudents = () => {
 
         console.log("Student account created successfully:", accountData);
         toast.success("Student account created successfully");
+        
+        // Set the auth_user_id for the student record
+        const authUserId = accountData;
+        studentData = { ...studentData, auth_user_id: authUserId } as any;
       }
 
       // Create the student record (remove account-specific fields)
@@ -237,6 +241,9 @@ export const useStudents = () => {
 
         console.log("useStudents: Student account created successfully during update:", accountData);
         toast.success("Student account created successfully");
+        
+        // Add the auth_user_id to updates
+        updates = { ...updates, auth_user_id: accountData } as any;
       }
 
       // Clean the update data
