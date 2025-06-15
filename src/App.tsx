@@ -1,19 +1,19 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { LandingPage } from "./components/LandingPage";
+import LandingPage from "./components/LandingPage";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import StudentProfile from "./pages/StudentProfile";
-import StudentProgress from "./pages/StudentProgress";
-import StudentLMS from "./pages/StudentLMS";
-import StudentAttendance from "./pages/StudentAttendance";
-import StudentNotes from "./pages/StudentNotes";
-import StudentSchedule from "./pages/StudentSchedule";
+import Dashboard from "./pages/StudentDashboard";
+import StudentProfile from "./pages/student/StudentProfile";
+import StudentProgress from "./pages/student/StudentProgress";
+import StudentLMS from "./pages/student/StudentLMS";
+import StudentAttendance from "./pages/student/StudentAttendance";
+import StudentNotes from "./pages/student/StudentNotes";
+import StudentSchedule from "./pages/student/StudentSchedule";
 import CoachDashboard from "./pages/coach/CoachDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCoaches from "./pages/admin/AdminCoaches";
@@ -40,7 +40,6 @@ function App() {
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
 
             {/* Protected Routes */}
             <Route path="/protected" element={
