@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Coach, CoachInput, CoachUpdate } from "@/types/coach";
@@ -23,23 +24,32 @@ export const coachService = {
           phone,
           belt,
           joined_date,
-          auth_user_id,
-          profiles:auth_user_id (
-            role_id,
-            user_roles:role_id (
-              name
-            )
-          )
+          auth_user_id
         `)
         .not("auth_user_id", "is", null);
 
       if (studentsError) throw studentsError;
 
+      // Get profiles with coach role for these students
+      const { data: coachProfiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select(`
+          id,
+          user_roles:role_id (
+            name
+          )
+        `)
+        .in("id", (upgradedStudents || []).map(s => s.auth_user_id).filter(Boolean));
+
+      if (profilesError) throw profilesError;
+
       // Filter students who have coach role
+      const coachProfileIds = (coachProfiles || [])
+        .filter(profile => profile.user_roles?.name === "Coach")
+        .map(profile => profile.id);
+
       const studentCoaches = (upgradedStudents || [])
-        .filter(student => 
-          student.profiles?.user_roles?.name === "Coach"
-        )
+        .filter(student => student.auth_user_id && coachProfileIds.includes(student.auth_user_id))
         .map(student => ({
           id: student.id,
           name: student.name,
@@ -61,6 +71,7 @@ export const coachService = {
       const allCoaches = [
         ...(coachesData || []).map(coach => ({
           ...coach,
+          status: coach.status as "active" | "inactive", // Type assertion for proper typing
           is_upgraded_student: false
         })),
         ...studentCoaches

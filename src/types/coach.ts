@@ -1,3 +1,4 @@
+
 export interface Coach {
   id: string;
   name: string;
@@ -15,5 +16,16 @@ export interface Coach {
   is_upgraded_student?: boolean; // Flag to identify coaches upgraded from students
 }
 
-export type CoachInput = Omit<Coach, "id" | "created_at" | "updated_at">;
-export type CoachUpdate = Partial<Omit<Coach, "id" | "created_at" | "updated_at">>;
+// Add account-related properties to CoachInput
+export type CoachInput = Omit<Coach, "id" | "created_at" | "updated_at"> & {
+  username?: string;
+  password?: string;
+  createAccount?: boolean;
+};
+
+// Add account-related properties to CoachUpdate  
+export type CoachUpdate = Partial<Omit<Coach, "id" | "created_at" | "updated_at">> & {
+  username?: string;
+  password?: string;
+  createAccount?: boolean;
+};
