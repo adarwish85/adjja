@@ -3,17 +3,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isToday, parseISO } from "date-fns";
-
-interface TodaysClass {
-  id: string;
-  name: string;
-  instructor: string;
-  schedule: string;
-  startTime: Date;
-  endTime: Date;
-  duration: number;
-}
+import { format } from "date-fns";
+import { getTodaySessions, ScheduledClassSession } from "@/utils/classScheduleUtils";
 
 export const useClassReminder = () => {
   const { user } = useAuth();
@@ -28,8 +19,8 @@ export const useClassReminder = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch today's classes for the student
-  const { data: todaysClasses = [] } = useQuery({
+  // Fetch enrolled classes for the student
+  const { data: enrolledClasses = [] } = useQuery({
     queryKey: ['todays-classes', user?.id, format(currentTime, 'yyyy-MM-dd')],
     queryFn: async () => {
       if (!user) return [];
@@ -42,71 +33,39 @@ export const useClassReminder = () => {
 
       if (!student) return [];
 
-      const { data: enrollments } = await supabase
+      const { data, error } = await supabase
         .from('class_enrollments')
         .select(`
+          *,
           classes (
             id,
             name,
             instructor,
             schedule,
-            duration
+            duration,
+            level,
+            location
           )
         `)
         .eq('student_id', student.id)
         .eq('status', 'active');
 
-      if (!enrollments) return [];
-
-      // Parse schedules and find today's classes
-      const today = format(currentTime, 'EEE'); // Get day name (Mon, Tue, etc.)
-      const todaysClasses: TodaysClass[] = [];
-
-      enrollments.forEach(enrollment => {
-        const classData = enrollment.classes as any;
-        if (!classData?.schedule) return;
-
-        // Parse schedule format: "Mon/Wed/Fri 7:00 PM"
-        const [days, time, period] = classData.schedule.split(' ');
-        if (!days || !time || !period) return;
-
-        const classDays = days.split('/');
-        const isClassToday = classDays.some(day => 
-          day.trim().toLowerCase().startsWith(today.toLowerCase())
-        );
-
-        if (isClassToday) {
-          // Parse time
-          const [hours, minutes] = time.split(':').map(Number);
-          let hour24 = hours;
-          if (period.toLowerCase() === 'pm' && hours !== 12) {
-            hour24 += 12;
-          } else if (period.toLowerCase() === 'am' && hours === 12) {
-            hour24 = 0;
-          }
-
-          const startTime = new Date();
-          startTime.setHours(hour24, minutes || 0, 0, 0);
-
-          const endTime = new Date(startTime);
-          endTime.setMinutes(endTime.getMinutes() + classData.duration);
-
-          todaysClasses.push({
-            id: classData.id,
-            name: classData.name,
-            instructor: classData.instructor,
-            schedule: classData.schedule,
-            startTime,
-            endTime,
-            duration: classData.duration
-          });
-        }
-      });
-
-      return todaysClasses;
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user
   });
+
+  // Use the existing parsing utility to get today's sessions
+  const todaysClasses = getTodaySessions(currentTime, enrolledClasses).map(session => ({
+    id: session.classId,
+    name: session.className,
+    instructor: session.instructor,
+    schedule: `${session.dayLabel} ${session.timeLabel}`,
+    startTime: session.startTime,
+    endTime: session.endTime,
+    duration: Math.round((session.endTime.getTime() - session.startTime.getTime()) / (1000 * 60))
+  }));
 
   // Check if reminder should be shown (from 9 AM onwards on class day)
   const shouldShowReminder = todaysClasses.length > 0 && currentTime.getHours() >= 9;
