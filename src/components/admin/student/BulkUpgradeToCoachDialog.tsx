@@ -1,10 +1,13 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useStudentAuthStatus } from "@/hooks/useStudentAuthStatus";
+import {
+  useCheckAuthUserByEmail,
+  useCheckAuthUserById,
+  useProfileIdByEmail,
+} from "@/hooks/student-auth";
 
 interface BulkUpgradeToCoachDialogProps {
   open: boolean;
@@ -22,7 +25,8 @@ export const BulkUpgradeToCoachDialog = ({
   onSuccess,
 }: BulkUpgradeToCoachDialogProps) => {
   const [loading, setLoading] = useState(false);
-  const { getProfileIdByEmail, checkAuthUserById } = useStudentAuthStatus();
+  const { getProfileIdByEmail } = useProfileIdByEmail();
+  const { checkAuthUserById } = useCheckAuthUserById();
   const [failed, setFailed] = useState<{ name: string; msg: string }[]>([]);
 
   // You must provide emails for this mapping
@@ -137,4 +141,3 @@ export const BulkUpgradeToCoachDialog = ({
     </Dialog>
   );
 };
-
