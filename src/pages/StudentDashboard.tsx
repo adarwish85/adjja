@@ -17,21 +17,27 @@ const StudentDashboard = () => {
   return (
     <StudentLayout>
       <div className="p-4 lg:p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <StudentWelcome />
-          <div className="flex items-center gap-4">
+        {/* Header with Welcome and Quick Actions */}
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          <div className="flex-1">
+            <StudentWelcome />
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-4 lg:pt-6">
             <QuotaDisplay quota={studentQuota} compact />
             <StudentCheckInButton />
           </div>
         </div>
         
+        {/* Analytics Section */}
         <StudentAnalytics />
         
+        {/* Main Content Grid */}
         <div className="grid lg:grid-cols-2 gap-6">
           <StudentProgress />
           <StudentLMS />
         </div>
         
+        {/* Secondary Content Grid */}
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <StudentSchedule />

@@ -11,11 +11,11 @@ export const StudentCheckInButton = () => {
     <>
       <Button
         onClick={() => setShowModal(true)}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-bjj-red hover:bg-bjj-red/90 shadow-lg lg:relative lg:bottom-auto lg:right-auto lg:h-auto lg:w-auto lg:rounded-md"
+        className="bg-bjj-red hover:bg-bjj-red/90 text-white shadow-lg whitespace-nowrap"
         size="lg"
       >
-        <CheckCircle className="h-6 w-6 lg:mr-2" />
-        <span className="hidden lg:inline">Check In</span>
+        <CheckCircle className="h-5 w-5 mr-2" />
+        Check In to Class
       </Button>
 
       <StudentCheckInModal 
