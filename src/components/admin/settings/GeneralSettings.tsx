@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,9 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building, Globe, Clock, Palette, Upload, X, Star } from "lucide-react";
+import { Building, Globe, Clock, Upload, X } from "lucide-react";
 import { useSettings, GeneralSettings as GeneralSettingsType } from "@/hooks/useSettings";
-import { useTheme } from "@/contexts/ThemeContext";
 import { SpecialtiesManagement } from "./SpecialtiesManagement";
 
 export const GeneralSettings = () => {
@@ -20,7 +20,6 @@ export const GeneralSettings = () => {
     worldCurrencies 
   } = useSettings();
   
-  const { theme, colorScheme, setTheme, setColorScheme } = useTheme();
   const [settings, setSettings] = useState<GeneralSettingsType>(defaultGeneralSettings);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -79,18 +78,6 @@ export const GeneralSettings = () => {
         }
       }
     }));
-  };
-
-  const handleThemeChange = (newTheme: string) => {
-    const themeValue = newTheme as 'light' | 'dark' | 'auto';
-    setSettings(prev => ({ ...prev, theme: newTheme }));
-    setTheme(themeValue);
-  };
-
-  const handleColorSchemeChange = (newColorScheme: string) => {
-    const colorSchemeValue = newColorScheme as 'bjj-gold' | 'blue' | 'green' | 'purple' | 'black';
-    setSettings(prev => ({ ...prev, colorScheme: newColorScheme }));
-    setColorScheme(colorSchemeValue);
   };
 
   const handleSpecialtiesUpdate = (newSpecialties: string[]) => {
@@ -307,65 +294,6 @@ export const GeneralSettings = () => {
               </div>
             </div>
           ))}
-        </CardContent>
-      </Card>
-
-      {/* Theme Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-bjj-navy flex items-center gap-2">
-            <Palette className="h-5 w-5" />
-            Theme & Appearance
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="theme">Theme</Label>
-              <Select 
-                value={settings.theme} 
-                onValueChange={handleThemeChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select theme" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">Light</SelectItem>
-                  <SelectItem value="dark">Dark</SelectItem>
-                  <SelectItem value="auto">Auto</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="color-scheme">Color Scheme</Label>
-              <Select 
-                value={settings.colorScheme} 
-                onValueChange={handleColorSchemeChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select color scheme" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="black">Black</SelectItem>
-                  <SelectItem value="bjj-gold">BJJ Gold</SelectItem>
-                  <SelectItem value="blue">Blue</SelectItem>
-                  <SelectItem value="green">Green</SelectItem>
-                  <SelectItem value="purple">Purple</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          {/* Color Scheme Preview */}
-          <div className="mt-4">
-            <Label>Preview</Label>
-            <div className="flex space-x-2 mt-2">
-              <div className="w-8 h-8 rounded bg-primary border-2 border-border"></div>
-              <div className="w-8 h-8 rounded bg-accent border-2 border-border"></div>
-              <div className="w-8 h-8 rounded bg-secondary border-2 border-border"></div>
-              <div className="w-8 h-8 rounded bg-muted border-2 border-border"></div>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
