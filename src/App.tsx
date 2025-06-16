@@ -123,6 +123,14 @@ function App() {
               </ProtectedRoute>
             } />
 
+            <Route path="/coach/students" element={
+              <ProtectedRoute>
+                <RoleGuard allowedRoles={['Coach']}>
+                  <CoachStudents />
+                </RoleGuard>
+              </ProtectedRoute>
+            } />
+
             {/* Admin Routes */}
             <Route path="/admin" element={
               <ProtectedRoute>
@@ -214,4 +222,3 @@ function App() {
 }
 
 export default App;
-

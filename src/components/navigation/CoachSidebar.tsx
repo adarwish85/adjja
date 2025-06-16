@@ -1,4 +1,5 @@
 
+import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -23,7 +24,7 @@ import {
 } from "lucide-react";
 
 const menuItems = [
-  { title: "Dashboard", icon: BarChart3, url: "/coach/dashboard", active: true },
+  { title: "Dashboard", icon: BarChart3, url: "/coach/dashboard" },
   { title: "My Students", icon: Users, url: "/coach/students" },
   { title: "Attendance", icon: Calendar, url: "/coach/attendance" },
   { title: "Notes", icon: StickyNote, url: "/coach/notes" },
@@ -33,6 +34,8 @@ const menuItems = [
 ];
 
 export const CoachSidebar = () => {
+  const location = useLocation();
+
   return (
     <Sidebar className="border-r border-gray-200">
       <SidebarHeader className="p-6 border-b border-gray-200">
@@ -58,13 +61,13 @@ export const CoachSidebar = () => {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    isActive={item.active}
+                    isActive={location.pathname === item.url}
                     className="w-full justify-start px-3 py-2 text-bjj-gray hover:bg-bjj-gold/10 hover:text-bjj-gold-dark data-[active=true]:bg-bjj-gold/20 data-[active=true]:text-bjj-gold-dark"
                   >
-                    <a href={item.url} className="flex items-center space-x-3">
+                    <Link to={item.url} className="flex items-center space-x-3">
                       <item.icon className="h-5 w-5" />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
