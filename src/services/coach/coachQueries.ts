@@ -123,10 +123,52 @@ export const coachQueries = {
             profileMap.set(profile.user_id, profile);
           });
 
-          upgradedStudentCoaches = coachStudents.map(student => {
+          // Calculate student counts for each upgraded coach
+          for (const student of coachStudents) {
             const coachProfile = profileMap.get(student.auth_user_id) || {};
             
-            return {
+            // Count students for this coach
+            let studentCount = 0;
+            
+            try {
+              // Count direct students assigned to this coach
+              const { data: directStudents, error: directError } = await supabase
+                .from("students")
+                .select("id", { count: 'exact' })
+                .or(`coach.eq.${student.name},coach_user_id.eq.${student.auth_user_id}`)
+                .eq("status", "active");
+
+              if (!directError && directStudents) {
+                studentCount += directStudents.length;
+              }
+
+              // Count students enrolled in classes where this coach is instructor
+              const { data: coachClasses, error: classesError } = await supabase
+                .from("classes")
+                .select("id")
+                .eq("instructor", student.name)
+                .eq("status", "Active");
+
+              if (!classesError && coachClasses && coachClasses.length > 0) {
+                const classIds = coachClasses.map(c => c.id);
+                
+                const { data: enrollments, error: enrollmentError } = await supabase
+                  .from("class_enrollments")
+                  .select("student_id", { count: 'exact' })
+                  .in("class_id", classIds)
+                  .eq("status", "active");
+
+                if (!enrollmentError && enrollments) {
+                  // Add unique students from class enrollments (avoid double counting)
+                  const uniqueClassStudents = new Set(enrollments.map(e => e.student_id));
+                  studentCount += uniqueClassStudents.size;
+                }
+              }
+            } catch (error) {
+              console.error("fetchCoaches: Error counting students for coach:", student.name, error);
+            }
+            
+            upgradedStudentCoaches.push({
               id: student.id,
               name: student.name,
               email: student.email,
@@ -135,15 +177,15 @@ export const coachQueries = {
               specialties: coachProfile.specialties || [],
               branch: "Main",
               status: "active" as const,
-              students_count: 0,
+              students_count: studentCount,
               assigned_classes: coachProfile.assigned_classes || [],
               joined_date: student.joined_date,
               created_at: student.joined_date,
               updated_at: student.joined_date,
               is_upgraded_student: true,
               auth_user_id: student.auth_user_id
-            };
-          });
+            });
+          }
           
           console.log("fetchCoaches: Upgraded student coaches:", upgradedStudentCoaches.length);
         } else {
@@ -154,7 +196,52 @@ export const coachQueries = {
         // Continue without upgraded coaches rather than failing completely
       }
 
-      // Step 3: Combine and return results
+      // Step 3: Update student counts for traditional coaches as well
+      for (const coach of traditionalCoaches) {
+        try {
+          let studentCount = 0;
+          
+          // Count direct students assigned to this coach
+          const { data: directStudents, error: directError } = await supabase
+            .from("students")
+            .select("id", { count: 'exact' })
+            .eq("coach", coach.name)
+            .eq("status", "active");
+
+          if (!directError && directStudents) {
+            studentCount += directStudents.length;
+          }
+
+          // Count students enrolled in classes where this coach is instructor
+          const { data: coachClasses, error: classesError } = await supabase
+            .from("classes")
+            .select("id")
+            .eq("instructor", coach.name)
+            .eq("status", "Active");
+
+          if (!classesError && coachClasses && coachClasses.length > 0) {
+            const classIds = coachClasses.map(c => c.id);
+            
+            const { data: enrollments, error: enrollmentError } = await supabase
+              .from("class_enrollments")
+              .select("student_id", { count: 'exact' })
+              .in("class_id", classIds)
+              .eq("status", "active");
+
+            if (!enrollmentError && enrollments) {
+              // Add unique students from class enrollments (avoid double counting)
+              const uniqueClassStudents = new Set(enrollments.map(e => e.student_id));
+              studentCount += uniqueClassStudents.size;
+            }
+          }
+          
+          coach.students_count = studentCount;
+        } catch (error) {
+          console.error("fetchCoaches: Error counting students for traditional coach:", coach.name, error);
+        }
+      }
+
+      // Step 4: Combine and return results
       const allCoaches = [...traditionalCoaches, ...upgradedStudentCoaches];
       console.log("fetchCoaches: Total coaches found:", allCoaches.length);
       

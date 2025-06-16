@@ -113,10 +113,62 @@ export const useCoachesRealTimeSync = ({
         },
         (payload) => {
           console.log('Real-time: New student added:', payload);
-          // New students might potentially become coaches
+          // New students might potentially become coaches or be assigned to coaches
           if (payload.new.auth_user_id || payload.new.coach === "Coach") {
             onStudentUpgraded?.();
           }
+        }
+      )
+      .subscribe();
+
+    // NEW: Listen to class enrollment changes that affect coach student counts
+    const enrollmentsChannel = supabase
+      .channel('class-enrollments-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'class_enrollments'
+        },
+        (payload) => {
+          console.log('Real-time: Class enrollment changed:', payload);
+          // Any enrollment change can affect coach student counts
+          onStudentUpgraded?.();
+        }
+      )
+      .subscribe();
+
+    // NEW: Listen to class changes that might affect coach assignments
+    const classesChannel = supabase
+      .channel('classes-instructor-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'classes'
+        },
+        (payload) => {
+          console.log('Real-time: Class updated:', payload);
+          // Check if instructor was changed
+          if (payload.new.instructor !== payload.old.instructor) {
+            console.log('Real-time: Class instructor changed, refreshing coaches...');
+            onStudentUpgraded?.();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'classes'
+        },
+        (payload) => {
+          console.log('Real-time: New class added:', payload);
+          // New classes with instructors might affect coach counts
+          onStudentUpgraded?.();
         }
       )
       .subscribe();
@@ -146,6 +198,8 @@ export const useCoachesRealTimeSync = ({
       supabase.removeChannel(coachesChannel);
       supabase.removeChannel(profilesChannel);
       supabase.removeChannel(studentsChannel);
+      supabase.removeChannel(enrollmentsChannel);
+      supabase.removeChannel(classesChannel);
       supabase.removeChannel(userRolesChannel);
     };
   }, [onCoachAdded, onCoachUpdated, onCoachRemoved, onStudentUpgraded]);
