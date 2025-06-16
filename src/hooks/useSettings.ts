@@ -12,8 +12,6 @@ export interface GeneralSettings {
   timezone: string;
   currency: string;
   language: string;
-  theme: string;
-  colorScheme: string;
   specialties: string[];
   businessHours: Record<string, { enabled: boolean; start: string; end: string }>;
 }
@@ -226,8 +224,6 @@ export const useSettings = () => {
     timezone: "africa/cairo",
     currency: "egp",
     language: "en",
-    theme: "light",
-    colorScheme: "black",
     specialties: [
       "Fundamentals",
       "Competition",

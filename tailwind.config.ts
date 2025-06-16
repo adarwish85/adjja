@@ -63,13 +63,13 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// BJJ Academy custom colors using CSS variables
+				// BJJ Academy standardized colors using blue
 				bjj: {
 					navy: '#1a202c',
 					'navy-light': '#2d3748',
-					gold: 'var(--bjj-gold)',
-					'gold-light': 'var(--bjj-gold-light)',
-					'gold-dark': 'var(--bjj-gold-dark)',
+					gold: '#1d6bcd',
+					'gold-light': '#4a8bd9',
+					'gold-dark': '#1557b3',
 					white: '#ffffff',
 					gray: '#4a5568'
 				}
