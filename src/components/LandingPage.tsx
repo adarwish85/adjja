@@ -2,182 +2,255 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { UserCog, Users, GraduationCap, BarChart3, Calendar, Trophy, BookOpen, Shield } from "lucide-react";
+import { UserCog, Users, GraduationCap, BarChart3, Calendar, Trophy, BookOpen, Shield, Star, Award, Target, Heart, ChevronRight, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const LandingPage = () => {
   const navigate = useNavigate();
 
-  const features = [
+  const programs = [
     {
-      icon: <Users className="h-8 w-8 text-bjj-gold-dark" />,
-      title: "Student Management",
-      description: "Comprehensive student profiles, attendance tracking, and progress monitoring"
+      title: "Beginner Program",
+      description: "Perfect for those new to BJJ. Learn fundamentals in a supportive environment.",
+      level: "Beginner",
+      duration: "3-6 months"
     },
     {
-      icon: <Calendar className="h-8 w-8 text-bjj-gold-dark" />,
-      title: "Class Scheduling",
-      description: "Organize classes, manage schedules, and track participation"
+      title: "Advanced Training",
+      description: "Refine your technique and compete at higher levels.",
+      level: "Advanced",
+      duration: "Ongoing"
     },
     {
-      icon: <BarChart3 className="h-8 w-8 text-bjj-gold-dark" />,
-      title: "Performance Analytics",
-      description: "Detailed insights into student progress and academy performance"
-    },
-    {
-      icon: <BookOpen className="h-8 w-8 text-bjj-gold-dark" />,
-      title: "Learning Management",
-      description: "Online courses, educational content, and skill development tracking"
-    },
-    {
-      icon: <Trophy className="h-8 w-8 text-bjj-gold-dark" />,
-      title: "Belt Progression",
-      description: "Track student advancement through belt rankings and achievements"
-    },
-    {
-      icon: <Shield className="h-8 w-8 text-bjj-gold-dark" />,
-      title: "Secure Access",
-      description: "Role-based permissions for admins, coaches, and students"
+      title: "Kids BJJ",
+      description: "Safe, fun classes that build confidence and discipline in children.",
+      level: "Kids",
+      duration: "Age-appropriate"
     }
   ];
 
-  const userRoles = [
+  const benefits = [
     {
-      icon: <UserCog className="h-12 w-12 text-bjj-gold-dark" />,
-      title: "Super Admin",
-      description: "Complete system control",
-      features: ["Manage all users", "Academy analytics", "System configuration", "Payment tracking"],
-      badge: "Full Access"
+      icon: <Shield className="h-8 w-8 text-bjj-gold" />,
+      title: "Self-Defense",
+      description: "Learn practical techniques to protect yourself and your loved ones"
     },
     {
-      icon: <Users className="h-12 w-12 text-bjj-gold-dark" />,
-      title: "Coach",
-      description: "Student & class management",
-      features: ["Track attendance", "Student progress", "Upload content", "Performance notes"],
-      badge: "Instructor"
+      icon: <Heart className="h-8 w-8 text-bjj-gold" />,
+      title: "Physical Fitness",
+      description: "Build strength, flexibility, and cardiovascular endurance"
     },
     {
-      icon: <GraduationCap className="h-12 w-12 text-bjj-gold-dark" />,
-      title: "Student",
-      description: "Personal training portal",
-      features: ["Check-in to classes", "View progress", "Access courses", "Track achievements"],
-      badge: "Learner"
+      icon: <Users className="h-8 w-8 text-bjj-gold" />,
+      title: "Community",
+      description: "Join a supportive family of martial artists and lifelong friends"
+    },
+    {
+      icon: <Target className="h-8 w-8 text-bjj-gold" />,
+      title: "Mental Discipline",
+      description: "Develop focus, patience, and problem-solving skills"
+    }
+  ];
+
+  const achievements = [
+    "15+ Years of Teaching Excellence",
+    "500+ Students Trained",
+    "Multiple Competition Champions",
+    "Family-Friendly Environment"
+  ];
+
+  const testimonials = [
+    {
+      name: "Sarah Johnson",
+      text: "Ahmed Darwish Academy transformed my life. The instructors are patient, knowledgeable, and truly care about each student's progress.",
+      belt: "Blue Belt"
+    },
+    {
+      name: "Michael Chen",
+      text: "My kids love their classes here. They've gained so much confidence and discipline. Highly recommend!",
+      belt: "Parent"
+    },
+    {
+      name: "Alex Rodriguez",
+      text: "The structured curriculum and progress tracking keep me motivated. Best BJJ academy in the area!",
+      belt: "Purple Belt"
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      {/* Header */}
-      <header className="relative z-10 py-8 bg-white shadow-sm">
-        <div className="w-full px-4 flex items-center justify-between">
+    <div className="min-h-screen bg-white">
+      {/* Navigation Header */}
+      <header className="relative z-50 bg-white/95 backdrop-blur-sm shadow-sm sticky top-0">
+        <div className="w-full px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="h-12 w-12 bg-bjj-gold rounded-lg flex items-center justify-center">
               <Shield className="h-8 w-8 text-white font-bold" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-bjj-navy">ADJJA</h1>
-              <p className="text-bjj-gold-dark text-sm">Academy Management System</p>
+              <h1 className="text-xl font-bold text-bjj-navy">Ahmed Darwish Academy</h1>
+              <p className="text-bjj-gold text-sm">Brazilian Jiu-Jitsu</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <Button 
               variant="outline" 
               className="border-bjj-gold text-bjj-gold hover:bg-bjj-gold hover:text-white"
+              onClick={() => navigate("/login")}
             >
-              Contact Support
+              <Shield className="w-4 h-4 mr-2" />
+              Member Login
             </Button>
             <Button 
               className="bg-bjj-gold hover:bg-bjj-gold-dark text-white"
               onClick={() => navigate("/login")}
             >
-              Sign In
+              Get Started
+              <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="py-16 text-center animate-fade-in">
-        <div className="w-full px-4 max-w-4xl mx-auto">
-          <Badge className="mb-6 bg-bjj-gold/10 text-bjj-gold-dark border-bjj-gold/30">
-            Brazilian Jiu-Jitsu Academy Management
+      <section className="relative min-h-[90vh] flex items-center justify-center bg-gradient-to-br from-bjj-navy via-bjj-navy/95 to-bjj-navy/90">
+        {/* Background overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1544844179-ac0aeebb4333?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`
+          }}
+        />
+        
+        <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
+          <Badge className="mb-6 bg-bjj-gold/20 text-bjj-gold border-bjj-gold/30 text-lg px-4 py-2">
+            Empowering Students On & Off the Mat
           </Badge>
-          <h2 className="text-5xl md:text-6xl font-bold text-bjj-navy mb-6 leading-tight">
-            Manage Your BJJ Academy with
-            <span className="text-bjj-gold-dark block">Excellence</span>
-          </h2>
-          <p className="text-xl text-bjj-gray mb-12 max-w-2xl mx-auto">
-            Comprehensive student management, attendance tracking, performance analytics, and online learning platform designed specifically for martial arts academies.
+          
+          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+            Welcome to
+            <span className="block text-bjj-gold">Ahmed Darwish</span>
+            <span className="block text-3xl md:text-5xl">Jiu-Jitsu Academy</span>
+          </h1>
+          
+          <p className="text-xl md:text-2xl text-gray-200 mb-12 max-w-3xl mx-auto leading-relaxed">
+            Master the art of Brazilian Jiu-Jitsu while building confidence, strength, and lifelong friendships. 
+            Join our academy and discover the transformative power of martial arts.
           </p>
           
-          {/* User Role Information Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-16">
-            {userRoles.map((role, index) => (
-              <Card key={role.title} className="bg-white border-bjj-gold/20 hover:shadow-lg transition-all duration-300">
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 p-3 bg-bjj-gold/10 rounded-full w-fit">
-                    {role.icon}
-                  </div>
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <CardTitle className="text-bjj-navy text-xl">{role.title}</CardTitle>
-                    <Badge variant="secondary" className="bg-bjj-gold text-white text-xs">
-                      {role.badge}
-                    </Badge>
-                  </div>
-                  <CardDescription className="text-bjj-gray">
-                    {role.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {role.features.map((feature, idx) => (
-                      <li key={idx} className="text-bjj-gray text-sm flex items-center">
-                        <div className="h-1.5 w-1.5 bg-bjj-gold-dark rounded-full mr-2" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="text-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button 
               size="lg"
               className="bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold px-8 py-4 text-lg"
               onClick={() => navigate("/login")}
             >
-              Get Started - Sign In
+              <Play className="w-5 h-5 mr-2" />
+              Start Your Journey
             </Button>
-            <p className="text-bjj-gray mt-4">
-              Access your personalized dashboard based on your role
-            </p>
+            <Button 
+              size="lg"
+              variant="outline"
+              className="border-white text-white hover:bg-white hover:text-bjj-navy font-semibold px-8 py-4 text-lg"
+              onClick={() => navigate("/login")}
+            >
+              <Shield className="w-5 h-5 mr-2" />
+              Member Login
+            </Button>
+          </div>
+          
+          <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {achievements.map((achievement, index) => (
+              <div key={index} className="text-white">
+                <div className="text-2xl md:text-3xl font-bold text-bjj-gold mb-2">
+                  {achievement.split(' ')[0]}
+                </div>
+                <div className="text-sm md:text-base opacity-90">
+                  {achievement.split(' ').slice(1).join(' ')}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="w-full px-4">
+      {/* About Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <Badge className="mb-4 bg-bjj-gold/10 text-bjj-gold border-bjj-gold/30">
+                About Our Academy
+              </Badge>
+              <h2 className="text-4xl font-bold text-bjj-navy mb-6">
+                Meet Ahmed Darwish
+              </h2>
+              <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+                With over 15 years of experience in Brazilian Jiu-Jitsu, Ahmed Darwish founded this academy 
+                with a vision to create a welcoming environment where students of all levels can learn, grow, 
+                and achieve their personal goals.
+              </p>
+              <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+                Our academy emphasizes not just physical technique, but also mental discipline, respect, 
+                and the development of character. We believe that Brazilian Jiu-Jitsu is more than just 
+                a martial art—it's a way of life that builds confidence and resilience.
+              </p>
+              <div className="flex items-center space-x-4">
+                <Award className="w-8 h-8 text-bjj-gold" />
+                <div>
+                  <div className="font-semibold text-bjj-navy">Black Belt</div>
+                  <div className="text-gray-600">Brazilian Jiu-Jitsu</div>
+                </div>
+              </div>
+            </div>
+            <div className="relative">
+              <img
+                src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                alt="Ahmed Darwish training"
+                className="rounded-lg shadow-2xl"
+              />
+              <div className="absolute -bottom-6 -right-6 bg-bjj-gold text-white p-6 rounded-lg shadow-lg">
+                <div className="text-2xl font-bold">15+</div>
+                <div className="text-sm">Years Experience</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Programs Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h3 className="text-4xl font-bold text-bjj-navy mb-4">Powerful Features</h3>
-            <p className="text-xl text-bjj-gray max-w-2xl mx-auto">
-              Everything you need to run a successful BJJ academy in one comprehensive platform
+            <Badge className="mb-4 bg-bjj-gold/10 text-bjj-gold border-bjj-gold/30">
+              Training Programs
+            </Badge>
+            <h2 className="text-4xl font-bold text-bjj-navy mb-4">Choose Your Path</h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              We offer structured programs designed to meet you where you are and take you where you want to go.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <Card key={feature.title} className="bg-white border-bjj-gold/20 hover:shadow-lg transition-all duration-300">
+          <div className="grid md:grid-cols-3 gap-8">
+            {programs.map((program, index) => (
+              <Card key={program.title} className="border-bjj-gold/20 hover:shadow-lg transition-all duration-300 hover:border-bjj-gold/40">
                 <CardHeader>
-                  <div className="mb-4">
-                    {feature.icon}
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge variant="outline" className="border-bjj-gold text-bjj-gold">
+                      {program.level}
+                    </Badge>
+                    <GraduationCap className="w-6 h-6 text-bjj-gold" />
                   </div>
-                  <CardTitle className="text-bjj-navy text-xl">{feature.title}</CardTitle>
+                  <CardTitle className="text-bjj-navy">{program.title}</CardTitle>
+                  <CardDescription className="text-gray-600">
+                    {program.description}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-bjj-gray">{feature.description}</p>
+                  <div className="text-sm text-gray-500 mb-4">
+                    Duration: {program.duration}
+                  </div>
+                  <Button className="w-full bg-bjj-gold hover:bg-bjj-gold-dark">
+                    Learn More
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -185,17 +258,120 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Benefits Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <Badge className="mb-4 bg-bjj-gold/10 text-bjj-gold border-bjj-gold/30">
+              Why Choose BJJ?
+            </Badge>
+            <h2 className="text-4xl font-bold text-bjj-navy mb-4">Transform Your Life</h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Brazilian Jiu-Jitsu offers benefits that extend far beyond the mat.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {benefits.map((benefit, index) => (
+              <Card key={benefit.title} className="text-center border-bjj-gold/20 hover:shadow-lg transition-all duration-300">
+                <CardHeader>
+                  <div className="mx-auto mb-4 p-3 bg-bjj-gold/10 rounded-full w-fit">
+                    {benefit.icon}
+                  </div>
+                  <CardTitle className="text-bjj-navy text-xl">{benefit.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">{benefit.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <Badge className="mb-4 bg-bjj-gold/10 text-bjj-gold border-bjj-gold/30">
+              Student Success Stories
+            </Badge>
+            <h2 className="text-4xl font-bold text-bjj-navy mb-4">What Our Students Say</h2>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="border-bjj-gold/20 hover:shadow-lg transition-all duration-300">
+                <CardHeader>
+                  <div className="flex items-center space-x-1 mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-5 h-5 fill-bjj-gold text-bjj-gold" />
+                    ))}
+                  </div>
+                  <CardDescription className="text-gray-700 italic">
+                    "{testimonial.text}"
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="font-semibold text-bjj-navy">{testimonial.name}</div>
+                  <div className="text-sm text-bjj-gold">{testimonial.belt}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Call to Action Section */}
+      <section className="py-20 bg-gradient-to-r from-bjj-navy to-bjj-navy/90">
+        <div className="max-w-4xl mx-auto text-center px-6">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            Ready to Start Your Journey?
+          </h2>
+          <p className="text-xl text-gray-200 mb-12 max-w-2xl mx-auto">
+            Join the Ahmed Darwish Academy family today and discover the transformative power of Brazilian Jiu-Jitsu.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button 
+              size="lg"
+              className="bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold px-8 py-4 text-lg"
+              onClick={() => navigate("/login")}
+            >
+              <Play className="w-5 h-5 mr-2" />
+              Get Started Today
+            </Button>
+            <Button 
+              size="lg"
+              variant="outline"
+              className="border-white text-white hover:bg-white hover:text-bjj-navy font-semibold px-8 py-4 text-lg"
+              onClick={() => navigate("/login")}
+            >
+              <Shield className="w-5 h-5 mr-2" />
+              Member Login
+            </Button>
+          </div>
+          
+          <p className="text-gray-300 mt-8">
+            New students start with our comprehensive profile wizard to personalize your training experience.
+          </p>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="py-12 text-center bg-white">
-        <div className="w-full px-4">
+      <footer className="py-12 bg-bjj-navy text-center">
+        <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-center justify-center space-x-3 mb-6">
             <div className="h-8 w-8 bg-bjj-gold rounded flex items-center justify-center">
               <Shield className="h-5 w-5 text-white" />
             </div>
-            <span className="text-bjj-navy font-semibold">ADJJA Academy Management</span>
+            <span className="text-white font-semibold text-lg">Ahmed Darwish Academy</span>
           </div>
-          <p className="text-bjj-gray">
-            Empowering Brazilian Jiu-Jitsu academies with modern management tools
+          <p className="text-gray-300 mb-4">
+            Empowering students on and off the mat with the art of Brazilian Jiu-Jitsu
+          </p>
+          <p className="text-gray-400 text-sm">
+            © 2024 Ahmed Darwish Jiu-Jitsu Academy. All rights reserved.
           </p>
         </div>
       </footer>
