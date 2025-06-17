@@ -136,11 +136,7 @@ const LandingPage = () => {
               <h2 className="text-4xl font-bold text-bjj-navy mb-6">
                 Meet Ahmed Darwish
               </h2>
-              <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-                With over 15 years of experience in Brazilian Jiu-Jitsu, Ahmed Darwish founded this academy 
-                with a vision to create a welcoming environment where students of all levels can learn, grow, 
-                and achieve their personal goals.
-              </p>
+              <p className="text-lg text-gray-700 mb-6 leading-relaxed">With over 10 years of experience in Brazilian Jiu-Jitsu, Ahmed Darwish founded this academy with a vision to create a welcoming environment where students of all levels can learn, grow, and achieve their personal goals.</p>
               <p className="text-lg text-gray-700 mb-8 leading-relaxed">
                 Our academy emphasizes not just physical technique, but also mental discipline, respect, 
                 and the development of character. We believe that Brazilian Jiu-Jitsu is more than just 
@@ -149,15 +145,15 @@ const LandingPage = () => {
               <div className="flex items-center space-x-4">
                 <Award className="w-8 h-8 text-bjj-gold" />
                 <div>
-                  <div className="font-semibold text-bjj-navy">Black Belt</div>
+                  <div className="font-semibold text-bjj-navy">Purple Belt</div>
                   <div className="text-gray-600">Brazilian Jiu-Jitsu</div>
                 </div>
               </div>
             </div>
             <div className="relative">
-              <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Ahmed Darwish training" className="rounded-lg shadow-2xl" />
+              <img alt="Ahmed Darwish training" src="/lovable-uploads/1625486b-41bd-49fa-8925-02e609371239.jpg" className="rounded-lg shadow-2xl object-contain" />
               <div className="absolute -bottom-6 -right-6 bg-bjj-gold text-white p-6 rounded-lg shadow-lg">
-                <div className="text-2xl font-bold">15+</div>
+                <div className="text-2xl font-bold">10+</div>
                 <div className="text-sm">Years Experience</div>
               </div>
             </div>
@@ -278,7 +274,7 @@ const LandingPage = () => {
               <Play className="w-5 h-5 mr-2" />
               Get Started Today
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-bjj-navy font-semibold px-8 py-4 text-lg" onClick={() => navigate("/login")}>
+            <Button size="lg" variant="outline" onClick={() => navigate("/login")} className="border-white hover:bg-white font-semibold px-8 py-4 text-lg text-zinc-950">
               <Shield className="w-5 h-5 mr-2" />
               Member Login
             </Button>
