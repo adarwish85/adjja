@@ -48,7 +48,7 @@ export const ProfileCompletionBar = () => {
         .single();
 
       const hasBasicInfo = !!(profile?.phone && profile?.name);
-      const hasBJJProfile = !!(bjjProfile?.belt_rank);
+      const hasBJJProfile = !!bjjProfile?.belt_rank;
       const hasProfilePicture = !!profile?.profile_picture_url;
       const hasCoverPhoto = !!profile?.cover_photo_url;
 

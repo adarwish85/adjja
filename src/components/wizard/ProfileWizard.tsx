@@ -152,14 +152,19 @@ export const ProfileWizard = () => {
         throw studentError;
       }
 
-      // Log completion audit
-      await supabase
+      // Log completion audit - fix the field name and type conversion
+      const { error: auditError } = await supabase
         .from('profile_completion_audit')
         .insert({
           user_id: user.id,
           step_completed: 'wizard_completed',
-          field_data: wizardData
+          field_data: JSON.parse(JSON.stringify(wizardData)) // Convert to proper JSON
         });
+
+      if (auditError) {
+        console.error('Audit log error:', auditError);
+        // Don't fail the whole process for audit logging
+      }
 
       toast.success("Profile submitted successfully! Please wait for admin approval.");
       navigate("/profile-pending");
