@@ -15,8 +15,10 @@ export const useCoachStudents = () => {
     
     try {
       setLoading(true);
-      console.log('🎓 useCoachStudents: Fetching students for coach:', userProfile.name);
+      console.log('🎓 useCoachStudents: Fetching students for coach:', userProfile.name, 'ID:', userProfile.id);
       
+      let allStudents: any[] = [];
+
       // Step 1: Get students directly assigned to this coach by name or user_id
       const { data: directStudents, error: directError } = await supabase
         .from("students")
@@ -26,14 +28,14 @@ export const useCoachStudents = () => {
 
       if (directError) {
         console.error("useCoachStudents: Error fetching direct students:", directError);
+      } else {
+        allStudents = directStudents || [];
+        console.log('🎓 useCoachStudents: Found direct students:', allStudents.length);
       }
-
-      let allStudents = directStudents || [];
-      console.log('🎓 useCoachStudents: Found direct students:', allStudents.length);
 
       // Step 2: Get students enrolled in classes where this coach is the instructor
       try {
-        // First, get classes where this coach is the instructor
+        // First, get classes where this coach is the instructor (by name)
         const { data: coachClasses, error: classesError } = await supabase
           .from("classes")
           .select("id, name, instructor")
@@ -43,7 +45,7 @@ export const useCoachStudents = () => {
         if (classesError) {
           console.error("useCoachStudents: Error fetching coach classes:", classesError);
         } else if (coachClasses && coachClasses.length > 0) {
-          console.log('🎓 useCoachStudents: Found coach classes:', coachClasses.length);
+          console.log('🎓 useCoachStudents: Found coach classes:', coachClasses.map(c => c.name));
           
           const classIds = coachClasses.map(c => c.id);
           
@@ -75,7 +77,55 @@ export const useCoachStudents = () => {
         console.error("useCoachStudents: Error in class enrollment lookup:", error);
       }
 
-      // Step 3: Type and format the final students array
+      // Step 3: For upgraded coaches, also check if there are any additional assignments
+      // This covers edge cases where the coach might be assigned in different ways
+      if (userProfile.id) {
+        try {
+          // Check if this user has any coach profile assignments
+          const { data: coachProfile, error: coachProfileError } = await supabase
+            .from("coach_profiles")
+            .select("assigned_classes")
+            .eq("user_id", userProfile.id)
+            .single();
+
+          if (!coachProfileError && coachProfile?.assigned_classes?.length > 0) {
+            console.log('🎓 useCoachStudents: Found coach profile with assigned classes:', coachProfile.assigned_classes);
+            
+            // Get students from assigned classes (if any additional ones)
+            const { data: additionalClasses, error: additionalClassesError } = await supabase
+              .from("classes")
+              .select("id, name")
+              .in("name", coachProfile.assigned_classes)
+              .eq("status", "Active");
+
+            if (!additionalClassesError && additionalClasses?.length > 0) {
+              const additionalClassIds = additionalClasses.map(c => c.id);
+              
+              const { data: additionalEnrollments, error: additionalEnrollmentError } = await supabase
+                .from("class_enrollments")
+                .select(`
+                  student_id,
+                  students!inner(*)
+                `)
+                .in("class_id", additionalClassIds)
+                .eq("status", "active");
+
+              if (!additionalEnrollmentError && additionalEnrollments) {
+                const additionalStudents = additionalEnrollments
+                  .map(enrollment => enrollment.students)
+                  .filter(student => student && !allStudents.some(existing => existing.id === student.id));
+                
+                allStudents = [...allStudents, ...additionalStudents];
+                console.log('🎓 useCoachStudents: Total students after additional assignments:', allStudents.length);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("useCoachStudents: Error checking coach profile assignments:", error);
+        }
+      }
+
+      // Step 4: Type and format the final students array
       const typedStudents: Student[] = allStudents.map(student => ({
         ...student,
         status: student.status as "active" | "inactive" | "on-hold",
@@ -90,6 +140,7 @@ export const useCoachStudents = () => {
         attendance_rate: student.attendance_rate || 0
       }));
 
+      console.log('🎓 useCoachStudents: Final student list:', typedStudents.map(s => s.name));
       setStudents(typedStudents);
     } catch (error) {
       console.error("🎓 useCoachStudents: Error fetching students:", error);
@@ -133,8 +184,7 @@ export const useCoachStudents = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'students',
-          filter: `coach=eq.${userProfile.name}`
+          table: 'students'
         },
         () => {
           console.log('🔄 useCoachStudents: Real-time student update detected');
@@ -166,8 +216,7 @@ export const useCoachStudents = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'classes',
-          filter: `instructor=eq.${userProfile.name}`
+          table: 'classes'
         },
         () => {
           console.log('🔄 useCoachStudents: Real-time class update detected');

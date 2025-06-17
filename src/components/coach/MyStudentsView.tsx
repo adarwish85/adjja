@@ -7,15 +7,17 @@ import { StudentCard } from "./StudentCard";
 import { StudentDetailsModal } from "./StudentDetailsModal";
 import { useCoachStudents } from "@/hooks/useCoachStudents";
 import { Student } from "@/hooks/useStudents";
-import { Search, Users, UserCheck, TrendingUp } from "lucide-react";
+import { Search, Users, UserCheck, TrendingUp, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 export const MyStudentsView = () => {
-  const { students, loading, stats } = useCoachStudents();
+  const { students, loading, stats, refetch } = useCoachStudents();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [beltFilter, setBeltFilter] = useState<string>("all");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,6 +38,18 @@ export const MyStudentsView = () => {
 
   const handleCheckIn = (student: Student) => {
     toast.info(`Check-in functionality for ${student.name} - Coming soon!`);
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+      toast.success("Student list refreshed");
+    } catch (error) {
+      toast.error("Failed to refresh student list");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const belts = ["White", "Blue", "Purple", "Brown", "Black"];
@@ -107,9 +121,21 @@ export const MyStudentsView = () => {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            My Students ({filteredStudents.length})
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              My Students ({filteredStudents.length})
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -159,12 +185,18 @@ export const MyStudentsView = () => {
                   : "No students assigned yet"
                 }
               </h3>
-              <p className="text-gray-500">
+              <p className="text-gray-500 mb-4">
                 {searchTerm || statusFilter !== "all" || beltFilter !== "all"
                   ? "Try adjusting your search or filter criteria"
-                  : "Students will appear here once they are assigned to you"
+                  : "Students will appear here once they are assigned to you or enrolled in your classes"
                 }
               </p>
+              {!searchTerm && statusFilter === "all" && beltFilter === "all" && (
+                <Button variant="outline" onClick={handleRefresh} className="flex items-center gap-2 mx-auto">
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh to check for new students
+                </Button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

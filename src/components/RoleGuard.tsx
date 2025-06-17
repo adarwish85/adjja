@@ -20,14 +20,18 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
     if (!loading && user) {
       if (!userProfile) {
         console.log('❌ RoleGuard: User exists but no profile found, redirecting to login');
-        // User exists but no profile found
         navigate("/login");
         return;
       }
 
       const userRole = userProfile.role_name?.toLowerCase();
-      // Case-insensitive role matching
-      const hasPermission = allowedRoles.some(role => role.toLowerCase() === userRole);
+      // Case-insensitive role matching with better logging
+      const hasPermission = allowedRoles.some(role => {
+        const normalizedRole = role.toLowerCase();
+        const matches = normalizedRole === userRole;
+        console.log(`🔍 RoleGuard: Checking role "${normalizedRole}" against user role "${userRole}": ${matches}`);
+        return matches;
+      });
 
       console.log('🔍 RoleGuard: User role:', userRole, 'Allowed roles:', allowedRoles, 'Has permission:', hasPermission);
 
