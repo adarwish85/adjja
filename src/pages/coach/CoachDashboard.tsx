@@ -7,7 +7,7 @@ import { StudentLMS } from "@/components/dashboard/StudentLMS";
 import { StudentSchedule } from "@/components/dashboard/StudentSchedule";
 import { StudentAchievements } from "@/components/dashboard/StudentAchievements";
 import { LMSPurchase } from "@/components/dashboard/LMSPurchase";
-import { MyStudentsView } from "@/components/coach/MyStudentsView";
+import { ProfileCompletionBar } from "@/components/dashboard/ProfileCompletionBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
 import { useCoachStudents } from "@/hooks/useCoachStudents";
@@ -18,6 +18,9 @@ const CoachDashboard = () => {
   return (
     <CoachLayout>
       <div className="p-4 lg:p-6 space-y-6">
+        {/* Profile Completion Bar */}
+        <ProfileCompletionBar />
+        
         {/* Welcome Section - Same as Student */}
         <StudentWelcome />
         

@@ -1134,47 +1134,89 @@ export type Database = {
           },
         ]
       }
+      profile_completion_audit: {
+        Row: {
+          completed_at: string | null
+          field_data: Json | null
+          id: string
+          step_completed: string
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          field_data?: Json | null
+          id?: string
+          step_completed: string
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          field_data?: Json | null
+          id?: string
+          step_completed?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
           birthdate: string | null
           cover_photo_url: string | null
           created_at: string | null
           email: string
           id: string
           last_login: string | null
+          mandatory_fields_completed: boolean | null
           name: string
           phone: string | null
+          profile_completed: boolean | null
           profile_picture_url: string | null
+          rejection_reason: string | null
           role_id: string | null
           status: string | null
           updated_at: string | null
           username: string | null
         }
         Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           birthdate?: string | null
           cover_photo_url?: string | null
           created_at?: string | null
           email: string
           id: string
           last_login?: string | null
+          mandatory_fields_completed?: boolean | null
           name: string
           phone?: string | null
+          profile_completed?: boolean | null
           profile_picture_url?: string | null
+          rejection_reason?: string | null
           role_id?: string | null
           status?: string | null
           updated_at?: string | null
           username?: string | null
         }
         Update: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           birthdate?: string | null
           cover_photo_url?: string | null
           created_at?: string | null
           email?: string
           id?: string
           last_login?: string | null
+          mandatory_fields_completed?: boolean | null
           name?: string
           phone?: string | null
+          profile_completed?: boolean | null
           profile_picture_url?: string | null
+          rejection_reason?: string | null
           role_id?: string | null
           status?: string | null
           updated_at?: string | null
@@ -1794,6 +1836,10 @@ export type Database = {
       }
     }
     Functions: {
+      approve_user_profile: {
+        Args: { p_user_id: string; p_approved_by: string }
+        Returns: boolean
+      }
       calculate_next_due_date: {
         Args: { period_type: string; from_date?: string }
         Returns: string
@@ -1863,6 +1909,10 @@ export type Database = {
       refresh_analytics_views: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      reject_user_profile: {
+        Args: { p_user_id: string; p_rejected_by: string; p_reason: string }
+        Returns: boolean
       }
       sync_student_auth_links: {
         Args: Record<PropertyKey, never>

@@ -28,35 +28,49 @@ const Login = () => {
   const [showResetForm, setShowResetForm] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
 
-  // Enhanced redirect logic with better role detection
+  // Enhanced redirect logic for profile wizard flow
   useEffect(() => {
     console.log('🔄 Login: Auth state check - user:', !!user, 'userProfile:', userProfile, 'loading:', loading, 'hasRedirected:', hasRedirected);
     
-    // Only proceed if we have both user and profile, not loading, and haven't redirected yet
     if (user && userProfile && !loading && !hasRedirected) {
-      const userRole = userProfile.role_name?.toLowerCase();
-      console.log('👤 Login: User authenticated with role:', userRole, 'redirecting...');
+      const approvalStatus = userProfile.approval_status;
+      const mandatoryFieldsCompleted = userProfile.mandatory_fields_completed;
       
-      // Set flag to prevent multiple redirects
+      console.log('📋 Login: Profile status', { approvalStatus, mandatoryFieldsCompleted });
+      
       setHasRedirected(true);
       
-      // Use a timeout to ensure all state updates are complete
       setTimeout(() => {
-        // Enhanced role-based routing with better debugging
-        if (userRole === 'student') {
-          console.log('🎓 Login: Redirecting to student dashboard');
-          navigate("/dashboard", { replace: true });
-        } else if (userRole === 'coach') {
-          console.log('👨‍🏫 Login: Redirecting to coach dashboard');
-          navigate("/coach", { replace: true });
-        } else if (userRole === 'super admin' || userRole === 'admin' || userRole === 'superadmin') {
-          console.log('👑 Login: Redirecting to admin dashboard');
-          navigate("/admin", { replace: true });
-        } else {
-          console.log('❓ Login: Unknown role:', userRole, 'redirecting to home');
-          navigate("/", { replace: true });
+        // If mandatory fields not completed, go to wizard
+        if (!mandatoryFieldsCompleted) {
+          console.log('📝 Login: Redirecting to profile wizard');
+          navigate("/profile-wizard", { replace: true });
+          return;
         }
-      }, 100); // Short delay to ensure state consistency
+
+        // If profile pending/rejected, go to pending page
+        if (approvalStatus === 'pending' || approvalStatus === 'rejected') {
+          console.log('⏳ Login: Redirecting to profile pending');
+          navigate("/profile-pending", { replace: true });
+          return;
+        }
+
+        // If approved, redirect based on role
+        if (approvalStatus === 'approved') {
+          const userRole = userProfile.role_name?.toLowerCase();
+          console.log('✅ Login: Profile approved, redirecting based on role:', userRole);
+          
+          if (userRole === 'student') {
+            navigate("/dashboard", { replace: true });
+          } else if (userRole === 'coach') {
+            navigate("/coach", { replace: true });
+          } else if (userRole === 'super admin' || userRole === 'admin' || userRole === 'superadmin') {
+            navigate("/admin", { replace: true });
+          } else {
+            navigate("/dashboard", { replace: true });
+          }
+        }
+      }, 100);
     }
   }, [user, userProfile, loading, navigate, hasRedirected]);
 

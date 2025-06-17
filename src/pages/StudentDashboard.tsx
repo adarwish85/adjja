@@ -7,11 +7,15 @@ import { StudentLMS } from "@/components/dashboard/StudentLMS";
 import { StudentSchedule } from "@/components/dashboard/StudentSchedule";
 import { StudentAchievements } from "@/components/dashboard/StudentAchievements";
 import { LMSPurchase } from "@/components/dashboard/LMSPurchase";
+import { ProfileCompletionBar } from "@/components/dashboard/ProfileCompletionBar";
 
 const StudentDashboard = () => {
   return (
     <StudentLayout>
       <div className="p-4 lg:p-6 space-y-6">
+        {/* Profile Completion Bar */}
+        <ProfileCompletionBar />
+        
         {/* Welcome Section */}
         <StudentWelcome />
         

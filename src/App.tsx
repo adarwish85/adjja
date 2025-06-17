@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -33,6 +32,8 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminSettings from "./pages/admin/AdminSettings";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleGuard from "./components/RoleGuard";
+import { ProfileWizard } from "./components/wizard/ProfileWizard";
+import ProfilePending from "./pages/ProfilePending";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,19 @@ function App() {
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
+
+            {/* Profile Wizard Routes - Semi-protected (user must be logged in) */}
+            <Route path="/profile-wizard" element={
+              <ProtectedRoute>
+                <ProfileWizard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/profile-pending" element={
+              <ProtectedRoute>
+                <ProfilePending />
+              </ProtectedRoute>
+            } />
 
             {/* Protected Routes */}
             <Route path="/protected" element={
