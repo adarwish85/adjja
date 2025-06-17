@@ -12,29 +12,34 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar";
 import { 
+  Home,
   BarChart3, 
   Users, 
   Calendar, 
   BookOpen, 
-  Upload,
-  Clock,
-  MessageSquare,
-  StickyNote,
-  Shield
+  GraduationCap,
+  FileText,
+  User,
+  Shield,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
 const menuItems = [
-  { title: "Dashboard", icon: BarChart3, url: "/coach/dashboard" },
-  { title: "My Students", icon: Users, url: "/coach/students" },
-  { title: "Attendance", icon: Calendar, url: "/coach/attendance" },
-  { title: "Notes", icon: StickyNote, url: "/coach/notes" },
-  { title: "LMS Upload", icon: Upload, url: "/coach/lms-upload" },
-  { title: "Schedule", icon: Clock, url: "/coach/schedule" },
-  { title: "Messages", icon: MessageSquare, url: "/coach/messages" },
+  { title: "Dashboard", icon: Home, url: "/coach/dashboard" },
+  { title: "Attendance", icon: BarChart3, url: "/coach/attendance" },
+  { title: "LMS", icon: BookOpen, url: "/coach/lms" },
+  { title: "My Progress", icon: GraduationCap, url: "/coach/progress" },
+  { title: "Notes", icon: FileText, url: "/coach/notes" },
+  { title: "Schedule", icon: Calendar, url: "/coach/schedule" },
+  { title: "Profile", icon: User, url: "/coach/profile" },
+  { title: "My Students", icon: Users, url: "/coach/students" }, // Coach-only module
 ];
 
 export const CoachSidebar = () => {
   const location = useLocation();
+  const { signOut } = useAuth();
 
   return (
     <Sidebar className="border-r border-gray-200">
@@ -53,7 +58,7 @@ export const CoachSidebar = () => {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="text-bjj-gray font-medium px-3 py-2">
-            Coach Tools
+            Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -71,6 +76,23 @@ export const CoachSidebar = () => {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <Button
+                  onClick={signOut}
+                  variant="ghost"
+                  className="w-full justify-start text-bjj-gray hover:text-bjj-gold"
+                >
+                  <LogOut className="h-5 w-5 mr-3" />
+                  Sign Out
+                </Button>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

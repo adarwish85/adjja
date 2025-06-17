@@ -15,6 +15,12 @@ import StudentAttendance from "./pages/student/StudentAttendance";
 import StudentNotes from "./pages/student/StudentNotes";
 import StudentSchedule from "./pages/student/StudentSchedule";
 import CoachDashboard from "./pages/coach/CoachDashboard";
+import CoachAttendance from "./pages/coach/CoachAttendance";
+import CoachLMS from "./pages/coach/CoachLMS";
+import CoachProgress from "./pages/coach/CoachProgress";
+import CoachNotes from "./pages/coach/CoachNotes";
+import CoachSchedule from "./pages/coach/CoachSchedule";
+import CoachProfile from "./pages/coach/CoachProfile";
 import CoachStudents from "./pages/coach/CoachStudents";
 import AdminDashboard from "./pages/SuperAdminDashboard";
 import AdminCoaches from "./pages/admin/AdminCoaches";
@@ -106,7 +112,7 @@ function App() {
               </ProtectedRoute>
             } />
 
-            {/* Coach Routes */}
+            {/* Coach Routes - All student modules plus My Students */}
             <Route path="/coach" element={
               <ProtectedRoute>
                 <RoleGuard allowedRoles={['Coach']}>
@@ -119,6 +125,54 @@ function App() {
               <ProtectedRoute>
                 <RoleGuard allowedRoles={['Coach']}>
                   <CoachDashboard />
+                </RoleGuard>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/coach/attendance" element={
+              <ProtectedRoute>
+                <RoleGuard allowedRoles={['Coach']}>
+                  <CoachAttendance />
+                </RoleGuard>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/coach/lms" element={
+              <ProtectedRoute>
+                <RoleGuard allowedRoles={['Coach']}>
+                  <CoachLMS />
+                </RoleGuard>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/coach/progress" element={
+              <ProtectedRoute>
+                <RoleGuard allowedRoles={['Coach']}>
+                  <CoachProgress />
+                </RoleGuard>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/coach/notes" element={
+              <ProtectedRoute>
+                <RoleGuard allowedRoles={['Coach']}>
+                  <CoachNotes />
+                </RoleGuard>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/coach/schedule" element={
+              <ProtectedRoute>
+                <RoleGuard allowedRoles={['Coach']}>
+                  <CoachSchedule />
+                </RoleGuard>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/coach/profile" element={
+              <ProtectedRoute>
+                <RoleGuard allowedRoles={['Coach']}>
+                  <CoachProfile />
                 </RoleGuard>
               </ProtectedRoute>
             } />

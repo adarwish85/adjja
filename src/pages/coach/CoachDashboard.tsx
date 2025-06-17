@@ -1,162 +1,75 @@
 
 import { CoachLayout } from "@/components/layouts/CoachLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StudentCheckIn } from "@/components/coach/StudentCheckIn";
-import { CoachProfileForm } from "@/components/coach/CoachProfileForm";
-import { CoachNotes } from "@/components/coach/CoachNotes";
+import { StudentWelcome } from "@/components/dashboard/StudentWelcome";
+import { StudentAnalytics } from "@/components/dashboard/StudentAnalytics";
+import { StudentProgress } from "@/components/dashboard/StudentProgress";
+import { StudentLMS } from "@/components/dashboard/StudentLMS";
+import { StudentSchedule } from "@/components/dashboard/StudentSchedule";
+import { StudentAchievements } from "@/components/dashboard/StudentAchievements";
+import { LMSPurchase } from "@/components/dashboard/LMSPurchase";
 import { MyStudentsView } from "@/components/coach/MyStudentsView";
-import { Users, UserCheck, BarChart3, StickyNote, User, Video, MessageSquare } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users } from "lucide-react";
 import { useCoachStudents } from "@/hooks/useCoachStudents";
 
 const CoachDashboard = () => {
-  const { userProfile } = useAuth();
   const { stats } = useCoachStudents();
 
   return (
     <CoachLayout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-bjj-navy">Coach Dashboard</h1>
-            <p className="text-bjj-gray">Welcome back, Coach {userProfile?.name}</p>
+      <div className="p-4 lg:p-6 space-y-6">
+        {/* Welcome Section - Same as Student */}
+        <StudentWelcome />
+        
+        {/* Analytics Section - Same as Student */}
+        <StudentAnalytics />
+        
+        {/* Main Content Grid - Same as Student */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          <StudentProgress />
+          <StudentLMS />
+        </div>
+        
+        {/* Coach-Specific: My Students Section */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-bjj-navy flex items-center gap-2">
+                <Users className="h-5 w-5 text-bjj-gold" />
+                My Students ({stats.totalStudents})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {stats.totalStudents > 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-bjj-gray mb-4">
+                    You have {stats.totalStudents} students assigned to your classes.
+                  </p>
+                  <p className="text-sm text-bjj-gray">
+                    Visit the "My Students" page to manage your students.
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-bjj-gray">
+                  <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No students assigned yet</p>
+                  <p className="text-xs">Students will appear here once assigned to your classes</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Secondary Content Grid - Same as Student */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <StudentSchedule />
+          </div>
+          <div className="space-y-6">
+            <StudentAchievements />
+            <LMSPurchase />
           </div>
         </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-bjj-gray flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                My Students
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">{stats.totalStudents}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-bjj-gray flex items-center gap-2">
-                <UserCheck className="h-4 w-4" />
-                Today's Check-ins
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">{stats.todayAttendance}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-bjj-gray flex items-center gap-2">
-                <StickyNote className="h-4 w-4" />
-                Notes Added
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">0</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-bjj-gray flex items-center gap-2">
-                <Video className="h-4 w-4" />
-                Progress Videos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bjj-navy">0</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="students" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="students" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Students
-            </TabsTrigger>
-            <TabsTrigger value="checkin" className="flex items-center gap-2">
-              <UserCheck className="h-4 w-4" />
-              Check-In
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Profile
-            </TabsTrigger>
-            <TabsTrigger value="notes" className="flex items-center gap-2">
-              <StickyNote className="h-4 w-4" />
-              Notes
-            </TabsTrigger>
-            <TabsTrigger value="videos" className="flex items-center gap-2">
-              <Video className="h-4 w-4" />
-              Videos
-            </TabsTrigger>
-            <TabsTrigger value="feed" className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Feed
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="students">
-            <MyStudentsView />
-          </TabsContent>
-
-          <TabsContent value="checkin">
-            <StudentCheckIn />
-          </TabsContent>
-
-          <TabsContent value="profile">
-            <CoachProfileForm />
-          </TabsContent>
-
-          <TabsContent value="notes">
-            <CoachNotes />
-          </TabsContent>
-
-          <TabsContent value="videos">
-            <Card>
-              <CardHeader>
-                <CardTitle>Progress Video Tracker</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-500">Progress video tracker coming soon...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="feed">
-            <Card>
-              <CardHeader>
-                <CardTitle>Coach Feed</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-500">Coach communication feed coming soon...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle>Student Analytics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-500">Student progress analytics coming soon...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
       </div>
     </CoachLayout>
   );
