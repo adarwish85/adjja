@@ -79,7 +79,7 @@ export const useAttendanceSession = () => {
         start_time: sessionData.start_time,
         end_time: sessionData.end_time,
         instructor_id: sessionData.instructor_id,
-        status: sessionData.status,
+        status: sessionData.status as 'active' | 'completed' | 'cancelled',
         class: {
           name: sessionData.classes.name,
           location: sessionData.classes.location
@@ -121,18 +121,18 @@ export const useAttendanceSession = () => {
         id: record.id,
         session_id: record.session_id,
         student_id: record.student_id,
-        status: record.status,
+        status: record.status as 'present' | 'late' | 'absent' | 'early_departure',
         check_in_time: record.check_in_time,
         check_out_time: record.check_out_time,
         late_minutes: record.late_minutes || 0,
         early_departure_minutes: record.early_departure_minutes || 0,
         notes: record.notes,
-        sync_status: record.sync_status || 'synced',
+        sync_status: (record.sync_status || 'synced') as 'pending' | 'synced' | 'failed',
         student: {
           id: record.students.id,
           name: record.students.name,
           email: record.students.email,
-          profile_picture_url: record.students.profiles?.profile_picture_url,
+          profile_picture_url: record.students.profiles?.[0]?.profile_picture_url,
           belt: record.students.belt,
           stripes: record.students.stripes
         }

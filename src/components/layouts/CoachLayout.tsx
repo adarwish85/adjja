@@ -1,6 +1,6 @@
 
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { CoachSidebar } from "@/components/navigation/CoachSidebar";
+import CoachSidebar from "@/components/navigation/CoachSidebar";
 import { TopBar } from "@/components/navigation/TopBar";
 
 interface CoachLayoutProps {
