@@ -34,7 +34,10 @@ export const useAuth = () => {
       email: user.email || '',
       role_id: 'fallback-role-id',
       role_name: suggestedRole,
-      status: 'active'
+      status: 'active',
+      approval_status: 'pending',
+      profile_completed: false,
+      mandatory_fields_completed: false
     };
   };
 
@@ -95,6 +98,10 @@ export const useAuth = () => {
           email,
           role_id,
           status,
+          approval_status,
+          profile_completed,
+          mandatory_fields_completed,
+          rejection_reason,
           user_roles:role_id (
             name
           )
@@ -163,7 +170,10 @@ export const useAuth = () => {
                   name: profileName,
                   email: profileEmail,
                   role_id: targetRole.id,
-                  status: 'active'
+                  status: 'active',
+                  approval_status: 'pending',
+                  profile_completed: false,
+                  mandatory_fields_completed: false
                 })
                 .select(`
                   id,
@@ -171,6 +181,9 @@ export const useAuth = () => {
                   email,
                   role_id,
                   status,
+                  approval_status,
+                  profile_completed,
+                  mandatory_fields_completed,
                   user_roles:role_id (
                     name
                   )
@@ -469,6 +482,19 @@ export const useAuth = () => {
   const isCoach = (): boolean => hasRole('Coach');
   const isStudent = (): boolean => hasRole('Student');
 
+  // New helper function to check if profile needs completion
+  const needsProfileCompletion = (): boolean => {
+    if (!userProfile) return false;
+    if (userProfile.role_name !== 'Student') return false;
+    return !userProfile.mandatory_fields_completed;
+  };
+
+  // New helper function to check if profile is pending approval
+  const isPendingApproval = (): boolean => {
+    if (!userProfile) return false;
+    return userProfile.approval_status === 'pending' && userProfile.mandatory_fields_completed === true;
+  };
+
   return {
     user,
     session,
@@ -481,5 +507,7 @@ export const useAuth = () => {
     isAdmin,
     isCoach,
     isStudent,
+    needsProfileCompletion,
+    isPendingApproval,
   };
 };

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +45,7 @@ export const ProfileWizard = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string>("");
   const [wizardData, setWizardData] = useState<WizardData>({
     name: "",
     phone: "",
@@ -63,10 +63,41 @@ export const ProfileWizard = () => {
   }
 
   const updateWizardData = (stepData: Partial<WizardData>) => {
+    console.log('🔄 Updating wizard data:', stepData);
     setWizardData(prev => ({ ...prev, ...stepData }));
   };
 
   const progress = (currentStep / steps.length) * 100;
+
+  const validateMandatoryFields = (): string[] => {
+    const errors: string[] = [];
+    
+    if (!wizardData.name?.trim()) {
+      errors.push("Name is required");
+    }
+    
+    if (!wizardData.phone?.trim()) {
+      errors.push("Phone number is required");
+    }
+    
+    if (!wizardData.profile_picture_url?.trim()) {
+      errors.push("Profile picture is required");
+    }
+    
+    if (!wizardData.belt?.trim()) {
+      errors.push("BJJ belt rank is required");
+    }
+    
+    if (!wizardData.years_practicing || wizardData.years_practicing <= 0) {
+      errors.push("Years practicing BJJ is required and must be greater than 0");
+    }
+    
+    if (!wizardData.previous_team?.trim()) {
+      errors.push("Previous team/academy is required");
+    }
+
+    return errors;
+  };
 
   const validateStep = (step: number): boolean => {
     switch (step) {
@@ -118,86 +149,189 @@ export const ProfileWizard = () => {
       e.stopPropagation();
     }
     
-    if (!user?.id) return;
+    console.log('🚀 Starting profile submission...');
+    console.log('📋 Current wizard data:', wizardData);
+    console.log('👤 Current user:', user);
+    
+    if (!user?.id) {
+      const error = 'No authenticated user found';
+      console.error('❌', error);
+      setSubmissionError(error);
+      toast.error(error);
+      return;
+    }
+
+    // Validate mandatory fields
+    const validationErrors = validateMandatoryFields();
+    if (validationErrors.length > 0) {
+      const errorMessage = `Missing required fields: ${validationErrors.join(', ')}`;
+      console.error('❌ Validation failed:', validationErrors);
+      setSubmissionError(errorMessage);
+      toast.error(errorMessage);
+      return;
+    }
 
     setIsSubmitting(true);
+    setSubmissionError("");
+
     try {
-      // Update profiles table
+      console.log('💾 Starting database updates...');
+
+      // 1. Update profiles table
+      const profileData = {
+        name: wizardData.name.trim(),
+        phone: wizardData.phone.trim(),
+        profile_picture_url: wizardData.profile_picture_url,
+        cover_photo_url: wizardData.cover_photo_url || null,
+        mandatory_fields_completed: true,
+        approval_status: 'pending',
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('📤 Updating profiles table:', profileData);
+
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
-          name: wizardData.name,
-          phone: wizardData.phone,
-          profile_picture_url: wizardData.profile_picture_url,
-          cover_photo_url: wizardData.cover_photo_url,
-          mandatory_fields_completed: true,
-          approval_status: 'pending',
-          updated_at: new Date().toISOString()
-        })
+        .update(profileData)
         .eq('id', user.id);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('❌ Profile update error:', profileError);
+        throw new Error(`Profile update failed: ${profileError.message}`);
+      }
 
-      // Create/update BJJ profile
+      console.log('✅ Profile updated successfully');
+
+      // 2. Create/update BJJ profile
       const bjjProfileData = {
         user_id: user.id,
         belt_rank: wizardData.belt,
-        weight_kg: wizardData.weight_kg,
-        height_cm: wizardData.height_cm,
-        favorite_position: wizardData.favorite_position,
-        favorite_submission: wizardData.favorite_submission,
-        instagram_url: wizardData.instagram_url,
-        facebook_url: wizardData.facebook_url,
+        weight_kg: wizardData.weight_kg || null,
+        height_cm: wizardData.height_cm || null,
+        favorite_position: wizardData.favorite_position || null,
+        favorite_submission: wizardData.favorite_submission || null,
+        instagram_url: wizardData.instagram_url || null,
+        facebook_url: wizardData.facebook_url || null,
         gallery_images: wizardData.gallery_images || []
       };
+
+      console.log('📤 Upserting BJJ profile:', bjjProfileData);
 
       const { error: bjjError } = await supabase
         .from('bjj_profiles')
         .upsert(bjjProfileData, { onConflict: 'user_id' });
 
-      if (bjjError) throw bjjError;
-
-      // Create student record with mandatory BJJ info
-      const { error: studentError } = await supabase
-        .from('students')
-        .insert({
-          auth_user_id: user.id,
-          name: wizardData.name,
-          email: user.email || '',
-          phone: wizardData.phone,
-          belt: wizardData.belt,
-          stripes: wizardData.stripes,
-          branch: 'Main', // Default branch
-          coach: 'TBD', // To be assigned
-          membership_type: 'monthly',
-          status: 'active'
-        });
-
-      if (studentError && !studentError.message.includes('duplicate')) {
-        throw studentError;
+      if (bjjError) {
+        console.error('❌ BJJ profile upsert error:', bjjError);
+        throw new Error(`BJJ profile creation failed: ${bjjError.message}`);
       }
 
-      // Log completion audit
+      console.log('✅ BJJ profile created successfully');
+
+      // 3. Create/update student record
+      const studentData = {
+        auth_user_id: user.id,
+        name: wizardData.name.trim(),
+        email: user.email || '',
+        phone: wizardData.phone.trim(),
+        belt: wizardData.belt,
+        stripes: wizardData.stripes || 0,
+        branch: 'Main', // Default branch
+        coach: 'TBD', // To be assigned
+        membership_type: 'monthly',
+        status: 'active'
+      };
+
+      console.log('📤 Creating/updating student record:', studentData);
+
+      // Check if student already exists
+      const { data: existingStudent, error: checkError } = await supabase
+        .from('students')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('❌ Student check error:', checkError);
+        throw new Error(`Student check failed: ${checkError.message}`);
+      }
+
+      if (existingStudent) {
+        // Update existing student
+        const { error: updateError } = await supabase
+          .from('students')
+          .update(studentData)
+          .eq('auth_user_id', user.id);
+
+        if (updateError) {
+          console.error('❌ Student update error:', updateError);
+          throw new Error(`Student update failed: ${updateError.message}`);
+        }
+        console.log('✅ Student record updated successfully');
+      } else {
+        // Create new student
+        const { error: insertError } = await supabase
+          .from('students')
+          .insert(studentData);
+
+        if (insertError) {
+          console.error('❌ Student insert error:', insertError);
+          throw new Error(`Student creation failed: ${insertError.message}`);
+        }
+        console.log('✅ Student record created successfully');
+      }
+
+      // 4. Log completion audit
       const auditData = {
         user_id: user.id,
         step_completed: 'wizard_completed',
         field_data: wizardData as any
       };
 
+      console.log('📤 Logging completion audit:', auditData);
+
       const { error: auditError } = await supabase
         .from('profile_completion_audit')
         .insert(auditData);
 
       if (auditError) {
-        console.error('Audit log error:', auditError);
+        console.error('⚠️ Audit log error (non-critical):', auditError);
         // Don't fail the whole process for audit logging
+      } else {
+        console.log('✅ Audit log created successfully');
       }
 
-      toast.success("Profile submitted successfully! Please wait for admin approval.");
+      // 5. Create notification for admin (optional)
+      try {
+        const { error: notificationError } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: user.id, // This will be for the user themselves
+            title: 'Profile Submitted',
+            message: 'Your profile has been submitted for admin approval. You will be notified once approved.',
+            type: 'info'
+          });
+
+        if (notificationError) {
+          console.error('⚠️ Notification creation error (non-critical):', notificationError);
+        } else {
+          console.log('✅ User notification created successfully');
+        }
+      } catch (notifError) {
+        console.error('⚠️ Notification creation failed (non-critical):', notifError);
+      }
+
+      console.log('🎉 Profile submission completed successfully!');
+      toast.success("✅ Profile submitted successfully! Please wait for admin approval.");
+      
+      // Navigate to pending approval page
       navigate("/profile-pending");
+
     } catch (error) {
-      console.error('Profile submission error:', error);
-      toast.error("Failed to submit profile. Please try again.");
+      console.error('💥 Profile submission error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during submission';
+      setSubmissionError(errorMessage);
+      toast.error(`Submission failed: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -270,13 +404,21 @@ export const ProfileWizard = () => {
           <CardContent>
             {renderStep()}
             
+            {/* Error Display */}
+            {submissionError && (
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm font-medium">Submission Error:</p>
+                <p className="text-red-600 text-sm mt-1">{submissionError}</p>
+              </div>
+            )}
+            
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8">
               <Button
                 type="button"
                 variant="outline"
                 onClick={prevStep}
-                disabled={currentStep === 1}
+                disabled={currentStep === 1 || isSubmitting}
               >
                 Previous
               </Button>
@@ -289,7 +431,7 @@ export const ProfileWizard = () => {
                     onClick={skipOptionalStep}
                     disabled={isSubmitting}
                   >
-                    Skip & Submit
+                    {isSubmitting ? "Submitting..." : "Skip & Submit"}
                   </Button>
                 )}
                 
@@ -298,7 +440,7 @@ export const ProfileWizard = () => {
                     type="button"
                     onClick={nextStep}
                     className="bg-bjj-gold hover:bg-bjj-gold-dark"
-                    disabled={!validateStep(currentStep)}
+                    disabled={!validateStep(currentStep) || isSubmitting}
                   >
                     Next Step
                   </Button>

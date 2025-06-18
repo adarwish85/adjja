@@ -3,36 +3,93 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
+import { Clock, CheckCircle, XCircle, ArrowLeft, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function ProfilePending() {
   const { user, userProfile, loading } = useAuth();
   const navigate = useNavigate();
   const [approvalStatus, setApprovalStatus] = useState<string>('pending');
   const [rejectionReason, setRejectionReason] = useState<string>('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    if (!loading && user && userProfile) {
-      // Check if user is already approved
-      if (userProfile.approval_status === 'approved') {
-        navigate("/dashboard");
+  const fetchApprovalStatus = async () => {
+    if (!user?.id) return;
+    
+    try {
+      console.log('🔍 Fetching approval status for user:', user.id);
+      
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('approval_status, rejection_reason')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('❌ Error fetching approval status:', error);
+        toast.error('Failed to fetch approval status');
         return;
       }
+
+      console.log('✅ Approval status fetched:', profile);
       
-      setApprovalStatus(userProfile.approval_status || 'pending');
-      setRejectionReason(userProfile.rejection_reason || '');
+      if (profile) {
+        setApprovalStatus(profile.approval_status || 'pending');
+        setRejectionReason(profile.rejection_reason || '');
+        
+        // If approved, redirect to dashboard
+        if (profile.approval_status === 'approved') {
+          console.log('🎉 Profile approved, redirecting to dashboard');
+          toast.success('Profile approved! Redirecting to dashboard...');
+          setTimeout(() => navigate("/dashboard"), 1500);
+        }
+      }
+    } catch (error) {
+      console.error('💥 Unexpected error fetching approval status:', error);
+      toast.error('Unexpected error occurred');
+    }
+  };
+
+  useEffect(() => {
+    if (!loading && user) {
+      // Check if user profile exists and has the right status
+      if (userProfile) {
+        if (userProfile.approval_status === 'approved') {
+          console.log('🎯 User already approved, redirecting to dashboard');
+          navigate("/dashboard");
+          return;
+        }
+        
+        setApprovalStatus(userProfile.approval_status || 'pending');
+        setRejectionReason(userProfile.rejection_reason || '');
+      } else {
+        // Fetch fresh data if userProfile is not available
+        fetchApprovalStatus();
+      }
     }
   }, [user, userProfile, loading, navigate]);
+
+  const handleRefreshStatus = async () => {
+    setIsRefreshing(true);
+    await fetchApprovalStatus();
+    setIsRefreshing(false);
+    toast.success('Status refreshed');
+  };
 
   const handleReturnToWizard = () => {
     navigate("/profile-wizard");
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
+    try {
+      await supabase.auth.signOut();
+      navigate("/");
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to sign out');
+    }
   };
 
   if (loading) {
@@ -129,6 +186,18 @@ export default function ProfilePending() {
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   {status.action}
+                </Button>
+              )}
+
+              {approvalStatus === 'pending' && (
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleRefreshStatus}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? 'Refreshing...' : 'Check Status'}
                 </Button>
               )}
 
