@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { X, User, Award, Camera } from "lucide-react";
+import { X, User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -23,11 +23,14 @@ export const ProfileCompletionBar = () => {
   const [completionData, setCompletionData] = useState<ProfileCompletionData | null>(null);
   const [isVisible, setIsVisible] = useState(true);
 
+  // Only show for Students with approved status
+  const shouldShow = userProfile?.role_name === 'Student' && userProfile?.approval_status === 'approved';
+
   useEffect(() => {
-    if (user && userProfile?.approval_status === 'approved') {
+    if (user && shouldShow) {
       checkProfileCompletion();
     }
-  }, [user, userProfile]);
+  }, [user, userProfile, shouldShow]);
 
   const checkProfileCompletion = async () => {
     if (!user) return;
@@ -75,7 +78,8 @@ export const ProfileCompletionBar = () => {
     }
   };
 
-  if (!isVisible || !completionData || completionData.completedFields === completionData.totalFields) {
+  // Don't render if not a Student or not approved
+  if (!shouldShow || !isVisible || !completionData || completionData.completedFields === completionData.totalFields) {
     return null;
   }
 

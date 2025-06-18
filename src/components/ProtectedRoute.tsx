@@ -24,26 +24,33 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
       if (userProfile && !hasCheckedRedirect) {
         const approvalStatus = userProfile.approval_status;
-        const profileCompleted = userProfile.profile_completed;
         const mandatoryFieldsCompleted = userProfile.mandatory_fields_completed;
+        const userRole = userProfile.role_name;
 
         console.log('📋 ProtectedRoute: Profile status check', {
           approvalStatus,
-          profileCompleted,
-          mandatoryFieldsCompleted
+          mandatoryFieldsCompleted,
+          userRole
         });
 
-        // If user hasn't completed mandatory fields, redirect to wizard
-        if (!mandatoryFieldsCompleted) {
-          console.log('📝 ProtectedRoute: Redirecting to profile wizard - mandatory fields incomplete');
+        // Skip wizard for Super Admin and Coach roles
+        if (userRole === 'Super Admin' || userRole === 'Coach') {
+          console.log('👑 ProtectedRoute: Admin/Coach user, skipping wizard');
+          setHasCheckedRedirect(true);
+          return;
+        }
+
+        // Only redirect Students to wizard if they haven't completed mandatory fields
+        if (userRole === 'Student' && !mandatoryFieldsCompleted) {
+          console.log('📝 ProtectedRoute: Redirecting Student to profile wizard - mandatory fields incomplete');
           navigate("/profile-wizard");
           setHasCheckedRedirect(true);
           return;
         }
 
-        // If profile is pending or rejected, redirect to pending page
-        if (approvalStatus === 'pending' || approvalStatus === 'rejected') {
-          console.log('⏳ ProtectedRoute: Redirecting to profile pending - status:', approvalStatus);
+        // If profile is pending or rejected, redirect to pending page (Students only)
+        if (userRole === 'Student' && (approvalStatus === 'pending' || approvalStatus === 'rejected')) {
+          console.log('⏳ ProtectedRoute: Redirecting Student to profile pending - status:', approvalStatus);
           navigate("/profile-pending");
           setHasCheckedRedirect(true);
           return;

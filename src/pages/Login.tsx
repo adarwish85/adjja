@@ -1,343 +1,139 @@
+
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { Shield } from "lucide-react";
 
 const Login = () => {
-  const { signIn, signUp, user, userProfile, loading } = useAuth();
+  const [emailOrUsername, setEmailOrUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, userProfile } = useAuth();
   const navigate = useNavigate();
-  const [loginData, setLoginData] = useState({
-    emailOrUsername: "",
-    password: "",
-  });
-  const [signupData, setSignupData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-  const [resetEmail, setResetEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showResetForm, setShowResetForm] = useState(false);
-  const [hasRedirected, setHasRedirected] = useState(false);
-
-  // Enhanced redirect logic for profile wizard flow
-  useEffect(() => {
-    console.log('🔄 Login: Auth state check - user:', !!user, 'userProfile:', userProfile, 'loading:', loading, 'hasRedirected:', hasRedirected);
-    
-    if (user && userProfile && !loading && !hasRedirected) {
-      const approvalStatus = userProfile.approval_status;
-      const mandatoryFieldsCompleted = userProfile.mandatory_fields_completed;
-      
-      console.log('📋 Login: Profile status', { approvalStatus, mandatoryFieldsCompleted });
-      
-      setHasRedirected(true);
-      
-      setTimeout(() => {
-        // If mandatory fields not completed, go to wizard
-        if (!mandatoryFieldsCompleted) {
-          console.log('📝 Login: Redirecting to profile wizard');
-          navigate("/profile-wizard", { replace: true });
-          return;
-        }
-
-        // If profile pending/rejected, go to pending page
-        if (approvalStatus === 'pending' || approvalStatus === 'rejected') {
-          console.log('⏳ Login: Redirecting to profile pending');
-          navigate("/profile-pending", { replace: true });
-          return;
-        }
-
-        // If approved, redirect based on role
-        if (approvalStatus === 'approved') {
-          const userRole = userProfile.role_name?.toLowerCase();
-          console.log('✅ Login: Profile approved, redirecting based on role:', userRole);
-          
-          if (userRole === 'student') {
-            navigate("/dashboard", { replace: true });
-          } else if (userRole === 'coach') {
-            navigate("/coach", { replace: true });
-          } else if (userRole === 'super admin' || userRole === 'admin' || userRole === 'superadmin') {
-            navigate("/admin", { replace: true });
-          } else {
-            navigate("/dashboard", { replace: true });
-          }
-        }
-      }, 100);
-    }
-  }, [user, userProfile, loading, navigate, hasRedirected]);
-
-  // Reset redirect flag when user changes
-  useEffect(() => {
-    if (!user) {
-      setHasRedirected(false);
-    }
-  }, [user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginData.emailOrUsername || !loginData.password) return;
+    setIsLoading(true);
 
-    setIsSubmitting(true);
     try {
-      console.log('🔐 Login: Attempting login for:', loginData.emailOrUsername);
-      const { data, error } = await signIn(loginData.emailOrUsername, loginData.password);
-      if (data && !error) {
-        console.log("✅ Login: Login successful, waiting for profile to load and redirect...");
-        // Clear the form on successful login
-        setLoginData({ emailOrUsername: "", password: "" });
-      }
-    } catch (error) {
-      console.error("❌ Login: Login error:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!signupData.name || !signupData.email || !signupData.password) return;
-    
-    if (signupData.password !== signupData.confirmPassword) {
-      toast.error("Passwords don't match");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const { data, error } = await signUp(signupData.email, signupData.password, {
-        name: signupData.name
-      });
-      if (data && !error) {
-        console.log("Signup successful, waiting for profile to load...");
-      }
-    } catch (error) {
-      console.error("Signup error:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!resetEmail) {
-      toast.error("Please enter your email address");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      console.log("Attempting password reset for email:", resetEmail);
-      console.log("Current window location:", window.location.origin);
+      const { data, error } = await signIn(emailOrUsername, password);
       
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-
-      console.log("Password reset response:", { error });
-
       if (error) {
-        console.error("Password reset error:", error);
-        toast.error(`Failed to send reset email: ${error.message}`);
-      } else {
-        toast.success("Password reset email sent! Check your inbox and spam folder.");
-        setShowResetForm(false);
-        setResetEmail("");
+        console.error("Login error:", error);
+        return;
+      }
+
+      if (data?.user) {
+        // Wait a moment for profile to load
+        setTimeout(() => {
+          const role = userProfile?.role_name;
+          const approvalStatus = userProfile?.approval_status;
+          const mandatoryCompleted = userProfile?.mandatory_fields_completed;
+
+          console.log('Login redirect logic:', { role, approvalStatus, mandatoryCompleted });
+
+          // Route based on role and completion status
+          if (role === 'Super Admin') {
+            navigate("/admin/dashboard");
+          } else if (role === 'Coach') {
+            navigate("/coach/dashboard");
+          } else if (role === 'Student') {
+            // Check if student needs to complete profile
+            if (!mandatoryCompleted) {
+              navigate("/profile-wizard");
+            } else if (approvalStatus === 'pending' || approvalStatus === 'rejected') {
+              navigate("/profile-pending");
+            } else {
+              navigate("/dashboard");
+            }
+          } else {
+            // Default fallback
+            navigate("/dashboard");
+          }
+        }, 1000);
       }
     } catch (error) {
-      console.error("Password reset exception:", error);
-      toast.error("Failed to send reset email. Please try again.");
+      console.error("Login failed:", error);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bjj-gold mx-auto mb-4"></div>
-          <p className="text-bjj-gray">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-bjj-navy">
-            ADJJA Academy Portal
+          <div className="flex justify-center mb-6">
+            <div className="h-16 w-16 bg-bjj-gold rounded-full flex items-center justify-center">
+              <Shield className="h-10 w-10 text-white" />
+            </div>
+          </div>
+          <h2 className="text-3xl font-bold text-bjj-navy">
+            Ahmed Darwish Academy
           </h2>
-          <p className="mt-2 text-sm text-bjj-gray">
-            Sign in to access your account
+          <p className="mt-2 text-sm text-gray-600">
+            Sign in to your account
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Welcome</CardTitle>
+            <CardTitle>Welcome Back</CardTitle>
             <CardDescription>
-              {showResetForm ? "Reset your password" : "Sign in to your account or create a new one"}
+              Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {showResetForm ? (
-              <form onSubmit={handlePasswordReset} className="space-y-4">
-                <div>
-                  <Label htmlFor="resetEmail">Email Address</Label>
-                  <Input
-                    id="resetEmail"
-                    type="email"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    placeholder="Enter your email address"
-                    required
-                  />
-                  <p className="text-xs text-gray-600 mt-1">
-                    We'll send you a link to reset your password. Check your spam folder if you don't see it.
-                  </p>
-                </div>
-                
-                <div className="flex space-x-3">
-                  <Button 
-                    type="submit" 
-                    className="flex-1 bg-bjj-gold hover:bg-bjj-gold-dark text-white"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Sending..." : "Send Reset Email"}
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={() => setShowResetForm(false)}
-                    disabled={isSubmitting}
-                  >
-                    Back to Login
-                  </Button>
-                </div>
-              </form>
-            ) : (
-              <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="login">Sign In</TabsTrigger>
-                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="login">
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div>
-                      <Label htmlFor="emailOrUsername">Email or Username</Label>
-                      <Input
-                        id="emailOrUsername"
-                        type="text"
-                        value={loginData.emailOrUsername}
-                        onChange={(e) => setLoginData(prev => ({ ...prev, emailOrUsername: e.target.value }))}
-                        placeholder="Enter your email or username"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        value={loginData.password}
-                        onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
-                        placeholder="Enter your password"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <button
-                        type="button"
-                        onClick={() => setShowResetForm(true)}
-                        className="text-sm text-bjj-gold hover:text-bjj-gold-dark underline"
-                      >
-                        Forgot your password?
-                      </button>
-                    </div>
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-bjj-gold hover:bg-bjj-gold-dark text-white"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? "Signing in..." : "Sign In"}
-                    </Button>
-                  </form>
-                </TabsContent>
-                
-                <TabsContent value="signup">
-                  <form onSubmit={handleSignup} className="space-y-4">
-                    <div>
-                      <Label htmlFor="name">Full Name</Label>
-                      <Input
-                        id="name"
-                        value={signupData.name}
-                        onChange={(e) => setSignupData(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Enter your full name"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={signupData.email}
-                        onChange={(e) => setSignupData(prev => ({ ...prev, email: e.target.value }))}
-                        placeholder="Enter your email"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        value={signupData.password}
-                        onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
-                        placeholder="Enter your password"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="confirmPassword">Confirm Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        value={signupData.confirmPassword}
-                        onChange={(e) => setSignupData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                        placeholder="Confirm your password"
-                        required
-                      />
-                    </div>
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-bjj-gold hover:bg-bjj-gold-dark text-white"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? "Creating account..." : "Sign Up"}
-                    </Button>
-                  </form>
-                </TabsContent>
-              </Tabs>
-            )}
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div>
+                <Label htmlFor="emailOrUsername">Email or Username</Label>
+                <Input
+                  id="emailOrUsername"
+                  type="text"
+                  value={emailOrUsername}
+                  onChange={(e) => setEmailOrUsername(e.target.value)}
+                  placeholder="Enter your email or username"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-bjj-gold hover:bg-bjj-gold-dark"
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing in..." : "Sign In"}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Don't have an account?{" "}
+                <Button
+                  variant="link"
+                  className="p-0 h-auto text-bjj-gold"
+                  onClick={() => navigate("/")}
+                >
+                  Get Started
+                </Button>
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

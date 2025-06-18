@@ -24,14 +24,27 @@ export const BasicInfoStep = ({ data, updateData }: BasicInfoStepProps) => {
 
     setUploading(true);
     try {
-      // For now, we'll use a placeholder URL
-      // In a real implementation, you'd upload to Supabase Storage
-      const fakeUrl = `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face`;
-      updateData({ profile_picture_url: fakeUrl });
+      // Create a temporary URL for preview
+      const fileUrl = URL.createObjectURL(file);
+      updateData({ profile_picture_url: fileUrl });
+      
+      // In a real implementation, you'd upload to Supabase Storage here
+      // For now, we'll use a placeholder that simulates an uploaded file
+      setTimeout(() => {
+        const fakeUrl = `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face`;
+        updateData({ profile_picture_url: fakeUrl });
+        setUploading(false);
+      }, 1000);
     } catch (error) {
       console.error('Upload error:', error);
-    } finally {
       setUploading(false);
+    }
+  };
+
+  const triggerFileInput = () => {
+    const fileInput = document.getElementById('profile-upload');
+    if (fileInput) {
+      fileInput.click();
     }
   };
 
@@ -53,12 +66,16 @@ export const BasicInfoStep = ({ data, updateData }: BasicInfoStepProps) => {
         </Avatar>
         
         <div>
-          <Label htmlFor="profile-upload" className="cursor-pointer">
-            <Button variant="outline" className="bg-white" disabled={uploading}>
-              <Upload className="w-4 h-4 mr-2" />
-              {uploading ? "Uploading..." : "Upload Profile Picture *"}
-            </Button>
-          </Label>
+          <Button 
+            type="button"
+            variant="outline" 
+            className="bg-white" 
+            disabled={uploading}
+            onClick={triggerFileInput}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            {uploading ? "Uploading..." : "Upload Profile Picture *"}
+          </Button>
           <input
             id="profile-upload"
             type="file"

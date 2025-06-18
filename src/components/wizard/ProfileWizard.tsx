@@ -42,7 +42,7 @@ const steps = [
 ];
 
 export const ProfileWizard = () => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,6 +55,12 @@ export const ProfileWizard = () => {
     years_practicing: 0,
     previous_team: "",
   });
+
+  // Skip wizard for non-Students
+  if (userProfile && userProfile.role_name !== 'Student') {
+    navigate("/dashboard");
+    return null;
+  }
 
   const updateWizardData = (stepData: Partial<WizardData>) => {
     setWizardData(prev => ({ ...prev, ...stepData }));
@@ -75,7 +81,12 @@ export const ProfileWizard = () => {
     }
   };
 
-  const nextStep = () => {
+  const nextStep = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (validateStep(currentStep)) {
       setCurrentStep(prev => Math.min(prev + 1, steps.length));
     } else {
@@ -83,17 +94,30 @@ export const ProfileWizard = () => {
     }
   };
 
-  const prevStep = () => {
+  const prevStep = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const skipOptionalStep = () => {
+  const skipOptionalStep = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (currentStep === 3) {
       handleSubmit();
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (!user?.id) return;
 
     setIsSubmitting(true);
@@ -107,6 +131,7 @@ export const ProfileWizard = () => {
           profile_picture_url: wizardData.profile_picture_url,
           cover_photo_url: wizardData.cover_photo_url,
           mandatory_fields_completed: true,
+          approval_status: 'pending',
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -152,14 +177,16 @@ export const ProfileWizard = () => {
         throw studentError;
       }
 
-      // Log completion audit - fix the field name and type conversion
+      // Log completion audit
+      const auditData = {
+        user_id: user.id,
+        step_completed: 'wizard_completed',
+        field_data: wizardData as any
+      };
+
       const { error: auditError } = await supabase
         .from('profile_completion_audit')
-        .insert({
-          user_id: user.id,
-          step_completed: 'wizard_completed',
-          field_data: JSON.parse(JSON.stringify(wizardData)) // Convert to proper JSON
-        });
+        .insert(auditData);
 
       if (auditError) {
         console.error('Audit log error:', auditError);
@@ -246,6 +273,7 @@ export const ProfileWizard = () => {
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8">
               <Button
+                type="button"
                 variant="outline"
                 onClick={prevStep}
                 disabled={currentStep === 1}
@@ -256,6 +284,7 @@ export const ProfileWizard = () => {
               <div className="flex gap-2">
                 {currentStep === 3 && (
                   <Button
+                    type="button"
                     variant="outline"
                     onClick={skipOptionalStep}
                     disabled={isSubmitting}
@@ -266,6 +295,7 @@ export const ProfileWizard = () => {
                 
                 {currentStep < steps.length ? (
                   <Button
+                    type="button"
                     onClick={nextStep}
                     className="bg-bjj-gold hover:bg-bjj-gold-dark"
                     disabled={!validateStep(currentStep)}
@@ -274,6 +304,7 @@ export const ProfileWizard = () => {
                   </Button>
                 ) : (
                   <Button
+                    type="button"
                     onClick={handleSubmit}
                     className="bg-bjj-gold hover:bg-bjj-gold-dark"
                     disabled={isSubmitting}
