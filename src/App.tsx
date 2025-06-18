@@ -34,12 +34,13 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import RoleGuard from "./components/RoleGuard";
 import { ProfileWizard } from "./components/wizard/ProfileWizard";
 import ProfilePending from "./pages/ProfilePending";
+import CoachAttendanceTracker from "./pages/coach/CoachAttendanceTracker";
 
 const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClient client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -126,78 +127,47 @@ function App() {
               </ProtectedRoute>
             } />
 
-            {/* Coach Routes - All student modules plus My Students */}
-            <Route path="/coach" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Coach']}>
-                  <CoachDashboard />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/coach/dashboard" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Coach']}>
-                  <CoachDashboard />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/coach/attendance" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Coach']}>
-                  <CoachAttendance />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/coach/lms" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Coach']}>
-                  <CoachLMS />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/coach/progress" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Coach']}>
-                  <CoachProgress />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/coach/notes" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Coach']}>
-                  <CoachNotes />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/coach/schedule" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Coach']}>
-                  <CoachSchedule />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/coach/profile" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Coach']}>
-                  <CoachProfile />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/coach/students" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Coach']}>
-                  <CoachStudents />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
+            {/* Coach Routes */}
+            <Route
+              path="/coach/dashboard"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Coach']}>
+                    <CoachDashboard />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/coach/students"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Coach']}>
+                    <CoachStudents />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/coach/attendance"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Coach']}>
+                    <CoachAttendance />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/coach/attendance-tracker"
+              element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Coach']}>
+                    <CoachAttendanceTracker />
+                  </RoleGuard>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Admin Routes */}
             <Route path="/admin" element={
@@ -285,7 +255,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
-    </QueryClientProvider>
+    </QueryClient>
   );
 }
 

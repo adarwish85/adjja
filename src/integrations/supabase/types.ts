@@ -87,6 +87,141 @@ export type Database = {
           },
         ]
       }
+      attendance_sessions: {
+        Row: {
+          class_id: string
+          created_at: string
+          end_time: string | null
+          id: string
+          instructor_id: string | null
+          session_date: string
+          start_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          instructor_id?: string | null
+          session_date?: string
+          start_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          instructor_id?: string | null
+          session_date?: string
+          start_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_sessions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_class_performance"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attendance_tracking: {
+        Row: {
+          check_in_time: string | null
+          check_out_time: string | null
+          created_at: string
+          early_departure_minutes: number | null
+          id: string
+          late_minutes: number | null
+          marked_by: string | null
+          notes: string | null
+          session_id: string
+          status: string
+          student_id: string
+          sync_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          early_departure_minutes?: number | null
+          id?: string
+          late_minutes?: number | null
+          marked_by?: string | null
+          notes?: string | null
+          session_id: string
+          status?: string
+          student_id: string
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          early_departure_minutes?: number | null
+          id?: string
+          late_minutes?: number | null
+          marked_by?: string | null
+          notes?: string | null
+          session_id?: string
+          status?: string
+          student_id?: string
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_tracking_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_tracking_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_tracking_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_attendance_stats"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "attendance_tracking_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bjj_profiles: {
         Row: {
           about_me: string | null
@@ -270,6 +405,13 @@ export type Database = {
             foreignKeyName: "certificates_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "student_attendance_stats"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "certificates_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
@@ -317,6 +459,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "classes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_attendance_stats"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "class_enrollments_student_id_fkey"
@@ -459,6 +608,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "classes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_attendance_stats"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_notes_student_id_fkey"
@@ -662,6 +818,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_attendance_stats"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "course_enrollments_student_id_fkey"
@@ -968,6 +1131,13 @@ export type Database = {
             foreignKeyName: "lms_subscriptions_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "student_attendance_stats"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "lms_subscriptions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
@@ -1075,6 +1245,13 @@ export type Database = {
             foreignKeyName: "payment_reminders_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "student_attendance_stats"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "payment_reminders_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
@@ -1118,6 +1295,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_transactions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_attendance_stats"
+            referencedColumns: ["student_id"]
+          },
           {
             foreignKeyName: "payment_transactions_student_id_fkey"
             columns: ["student_id"]
@@ -1288,6 +1472,13 @@ export type Database = {
             foreignKeyName: "progress_videos_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "student_attendance_stats"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "progress_videos_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
@@ -1372,6 +1563,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "student_subscriptions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_attendance_stats"
+            referencedColumns: ["student_id"]
+          },
           {
             foreignKeyName: "student_subscriptions_student_id_fkey"
             columns: ["student_id"]
@@ -1834,11 +2032,32 @@ export type Database = {
         }
         Relationships: []
       }
+      student_attendance_stats: {
+        Row: {
+          attendance_percentage: number | null
+          attended_sessions: number | null
+          early_departure_sessions: number | null
+          email: string | null
+          last_attended: string | null
+          late_sessions: number | null
+          name: string | null
+          student_id: string | null
+          total_sessions: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       approve_user_profile: {
         Args: { p_user_id: string; p_approved_by: string }
         Returns: boolean
+      }
+      calculate_attendance_streak: {
+        Args: { p_student_id: string }
+        Returns: {
+          current_streak: number
+          longest_streak: number
+        }[]
       }
       calculate_next_due_date: {
         Args: { period_type: string; from_date?: string }
@@ -1897,6 +2116,16 @@ export type Database = {
         Args: { p_category: string; p_key: string; p_branch_id?: string }
         Returns: Json
       }
+      mark_attendance: {
+        Args: {
+          p_session_id: string
+          p_student_id: string
+          p_status: string
+          p_marked_by: string
+          p_sync_status?: string
+        }
+        Returns: Json
+      }
       process_attendance_checkin: {
         Args: {
           p_student_id: string
@@ -1910,9 +2139,21 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      refresh_attendance_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       reject_user_profile: {
         Args: { p_user_id: string; p_rejected_by: string; p_reason: string }
         Returns: boolean
+      }
+      start_attendance_session: {
+        Args: {
+          p_class_id: string
+          p_instructor_id: string
+          p_session_date?: string
+        }
+        Returns: string
       }
       sync_student_auth_links: {
         Args: Record<PropertyKey, never>
