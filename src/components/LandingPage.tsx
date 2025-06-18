@@ -3,8 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { UserCog, Users, GraduationCap, BarChart3, Calendar, Trophy, BookOpen, Shield, Star, Award, Target, Heart, ChevronRight, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
 const LandingPage = () => {
   const navigate = useNavigate();
+  
   const programs = [{
     title: "Beginner Program",
     description: "Perfect for those new to BJJ. Learn fundamentals in a supportive environment.",
@@ -66,11 +68,11 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="outline" className="border-bjj-gold text-bjj-gold hover:bg-bjj-gold hover:text-white" onClick={() => navigate("/login")}>
+            <Button variant="outline" className="border-bjj-gold text-bjj-gold hover:bg-bjj-gold hover:text-white" onClick={() => navigate("/login?mode=login")}>
               <Shield className="w-4 h-4 mr-2" />
               Member Login
             </Button>
-            <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-white" onClick={() => navigate("/login")}>
+            <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-white" onClick={() => navigate("/login?mode=signup")}>
               Get Started
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
@@ -102,11 +104,11 @@ const LandingPage = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold px-8 py-4 text-lg" onClick={() => navigate("/login")}>
+            <Button size="lg" className="bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold px-8 py-4 text-lg" onClick={() => navigate("/login?mode=signup")}>
               <Play className="w-5 h-5 mr-2" />
               Start Your Journey
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/login")} className="border-white hover:bg-white font-semibold px-8 py-4 text-lg text-slate-950">
+            <Button size="lg" variant="outline" onClick={() => navigate("/login?mode=login")} className="border-white hover:bg-white font-semibold px-8 py-4 text-lg text-slate-950">
               <Shield className="w-5 h-5 mr-2" />
               Member Login
             </Button>
@@ -270,11 +272,11 @@ const LandingPage = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold px-8 py-4 text-lg" onClick={() => navigate("/login")}>
+            <Button size="lg" className="bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold px-8 py-4 text-lg" onClick={() => navigate("/login?mode=signup")}>
               <Play className="w-5 h-5 mr-2" />
               Get Started Today
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/login")} className="border-white hover:bg-white font-semibold px-8 py-4 text-lg text-zinc-950">
+            <Button size="lg" variant="outline" onClick={() => navigate("/login?mode=login")} className="border-white hover:bg-white font-semibold px-8 py-4 text-lg text-zinc-950">
               <Shield className="w-5 h-5 mr-2" />
               Member Login
             </Button>
