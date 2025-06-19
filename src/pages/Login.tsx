@@ -18,7 +18,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { signIn, signUp, user, userProfile, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -38,7 +38,7 @@ const Login = () => {
     });
 
     // Only proceed if we have a user and auth is not loading
-    if (!loading && user && !isLoading) {
+    if (!loading && user && !isSubmitting) {
       console.log('✅ User authenticated, determining redirect...');
       
       // If no profile yet, wait a moment for it to load
@@ -78,11 +78,11 @@ const Login = () => {
         navigate("/dashboard", { replace: true });
       }
     }
-  }, [user, userProfile, loading, navigate, isLoading]);
+  }, [user, userProfile, loading, navigate, isSubmitting]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
       console.log('🔐 Attempting login for:', email);
@@ -91,24 +91,24 @@ const Login = () => {
       if (error) {
         console.error("❌ Login error:", error);
         toast.error(error.message || "Login failed");
-        setIsLoading(false);
+        setIsSubmitting(false);
         return;
       }
 
       if (data?.user) {
         console.log('✅ Login successful for user:', data.user.id);
         toast.success("Login successful!");
-        // Don't call setIsLoading(false) here - let the useEffect handle navigation
+        // Don't call setIsSubmitting(false) here - let the useEffect handle navigation
         // The loading state will be cleared after successful navigation
       } else {
         console.error("❌ No user data received");
         toast.error("Login failed - no user data received");
-        setIsLoading(false);
+        setIsSubmitting(false);
       }
     } catch (error) {
       console.error("💥 Login failed:", error);
       toast.error("Login failed. Please try again.");
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -125,7 +125,7 @@ const Login = () => {
       return;
     }
 
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
       console.log('📝 Attempting signup for:', email);
@@ -134,7 +134,7 @@ const Login = () => {
       if (error) {
         console.error("❌ Signup error:", error);
         toast.error(error.message || "Signup failed");
-        setIsLoading(false);
+        setIsSubmitting(false);
         return;
       }
 
@@ -148,7 +148,7 @@ const Login = () => {
       console.error("💥 Signup failed:", error);
       toast.error("Signup failed. Please try again.");
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -242,9 +242,9 @@ const Login = () => {
               <Button
                 type="submit"
                 className="w-full bg-bjj-gold hover:bg-bjj-gold-dark"
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
-                {isLoading 
+                {isSubmitting 
                   ? (isSignup ? "Creating Account..." : "Signing in...") 
                   : (isSignup ? "Create Account" : "Sign In")
                 }
@@ -258,7 +258,7 @@ const Login = () => {
                   variant="link"
                   className="p-0 h-auto text-bjj-gold"
                   onClick={toggleMode}
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                 >
                   {isSignup ? "Sign In" : "Get Started"}
                 </Button>

@@ -188,25 +188,26 @@ export const useAuth = () => {
   };
 
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener - CRITICAL: No async operations in the callback!
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('🔄 Auth state changed:', event, session?.user?.id);
         
+        // Only synchronous state updates here - NO async operations
         setSession(session);
         setUser(session?.user ?? null);
         
+        // Defer any Supabase calls using setTimeout to prevent deadlock
         if (session?.user) {
-          // Fetch profile but don't block loading state
-          const profile = await fetchUserProfile(session.user.id);
-          if (!profile) {
-            console.log('⚠️ No profile found for user, but continuing...');
-          }
+          setTimeout(() => {
+            fetchUserProfile(session.user.id).finally(() => {
+              setLoading(false);
+            });
+          }, 0);
         } else {
           setUserProfile(null);
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
