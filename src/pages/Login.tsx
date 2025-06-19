@@ -19,60 +19,95 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, signUp, userProfile } = useAuth();
+  const { signIn, signUp, user, userProfile, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     setIsSignup(mode === 'signup');
   }, [mode]);
 
+  // Handle navigation after successful authentication
+  useEffect(() => {
+    console.log('🔄 Login useEffect - checking auth state:', { 
+      user: !!user, 
+      userProfile,
+      loading,
+      profileCompleted: userProfile?.mandatory_fields_completed,
+      approvalStatus: userProfile?.approval_status,
+      role: userProfile?.role_name 
+    });
+
+    // Only proceed if we have a user and auth is not loading
+    if (!loading && user && !isLoading) {
+      console.log('✅ User authenticated, determining redirect...');
+      
+      // If no profile yet, wait a moment for it to load
+      if (!userProfile) {
+        console.log('⏳ No profile yet, waiting...');
+        return;
+      }
+
+      const role = userProfile.role_name;
+      const approvalStatus = userProfile.approval_status;
+      const mandatoryCompleted = userProfile.mandatory_fields_completed;
+
+      console.log('🧭 Navigation logic:', { role, approvalStatus, mandatoryCompleted });
+
+      // Route based on role and completion status
+      if (role === 'Super Admin') {
+        console.log('👑 Redirecting Admin to dashboard');
+        navigate("/admin/dashboard", { replace: true });
+      } else if (role === 'Coach') {
+        console.log('👨‍🏫 Redirecting Coach to dashboard');
+        navigate("/coach/dashboard", { replace: true });
+      } else if (role === 'Student') {
+        // Check if student needs to complete profile
+        if (!mandatoryCompleted) {
+          console.log('📝 Redirecting Student to profile wizard');
+          navigate("/profile-wizard", { replace: true });
+        } else if (approvalStatus === 'pending' || approvalStatus === 'rejected') {
+          console.log('⏳ Redirecting Student to profile pending');
+          navigate("/profile-pending", { replace: true });
+        } else {
+          console.log('🎓 Redirecting Student to dashboard');
+          navigate("/dashboard", { replace: true });
+        }
+      } else {
+        // Default fallback
+        console.log('🔄 Default redirect to dashboard');
+        navigate("/dashboard", { replace: true });
+      }
+    }
+  }, [user, userProfile, loading, navigate, isLoading]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      console.log('🔐 Attempting login for:', email);
       const { data, error } = await signIn(email, password);
       
       if (error) {
-        console.error("Login error:", error);
+        console.error("❌ Login error:", error);
         toast.error(error.message || "Login failed");
+        setIsLoading(false);
         return;
       }
 
       if (data?.user) {
+        console.log('✅ Login successful for user:', data.user.id);
         toast.success("Login successful!");
-        // Wait a moment for profile to load
-        setTimeout(() => {
-          const role = userProfile?.role_name;
-          const approvalStatus = userProfile?.approval_status;
-          const mandatoryCompleted = userProfile?.mandatory_fields_completed;
-
-          console.log('Login redirect logic:', { role, approvalStatus, mandatoryCompleted });
-
-          // Route based on role and completion status
-          if (role === 'Super Admin') {
-            navigate("/admin/dashboard");
-          } else if (role === 'Coach') {
-            navigate("/coach/dashboard");
-          } else if (role === 'Student') {
-            // Check if student needs to complete profile
-            if (!mandatoryCompleted) {
-              navigate("/profile-wizard");
-            } else if (approvalStatus === 'pending' || approvalStatus === 'rejected') {
-              navigate("/profile-pending");
-            } else {
-              navigate("/dashboard");
-            }
-          } else {
-            // Default fallback
-            navigate("/dashboard");
-          }
-        }, 1000);
+        // Don't call setIsLoading(false) here - let the useEffect handle navigation
+        // The loading state will be cleared after successful navigation
+      } else {
+        console.error("❌ No user data received");
+        toast.error("Login failed - no user data received");
+        setIsLoading(false);
       }
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("💥 Login failed:", error);
       toast.error("Login failed. Please try again.");
-    } finally {
       setIsLoading(false);
     }
   };
@@ -93,21 +128,24 @@ const Login = () => {
     setIsLoading(true);
 
     try {
+      console.log('📝 Attempting signup for:', email);
       const { data, error } = await signUp(email, password, name);
       
       if (error) {
-        console.error("Signup error:", error);
+        console.error("❌ Signup error:", error);
         toast.error(error.message || "Signup failed");
+        setIsLoading(false);
         return;
       }
 
       if (data?.user) {
+        console.log('✅ Signup successful for user:', data.user.id);
         toast.success("Account created successfully! Please complete your profile.");
         // Redirect to profile wizard after successful signup
-        navigate("/profile-wizard");
+        navigate("/profile-wizard", { replace: true });
       }
     } catch (error) {
-      console.error("Signup failed:", error);
+      console.error("💥 Signup failed:", error);
       toast.error("Signup failed. Please try again.");
     } finally {
       setIsLoading(false);
@@ -115,8 +153,9 @@ const Login = () => {
   };
 
   const toggleMode = () => {
-    setIsSignup(!isSignup);
-    navigate(isSignup ? "/login?mode=login" : "/login?mode=signup");
+    const newMode = !isSignup;
+    setIsSignup(newMode);
+    navigate(newMode ? "/login?mode=signup" : "/login?mode=login", { replace: true });
   };
 
   return (
@@ -219,6 +258,7 @@ const Login = () => {
                   variant="link"
                   className="p-0 h-auto text-bjj-gold"
                   onClick={toggleMode}
+                  disabled={isLoading}
                 >
                   {isSignup ? "Sign In" : "Get Started"}
                 </Button>

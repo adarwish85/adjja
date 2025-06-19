@@ -7,54 +7,65 @@ import { useNavigate } from "react-router-dom";
 const LandingPage = () => {
   const navigate = useNavigate();
   
-  const programs = [{
-    title: "Beginner Program",
-    description: "Perfect for those new to BJJ. Learn fundamentals in a supportive environment.",
-    level: "Beginner",
-    duration: "3-6 months"
-  }, {
-    title: "Advanced Training",
-    description: "Refine your technique and compete at higher levels.",
-    level: "Advanced",
-    duration: "Ongoing"
-  }, {
-    title: "Kids BJJ",
-    description: "Safe, fun classes that build confidence and discipline in children.",
-    level: "Kids",
-    duration: "Age-appropriate"
-  }];
-  const benefits = [{
-    icon: <Shield className="h-8 w-8 text-bjj-gold" />,
-    title: "Self-Defense",
-    description: "Learn practical techniques to protect yourself and your loved ones"
-  }, {
-    icon: <Heart className="h-8 w-8 text-bjj-gold" />,
-    title: "Physical Fitness",
-    description: "Build strength, flexibility, and cardiovascular endurance"
-  }, {
-    icon: <Users className="h-8 w-8 text-bjj-gold" />,
-    title: "Community",
-    description: "Join a supportive family of martial artists and lifelong friends"
-  }, {
-    icon: <Target className="h-8 w-8 text-bjj-gold" />,
-    title: "Mental Discipline",
-    description: "Develop focus, patience, and problem-solving skills"
-  }];
+  const programs = [
+    {
+      title: "Beginner Program",
+      description: "Perfect for those new to BJJ. Learn fundamentals in a supportive environment.",
+      level: "Beginner",
+      duration: "3-6 months"
+    }, {
+      title: "Advanced Training",
+      description: "Refine your technique and compete at higher levels.",
+      level: "Advanced",
+      duration: "Ongoing"
+    }, {
+      title: "Kids BJJ",
+      description: "Safe, fun classes that build confidence and discipline in children.",
+      level: "Kids",
+      duration: "Age-appropriate"
+    }
+  ];
+  
+  const benefits = [
+    {
+      icon: <Shield className="h-8 w-8 text-bjj-gold" />,
+      title: "Self-Defense",
+      description: "Learn practical techniques to protect yourself and your loved ones"
+    }, {
+      icon: <Heart className="h-8 w-8 text-bjj-gold" />,
+      title: "Physical Fitness",
+      description: "Build strength, flexibility, and cardiovascular endurance"
+    }, {
+      icon: <Users className="h-8 w-8 text-bjj-gold" />,
+      title: "Community",
+      description: "Join a supportive family of martial artists and lifelong friends"
+    }, {
+      icon: <Target className="h-8 w-8 text-bjj-gold" />,
+      title: "Mental Discipline",
+      description: "Develop focus, patience, and problem-solving skills"
+    }
+  ];
+  
   const achievements = ["15+ Years of Teaching Excellence", "500+ Students Trained", "Multiple Competition Champions", "Family-Friendly Environment"];
-  const testimonials = [{
-    name: "Sarah Johnson",
-    text: "Ahmed Darwish Academy transformed my life. The instructors are patient, knowledgeable, and truly care about each student's progress.",
-    belt: "Blue Belt"
-  }, {
-    name: "Michael Chen",
-    text: "My kids love their classes here. They've gained so much confidence and discipline. Highly recommend!",
-    belt: "Parent"
-  }, {
-    name: "Alex Rodriguez",
-    text: "The structured curriculum and progress tracking keep me motivated. Best BJJ academy in the area!",
-    belt: "Purple Belt"
-  }];
-  return <div className="min-h-screen bg-white">
+  
+  const testimonials = [
+    {
+      name: "Sarah Johnson",
+      text: "Ahmed Darwish Academy transformed my life. The instructors are patient, knowledgeable, and truly care about each student's progress.",
+      belt: "Blue Belt"
+    }, {
+      name: "Michael Chen",
+      text: "My kids love their classes here. They've gained so much confidence and discipline. Highly recommend!",
+      belt: "Parent"
+    }, {
+      name: "Alex Rodriguez",
+      text: "The structured curriculum and progress tracking keep me motivated. Best BJJ academy in the area!",
+      belt: "Purple Belt"
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-white">
       {/* Navigation Header */}
       <header className="relative z-50 bg-white/95 backdrop-blur-sm shadow-sm sticky top-0">
         <div className="w-full px-6 py-4 flex items-center justify-between">
@@ -68,11 +79,18 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="outline" className="border-bjj-gold text-bjj-gold hover:bg-bjj-gold hover:text-white" onClick={() => navigate("/login?mode=login")}>
+            <Button 
+              variant="outline" 
+              className="border-bjj-gold text-bjj-gold hover:bg-bjj-gold hover:text-white" 
+              onClick={() => navigate("/login?mode=login")}
+            >
               <Shield className="w-4 h-4 mr-2" />
               Member Login
             </Button>
-            <Button className="bg-bjj-gold hover:bg-bjj-gold-dark text-white" onClick={() => navigate("/login?mode=signup")}>
+            <Button 
+              className="bg-bjj-gold hover:bg-bjj-gold-dark text-white" 
+              onClick={() => navigate("/login?mode=signup")}
+            >
               Get Started
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
@@ -84,8 +102,8 @@ const LandingPage = () => {
       <section className="relative min-h-[90vh] flex items-center justify-center bg-gradient-to-br from-bjj-navy via-bjj-navy/95 to-bjj-navy/90">
         {/* Background overlay */}
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20" style={{
-        backgroundImage: `url('https://images.unsplash.com/photo-1544844179-ac0aeebb4333?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`
-      }} />
+          backgroundImage: `url('https://images.unsplash.com/photo-1544844179-ac0aeebb4333?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`
+        }} />
         
         <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
           <Badge className="mb-6 bg-bjj-gold/20 text-bjj-gold border-bjj-gold/30 text-lg px-4 py-2">
@@ -104,25 +122,36 @@ const LandingPage = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold px-8 py-4 text-lg" onClick={() => navigate("/login?mode=signup")}>
+            <Button 
+              size="lg" 
+              className="bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold px-8 py-4 text-lg" 
+              onClick={() => navigate("/login?mode=signup")}
+            >
               <Play className="w-5 h-5 mr-2" />
               Start Your Journey
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/login?mode=login")} className="border-white hover:bg-white font-semibold px-8 py-4 text-lg text-slate-950">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              onClick={() => navigate("/login?mode=login")} 
+              className="border-white hover:bg-white font-semibold px-8 py-4 text-lg text-slate-950"
+            >
               <Shield className="w-5 h-5 mr-2" />
               Member Login
             </Button>
           </div>
           
           <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {achievements.map((achievement, index) => <div key={index} className="text-white">
+            {achievements.map((achievement, index) => (
+              <div key={index} className="text-white">
                 <div className="text-2xl md:text-3xl font-bold text-bjj-gold mb-2">
                   {achievement.split(' ')[0]}
                 </div>
                 <div className="text-sm md:text-base opacity-90">
                   {achievement.split(' ').slice(1).join(' ')}
                 </div>
-              </div>)}
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -177,7 +206,8 @@ const LandingPage = () => {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            {programs.map((program, index) => <Card key={program.title} className="border-bjj-gold/20 hover:shadow-lg transition-all duration-300 hover:border-bjj-gold/40">
+            {programs.map((program, index) => (
+              <Card key={program.title} className="border-bjj-gold/20 hover:shadow-lg transition-all duration-300 hover:border-bjj-gold/40">
                 <CardHeader>
                   <div className="flex items-center justify-between mb-2">
                     <Badge variant="outline" className="border-bjj-gold text-bjj-gold">
@@ -198,7 +228,8 @@ const LandingPage = () => {
                     Learn More
                   </Button>
                 </CardContent>
-              </Card>)}
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -217,7 +248,8 @@ const LandingPage = () => {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {benefits.map((benefit, index) => <Card key={benefit.title} className="text-center border-bjj-gold/20 hover:shadow-lg transition-all duration-300">
+            {benefits.map((benefit, index) => (
+              <Card key={benefit.title} className="text-center border-bjj-gold/20 hover:shadow-lg transition-all duration-300">
                 <CardHeader>
                   <div className="mx-auto mb-4 p-3 bg-bjj-gold/10 rounded-full w-fit">
                     {benefit.icon}
@@ -227,7 +259,8 @@ const LandingPage = () => {
                 <CardContent>
                   <p className="text-gray-600">{benefit.description}</p>
                 </CardContent>
-              </Card>)}
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -243,10 +276,13 @@ const LandingPage = () => {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => <Card key={index} className="border-bjj-gold/20 hover:shadow-lg transition-all duration-300">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="border-bjj-gold/20 hover:shadow-lg transition-all duration-300">
                 <CardHeader>
                   <div className="flex items-center space-x-1 mb-4">
-                    {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-bjj-gold text-bjj-gold" />)}
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-5 h-5 fill-bjj-gold text-bjj-gold" />
+                    ))}
                   </div>
                   <CardDescription className="text-gray-700 italic">
                     "{testimonial.text}"
@@ -256,7 +292,8 @@ const LandingPage = () => {
                   <div className="font-semibold text-bjj-navy">{testimonial.name}</div>
                   <div className="text-sm text-bjj-gold">{testimonial.belt}</div>
                 </CardContent>
-              </Card>)}
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -272,11 +309,20 @@ const LandingPage = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold px-8 py-4 text-lg" onClick={() => navigate("/login?mode=signup")}>
+            <Button 
+              size="lg" 
+              className="bg-bjj-gold hover:bg-bjj-gold-dark text-white font-semibold px-8 py-4 text-lg" 
+              onClick={() => navigate("/login?mode=signup")}
+            >
               <Play className="w-5 h-5 mr-2" />
               Get Started Today
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/login?mode=login")} className="border-white hover:bg-white font-semibold px-8 py-4 text-lg text-zinc-950">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              onClick={() => navigate("/login?mode=login")} 
+              className="border-white hover:bg-white font-semibold px-8 py-4 text-lg text-zinc-950"
+            >
               <Shield className="w-5 h-5 mr-2" />
               Member Login
             </Button>
@@ -305,6 +351,8 @@ const LandingPage = () => {
           </p>
         </div>
       </footer>
-    </div>;
+    </div>
+  );
 };
+
 export default LandingPage;
