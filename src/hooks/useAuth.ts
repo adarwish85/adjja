@@ -200,12 +200,16 @@ export const useAuth = () => {
         // Defer any Supabase calls using setTimeout to prevent deadlock
         if (session?.user) {
           setTimeout(() => {
-            fetchUserProfile(session.user.id).finally(() => {
+            fetchUserProfile(session.user.id).catch((error) => {
+              console.error('Failed to fetch profile:', error);
+            }).finally(() => {
+              console.log('🔄 Setting loading to false after profile fetch');
               setLoading(false);
             });
           }, 0);
         } else {
           setUserProfile(null);
+          console.log('🔄 Setting loading to false - no user');
           setLoading(false);
         }
       }
@@ -214,6 +218,7 @@ export const useAuth = () => {
     // Get initial session
     const initializeAuth = async () => {
       try {
+        console.log('🚀 Initializing auth...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -222,6 +227,7 @@ export const useAuth = () => {
           return;
         }
         
+        console.log('📋 Initial session:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -232,6 +238,7 @@ export const useAuth = () => {
           }
         }
         
+        console.log('🔄 Setting loading to false after initialization');
         setLoading(false);
       } catch (error) {
         console.error('Error initializing auth:', error);
