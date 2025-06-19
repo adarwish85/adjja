@@ -57,6 +57,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         }
 
         setHasCheckedRedirect(true);
+      } else if (user && !userProfile && !hasCheckedRedirect) {
+        // User exists but no profile - let them through for now
+        console.log('⚠️ ProtectedRoute: User exists but no profile, allowing access');
+        setHasCheckedRedirect(true);
       }
     }
   }, [user, userProfile, loading, navigate, hasCheckedRedirect]);
@@ -83,17 +87,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return null; // Will redirect to login
   }
 
-  if (!userProfile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-bjj-navy mb-4">Profile Loading</h2>
-          <p className="text-bjj-gray">Please wait while we load your profile...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Allow access even if profile is missing - some users might not have profiles yet
   return <>{children}</>;
 };
 

@@ -1,5 +1,5 @@
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,8 +13,6 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -38,9 +36,59 @@ export const useAuth = () => {
         .eq('id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('❌ Error fetching profile:', error);
-        return;
+        
+        // If profile doesn't exist, create a basic one for existing users
+        if (error.code === 'PGRST116') {
+          console.log('📝 Profile not found, creating basic profile for existing user');
+          
+          // Get the user's email from auth.users
+          const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+          
+          if (authUser && !userError) {
+            // Get default Student role
+            const { data: studentRole } = await supabase
+              .from('user_roles')
+              .select('id')
+              .eq('name', 'Student')
+              .single();
+            
+            // Create basic profile
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert({
+                id: userId,
+                email: authUser.email,
+                name: authUser.email?.split('@')[0] || 'User',
+                role_id: studentRole?.id || null,
+                status: 'active',
+                approval_status: 'approved', // Auto-approve for existing users
+                mandatory_fields_completed: false
+              })
+              .select(`
+                *,
+                user_roles (
+                  id,
+                  name
+                )
+              `)
+              .single();
+            
+            if (!createError && newProfile) {
+              const enrichedProfile = {
+                ...newProfile,
+                role_name: newProfile.user_roles?.name || 'Student',
+                role_id: newProfile.user_roles?.id || null
+              };
+              
+              console.log('✅ Basic profile created successfully:', enrichedProfile);
+              setUserProfile(enrichedProfile);
+              return enrichedProfile;
+            }
+          }
+        }
+        return null;
       }
 
       if (profile) {
@@ -57,6 +105,8 @@ export const useAuth = () => {
     } catch (error) {
       console.error('💥 Unexpected error fetching profile:', error);
     }
+    
+    return null;
   };
 
   const refreshProfile = async () => {
@@ -147,10 +197,11 @@ export const useAuth = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer profile fetching to avoid blocking the auth state change
-          setTimeout(() => {
-            fetchUserProfile(session.user.id);
-          }, 0);
+          // Fetch profile but don't block loading state
+          const profile = await fetchUserProfile(session.user.id);
+          if (!profile) {
+            console.log('⚠️ No profile found for user, but continuing...');
+          }
         } else {
           setUserProfile(null);
         }
@@ -160,16 +211,34 @@ export const useAuth = () => {
     );
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setLoading(false);
+          return;
+        }
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          const profile = await fetchUserProfile(session.user.id);
+          if (!profile) {
+            console.log('⚠️ No profile found for user, but continuing...');
+          }
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        setLoading(false);
       }
-      
-      setLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     return () => subscription.unsubscribe();
   }, []);
