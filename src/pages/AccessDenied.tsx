@@ -7,14 +7,16 @@ import { useAuth } from "@/hooks/useAuth";
 
 const AccessDenied = () => {
   const navigate = useNavigate();
-  const { userProfile, isAdmin, isCoach, isStudent } = useAuth();
+  const { userProfile } = useAuth();
 
   const handleGoToDashboard = () => {
-    if (isAdmin()) {
+    const roleName = userProfile?.role_name?.toLowerCase();
+    
+    if (roleName === 'super admin' || roleName === 'admin') {
       navigate("/admin");
-    } else if (isCoach()) {
+    } else if (roleName === 'coach') {
       navigate("/coach");
-    } else if (isStudent()) {
+    } else if (roleName === 'student') {
       navigate("/dashboard");
     } else {
       navigate("/");
