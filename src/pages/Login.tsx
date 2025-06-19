@@ -1,33 +1,46 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield } from "lucide-react";
+import { toast } from "sonner";
 
 const Login = () => {
-  const [emailOrUsername, setEmailOrUsername] = useState("");
+  const [searchParams] = useSearchParams();
+  const mode = searchParams.get('mode') || 'login';
+  const [isSignup, setIsSignup] = useState(mode === 'signup');
+  
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, userProfile } = useAuth();
+  const { signIn, signUp, userProfile } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setIsSignup(mode === 'signup');
+  }, [mode]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { data, error } = await signIn(emailOrUsername, password);
+      const { data, error } = await signIn(email, password);
       
       if (error) {
         console.error("Login error:", error);
+        toast.error(error.message || "Login failed");
         return;
       }
 
       if (data?.user) {
+        toast.success("Login successful!");
         // Wait a moment for profile to load
         setTimeout(() => {
           const role = userProfile?.role_name;
@@ -58,9 +71,52 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Login failed:", error);
+      toast.error("Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters long");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await signUp(email, password, name);
+      
+      if (error) {
+        console.error("Signup error:", error);
+        toast.error(error.message || "Signup failed");
+        return;
+      }
+
+      if (data?.user) {
+        toast.success("Account created successfully! Please complete your profile.");
+        // Redirect to profile wizard after successful signup
+        navigate("/profile-wizard");
+      }
+    } catch (error) {
+      console.error("Signup failed:", error);
+      toast.error("Signup failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleMode = () => {
+    setIsSignup(!isSignup);
+    navigate(isSignup ? "/login?mode=login" : "/login?mode=signup");
   };
 
   return (
@@ -76,27 +132,44 @@ const Login = () => {
             Ahmed Darwish Academy
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to your account
+            {isSignup ? "Create your account" : "Sign in to your account"}
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Welcome Back</CardTitle>
+            <CardTitle>{isSignup ? "Get Started" : "Welcome Back"}</CardTitle>
             <CardDescription>
-              Enter your credentials to access your account
+              {isSignup 
+                ? "Enter your details to create your account"
+                : "Enter your credentials to access your account"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-6">
+            <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-6">
+              {isSignup && (
+                <div>
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter your full name"
+                    required
+                  />
+                </div>
+              )}
+
               <div>
-                <Label htmlFor="emailOrUsername">Email or Username</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="emailOrUsername"
-                  type="text"
-                  value={emailOrUsername}
-                  onChange={(e) => setEmailOrUsername(e.target.value)}
-                  placeholder="Enter your email or username"
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
                   required
                 />
               </div>
@@ -113,24 +186,41 @@ const Login = () => {
                 />
               </div>
 
+              {isSignup && (
+                <div>
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    required
+                  />
+                </div>
+              )}
+
               <Button
                 type="submit"
                 className="w-full bg-bjj-gold hover:bg-bjj-gold-dark"
                 disabled={isLoading}
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading 
+                  ? (isSignup ? "Creating Account..." : "Signing in...") 
+                  : (isSignup ? "Create Account" : "Sign In")
+                }
               </Button>
             </form>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Don't have an account?{" "}
+                {isSignup ? "Already have an account?" : "Don't have an account?"}{" "}
                 <Button
                   variant="link"
                   className="p-0 h-auto text-bjj-gold"
-                  onClick={() => navigate("/")}
+                  onClick={toggleMode}
                 >
-                  Get Started
+                  {isSignup ? "Sign In" : "Get Started"}
                 </Button>
               </p>
             </div>
