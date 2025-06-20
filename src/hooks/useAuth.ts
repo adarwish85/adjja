@@ -188,6 +188,14 @@ export const useAuth = () => {
   };
 
   useEffect(() => {
+    // Set a maximum loading timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.log('⏰ Auth loading timeout reached, setting loading to false');
+        setLoading(false);
+      }
+    }, 10000); // 10 second timeout
+
     // Set up auth state listener - CRITICAL: No async operations in the callback!
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -205,12 +213,14 @@ export const useAuth = () => {
             }).finally(() => {
               console.log('🔄 Setting loading to false after profile fetch');
               setLoading(false);
+              clearTimeout(loadingTimeout);
             });
           }, 0);
         } else {
           setUserProfile(null);
           console.log('🔄 Setting loading to false - no user');
           setLoading(false);
+          clearTimeout(loadingTimeout);
         }
       }
     );
@@ -224,6 +234,7 @@ export const useAuth = () => {
         if (error) {
           console.error('Error getting session:', error);
           setLoading(false);
+          clearTimeout(loadingTimeout);
           return;
         }
         
@@ -240,15 +251,20 @@ export const useAuth = () => {
         
         console.log('🔄 Setting loading to false after initialization');
         setLoading(false);
+        clearTimeout(loadingTimeout);
       } catch (error) {
         console.error('Error initializing auth:', error);
         setLoading(false);
+        clearTimeout(loadingTimeout);
       }
     };
 
     initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(loadingTimeout);
+    };
   }, []);
 
   return {

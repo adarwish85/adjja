@@ -19,6 +19,8 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [navigationTimeout, setNavigationTimeout] = useState<NodeJS.Timeout | null>(null);
+  
   const { signIn, signUp, user, userProfile, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -26,41 +28,88 @@ const Login = () => {
     setIsSignup(mode === 'signup');
   }, [mode]);
 
-  // Handle navigation after successful authentication
+  // Simplified navigation logic with timeout safety
   useEffect(() => {
-    console.log('🔄 Login useEffect - checking auth state:', { 
+    // Don't do anything if we're still loading auth state
+    if (loading) {
+      console.log('🔄 Auth still loading, waiting...');
+      return;
+    }
+
+    // Don't navigate if we're in the middle of submitting
+    if (isSubmitting) {
+      console.log('🔄 Still submitting, waiting...');
+      return;
+    }
+
+    // Only proceed if we have a user
+    if (!user) {
+      console.log('❌ No user found, staying on login page');
+      return;
+    }
+
+    console.log('✅ User authenticated, checking profile and role...', { 
       user: !!user, 
       userProfile,
-      loading,
-      profileCompleted: userProfile?.mandatory_fields_completed,
-      approvalStatus: userProfile?.approval_status,
-      role: userProfile?.role_name 
+      role: userProfile?.role_name,
+      mandatoryCompleted: userProfile?.mandatory_fields_completed,
+      approvalStatus: userProfile?.approval_status
     });
 
-    // Only proceed if we have a user and auth is not loading
-    if (!loading && user && !isSubmitting) {
-      console.log('✅ User authenticated, determining redirect...');
+    // Clear any existing timeout
+    if (navigationTimeout) {
+      clearTimeout(navigationTimeout);
+    }
+
+    // Set a timeout to prevent infinite waiting
+    const timeout = setTimeout(() => {
+      console.log('⏰ Navigation timeout - proceeding with default redirect');
       
-      // If no profile yet, wait a moment for it to load
       if (!userProfile) {
-        console.log('⏳ No profile yet, waiting...');
+        console.log('⚠️ No profile found after timeout, redirecting to profile wizard');
+        navigate("/profile-wizard", { replace: true });
         return;
       }
 
-      const role = userProfile.role_name;
+      // Default role-based navigation
+      const role = userProfile.role_name?.toLowerCase();
+      console.log('🧭 Default navigation for role:', role);
+      
+      switch (role) {
+        case 'super admin':
+          navigate("/admin/dashboard", { replace: true });
+          break;
+        case 'coach':
+          navigate("/coach/dashboard", { replace: true });
+          break;
+        case 'student':
+          navigate("/dashboard", { replace: true });
+          break;
+        default:
+          navigate("/dashboard", { replace: true });
+      }
+    }, 3000); // 3 second timeout
+
+    setNavigationTimeout(timeout);
+
+    // If we have a profile, navigate immediately
+    if (userProfile) {
+      clearTimeout(timeout);
+      
+      const role = userProfile.role_name?.toLowerCase();
       const approvalStatus = userProfile.approval_status;
       const mandatoryCompleted = userProfile.mandatory_fields_completed;
 
-      console.log('🧭 Navigation logic:', { role, approvalStatus, mandatoryCompleted });
+      console.log('🧭 Immediate navigation logic:', { role, approvalStatus, mandatoryCompleted });
 
       // Route based on role and completion status
-      if (role === 'Super Admin') {
+      if (role === 'super admin') {
         console.log('👑 Redirecting Admin to dashboard');
         navigate("/admin/dashboard", { replace: true });
-      } else if (role === 'Coach') {
+      } else if (role === 'coach') {
         console.log('👨‍🏫 Redirecting Coach to dashboard');
         navigate("/coach/dashboard", { replace: true });
-      } else if (role === 'Student') {
+      } else if (role === 'student') {
         // Check if student needs to complete profile
         if (!mandatoryCompleted) {
           console.log('📝 Redirecting Student to profile wizard');
@@ -73,12 +122,18 @@ const Login = () => {
           navigate("/dashboard", { replace: true });
         }
       } else {
-        // Default fallback
         console.log('🔄 Default redirect to dashboard');
         navigate("/dashboard", { replace: true });
       }
     }
-  }, [user, userProfile, loading, navigate, isSubmitting]);
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [user, userProfile, loading, navigate, isSubmitting, navigationTimeout]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,8 +153,8 @@ const Login = () => {
       if (data?.user) {
         console.log('✅ Login successful for user:', data.user.id);
         toast.success("Login successful!");
-        // Don't call setIsSubmitting(false) here - let the useEffect handle navigation
-        // The loading state will be cleared after successful navigation
+        // Don't set isSubmitting(false) here - let the useEffect handle navigation
+        // The component will handle the redirect, then we can clear the submitting state
       } else {
         console.error("❌ No user data received");
         toast.error("Login failed - no user data received");
@@ -158,6 +213,9 @@ const Login = () => {
     navigate(newMode ? "/login?mode=signup" : "/login?mode=login", { replace: true });
   };
 
+  // Show loading state while auth is initializing or we're submitting
+  const isLoading = loading || isSubmitting;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -197,6 +255,7 @@ const Login = () => {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Enter your full name"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               )}
@@ -210,6 +269,7 @@ const Login = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -222,6 +282,7 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -235,6 +296,7 @@ const Login = () => {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm your password"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               )}
@@ -242,13 +304,20 @@ const Login = () => {
               <Button
                 type="submit"
                 className="w-full bg-bjj-gold hover:bg-bjj-gold-dark"
-                disabled={isSubmitting}
+                disabled={isLoading}
               >
-                {isSubmitting 
+                {isLoading
                   ? (isSignup ? "Creating Account..." : "Signing in...") 
                   : (isSignup ? "Create Account" : "Sign In")
                 }
               </Button>
+
+              {/* Show timeout warning if we're waiting too long */}
+              {isSubmitting && !isSignup && (
+                <div className="text-center text-sm text-gray-600 mt-4">
+                  <p>Authenticating... If this takes too long, please refresh and try again.</p>
+                </div>
+              )}
             </form>
 
             <div className="mt-6 text-center">
@@ -258,7 +327,7 @@ const Login = () => {
                   variant="link"
                   className="p-0 h-auto text-bjj-gold"
                   onClick={toggleMode}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 >
                   {isSignup ? "Sign In" : "Get Started"}
                 </Button>
