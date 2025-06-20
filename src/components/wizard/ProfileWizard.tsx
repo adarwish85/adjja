@@ -7,7 +7,7 @@ import { CheckCircle } from "lucide-react";
 import { BasicInfoStep } from "./steps/BasicInfoStep";
 import { BJJDetailsStep } from "./steps/BJJDetailsStep";
 import { OptionalProfileStep } from "./steps/OptionalProfileStep";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthFlow } from "@/hooks/useAuthFlow";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -41,7 +41,7 @@ const steps = [
 ];
 
 export const ProfileWizard = () => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile } = useAuthFlow();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -177,7 +177,7 @@ export const ProfileWizard = () => {
     try {
       console.log('💾 Starting database updates...');
 
-      // 1. Update profiles table
+      // 1. Update profiles table with direct values (avoid self-referencing queries)
       const profileData = {
         name: wizardData.name.trim(),
         phone: wizardData.phone.trim(),
@@ -190,10 +190,15 @@ export const ProfileWizard = () => {
 
       console.log('📤 Updating profiles table:', profileData);
 
+      // Use upsert to avoid conflicts
       const { error: profileError } = await supabase
         .from('profiles')
-        .update(profileData)
-        .eq('id', user.id);
+        .upsert({
+          id: user.id, // Explicitly set the ID to match auth.uid()
+          ...profileData
+        }, {
+          onConflict: 'id'
+        });
 
       if (profileError) {
         console.error('❌ Profile update error:', profileError);
@@ -301,7 +306,7 @@ export const ProfileWizard = () => {
         console.log('✅ Audit log created successfully');
       }
 
-      // 5. Create notification for admin (optional)
+      // 5. Create notification for user (optional)
       try {
         const { error: notificationError } = await supabase
           .from('notifications')

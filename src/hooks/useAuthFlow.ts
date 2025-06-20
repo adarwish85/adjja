@@ -93,7 +93,7 @@ export const useAuthFlow = () => {
         return { success: false, error: error.message };
       }
 
-      // Let the auth state change handler take care of the rest
+      // Don't manually fetch profile here - let the auth state change handler do it
       console.log('✅ Sign in successful, waiting for auth state change...');
       return { success: true, error: null };
     } catch (error) {
@@ -121,8 +121,9 @@ export const useAuthFlow = () => {
 
   useEffect(() => {
     let mounted = true;
+    let profileFetchController: AbortController | null = null;
     
-    // Add a 15-second timeout to prevent infinite loading
+    // Add a 10-second timeout to prevent infinite loading
     const loadingTimeout = setTimeout(() => {
       if (mounted) {
         console.log('⏰ Auth loading timeout reached');
@@ -132,14 +133,19 @@ export const useAuthFlow = () => {
           error: 'Authentication timeout. Please try refreshing the page.'
         }));
       }
-    }, 15000);
+    }, 10000);
     
-    // Set up auth state listener
+    // Set up auth state listener - CRITICAL: No async operations in the callback!
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('🔄 Auth state changed:', event, session?.user?.id);
         
         if (!mounted) return;
+        
+        // Cancel any ongoing profile fetch
+        if (profileFetchController) {
+          profileFetchController.abort();
+        }
         
         if (session?.user) {
           // Update state immediately with user/session
@@ -149,37 +155,39 @@ export const useAuthFlow = () => {
             session: session,
             isAuthenticated: true,
             error: null,
+            loading: true, // Keep loading true while fetching profile
           }));
           
-          // Fetch profile separately with timeout
-          try {
-            const profilePromise = fetchUserProfile(session.user.id);
-            const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
-            );
-            
-            const profile = await Promise.race([profilePromise, timeoutPromise]) as UserProfile | null;
-            
-            if (mounted) {
-              setAuthState(prev => ({
-                ...prev,
-                userProfile: profile,
-                loading: false,
-                error: profile ? null : 'Failed to load user profile',
-              }));
-              clearTimeout(loadingTimeout);
+          // Fetch profile in a separate async context to avoid recursion
+          profileFetchController = new AbortController();
+          
+          setTimeout(async () => {
+            try {
+              if (!mounted) return;
+              
+              const profile = await fetchUserProfile(session.user.id);
+              
+              if (mounted && !profileFetchController?.signal.aborted) {
+                setAuthState(prev => ({
+                  ...prev,
+                  userProfile: profile,
+                  loading: false,
+                  error: profile ? null : 'Failed to load user profile',
+                }));
+                clearTimeout(loadingTimeout);
+              }
+            } catch (error) {
+              if (mounted && !profileFetchController?.signal.aborted) {
+                console.error('Profile fetch error:', error);
+                setAuthState(prev => ({
+                  ...prev,
+                  loading: false,
+                  error: 'Failed to load user profile',
+                }));
+                clearTimeout(loadingTimeout);
+              }
             }
-          } catch (error) {
-            if (mounted) {
-              console.error('Profile fetch error:', error);
-              setAuthState(prev => ({
-                ...prev,
-                loading: false,
-                error: 'Failed to load user profile',
-              }));
-              clearTimeout(loadingTimeout);
-            }
-          }
+          }, 0);
         } else {
           // No session - user logged out or not authenticated
           if (mounted) {
@@ -215,43 +223,10 @@ export const useAuthFlow = () => {
           return;
         }
         
-        if (session?.user) {
-          if (mounted) {
-            setAuthState(prev => ({
-              ...prev,
-              user: session.user,
-              session: session,
-              isAuthenticated: true,
-            }));
-          }
-          
-          try {
-            const profile = await fetchUserProfile(session.user.id);
-            
-            if (mounted) {
-              setAuthState(prev => ({
-                ...prev,
-                userProfile: profile,
-                loading: false,
-                error: profile ? null : 'Failed to load user profile',
-              }));
-              clearTimeout(loadingTimeout);
-            }
-          } catch (error) {
-            if (mounted) {
-              setAuthState(prev => ({
-                ...prev,
-                loading: false,
-                error: 'Failed to load user profile',
-              }));
-              clearTimeout(loadingTimeout);
-            }
-          }
-        } else {
-          if (mounted) {
-            setAuthState(prev => ({ ...prev, loading: false }));
-            clearTimeout(loadingTimeout);
-          }
+        // The auth state change listener will handle the session
+        if (!session && mounted) {
+          setAuthState(prev => ({ ...prev, loading: false }));
+          clearTimeout(loadingTimeout);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -272,6 +247,9 @@ export const useAuthFlow = () => {
       mounted = false;
       subscription.unsubscribe();
       clearTimeout(loadingTimeout);
+      if (profileFetchController) {
+        profileFetchController.abort();
+      }
     };
   }, []);
 
