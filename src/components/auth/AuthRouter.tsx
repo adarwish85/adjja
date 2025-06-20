@@ -57,36 +57,38 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
       return;
     }
 
-    // Role-based navigation
-    switch (role) {
-      case 'super admin':
-        console.log('👑 AuthRouter: Redirecting Super Admin to admin dashboard');
-        navigate("/admin/dashboard", { replace: true });
-        break;
-        
-      case 'coach':
-        console.log('👨‍🏫 AuthRouter: Redirecting Coach to coach dashboard');
-        navigate("/coach/dashboard", { replace: true });
-        break;
-        
-      case 'student':
-        // Check if student needs to complete profile
-        if (!mandatoryCompleted) {
-          console.log('📝 AuthRouter: Redirecting Student to profile wizard');
-          navigate("/profile-wizard", { replace: true });
-        } else if (approvalStatus === 'pending' || approvalStatus === 'rejected') {
-          console.log('⏳ AuthRouter: Redirecting Student to profile pending');
-          navigate("/profile-pending", { replace: true });
-        } else {
-          console.log('🎓 AuthRouter: Redirecting Student to dashboard');
+    // Role-based navigation with 500ms delay to ensure smooth transition
+    setTimeout(() => {
+      switch (role) {
+        case 'super admin':
+          console.log('👑 AuthRouter: Redirecting Super Admin to admin dashboard');
+          navigate("/admin/dashboard", { replace: true });
+          break;
+          
+        case 'coach':
+          console.log('👨‍🏫 AuthRouter: Redirecting Coach to coach dashboard');
+          navigate("/coach/dashboard", { replace: true });
+          break;
+          
+        case 'student':
+          // Check if student needs to complete profile
+          if (!mandatoryCompleted) {
+            console.log('📝 AuthRouter: Redirecting Student to profile wizard');
+            navigate("/profile-wizard", { replace: true });
+          } else if (approvalStatus === 'pending' || approvalStatus === 'rejected') {
+            console.log('⏳ AuthRouter: Redirecting Student to profile pending');
+            navigate("/profile-pending", { replace: true });
+          } else {
+            console.log('🎓 AuthRouter: Redirecting Student to dashboard');
+            navigate("/dashboard", { replace: true });
+          }
+          break;
+          
+        default:
+          console.log('🔄 AuthRouter: Unknown role, defaulting to student dashboard');
           navigate("/dashboard", { replace: true });
-        }
-        break;
-        
-      default:
-        console.log('🔄 AuthRouter: Unknown role, defaulting to student dashboard');
-        navigate("/dashboard", { replace: true });
-    }
+      }
+    }, 500);
   }, [user, userProfile, loading, error, isAuthenticated, navigate]);
 
   return <>{children}</>;

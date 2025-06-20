@@ -5,13 +5,15 @@ import { Shield } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { AuthRouter } from "@/components/auth/AuthRouter";
 import { useAuthFlow } from "@/hooks/useAuthFlow";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 const Login = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const mode = searchParams.get('mode') || 'login';
   const [isSignup, setIsSignup] = useState(mode === 'signup');
   
-  const { isAuthenticated, loading } = useAuthFlow();
+  const { isAuthenticated, loading, error } = useAuthFlow();
 
   useEffect(() => {
     setIsSignup(mode === 'signup');
@@ -66,6 +68,15 @@ const Login = () => {
               {isSignup ? "Create your account" : "Sign in to your account"}
             </p>
           </div>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {error}. Please try refreshing the page or contact support if the issue persists.
+              </AlertDescription>
+            </Alert>
+          )}
 
           <LoginForm isSignup={isSignup} onToggleMode={toggleMode} />
         </div>

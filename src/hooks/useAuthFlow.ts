@@ -122,6 +122,18 @@ export const useAuthFlow = () => {
   useEffect(() => {
     let mounted = true;
     
+    // Add a 15-second timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (mounted) {
+        console.log('⏰ Auth loading timeout reached');
+        setAuthState(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Authentication timeout. Please try refreshing the page.'
+        }));
+      }
+    }, 15000);
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -139,9 +151,14 @@ export const useAuthFlow = () => {
             error: null,
           }));
           
-          // Fetch profile separately
+          // Fetch profile separately with timeout
           try {
-            const profile = await fetchUserProfile(session.user.id);
+            const profilePromise = fetchUserProfile(session.user.id);
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+            );
+            
+            const profile = await Promise.race([profilePromise, timeoutPromise]) as UserProfile | null;
             
             if (mounted) {
               setAuthState(prev => ({
@@ -150,26 +167,32 @@ export const useAuthFlow = () => {
                 loading: false,
                 error: profile ? null : 'Failed to load user profile',
               }));
+              clearTimeout(loadingTimeout);
             }
           } catch (error) {
             if (mounted) {
+              console.error('Profile fetch error:', error);
               setAuthState(prev => ({
                 ...prev,
                 loading: false,
                 error: 'Failed to load user profile',
               }));
+              clearTimeout(loadingTimeout);
             }
           }
         } else {
           // No session - user logged out or not authenticated
-          setAuthState({
-            user: null,
-            session: null,
-            userProfile: null,
-            loading: false,
-            error: null,
-            isAuthenticated: false,
-          });
+          if (mounted) {
+            setAuthState({
+              user: null,
+              session: null,
+              userProfile: null,
+              loading: false,
+              error: null,
+              isAuthenticated: false,
+            });
+            clearTimeout(loadingTimeout);
+          }
         }
       }
     );
@@ -182,7 +205,12 @@ export const useAuthFlow = () => {
         if (error) {
           console.error('Session fetch error:', error);
           if (mounted) {
-            setAuthState(prev => ({ ...prev, loading: false, error: error.message }));
+            setAuthState(prev => ({ 
+              ...prev, 
+              loading: false, 
+              error: error.message 
+            }));
+            clearTimeout(loadingTimeout);
           }
           return;
         }
@@ -197,19 +225,32 @@ export const useAuthFlow = () => {
             }));
           }
           
-          const profile = await fetchUserProfile(session.user.id);
-          
-          if (mounted) {
-            setAuthState(prev => ({
-              ...prev,
-              userProfile: profile,
-              loading: false,
-              error: profile ? null : 'Failed to load user profile',
-            }));
+          try {
+            const profile = await fetchUserProfile(session.user.id);
+            
+            if (mounted) {
+              setAuthState(prev => ({
+                ...prev,
+                userProfile: profile,
+                loading: false,
+                error: profile ? null : 'Failed to load user profile',
+              }));
+              clearTimeout(loadingTimeout);
+            }
+          } catch (error) {
+            if (mounted) {
+              setAuthState(prev => ({
+                ...prev,
+                loading: false,
+                error: 'Failed to load user profile',
+              }));
+              clearTimeout(loadingTimeout);
+            }
           }
         } else {
           if (mounted) {
             setAuthState(prev => ({ ...prev, loading: false }));
+            clearTimeout(loadingTimeout);
           }
         }
       } catch (error) {
@@ -220,6 +261,7 @@ export const useAuthFlow = () => {
             loading: false, 
             error: 'Authentication initialization failed' 
           }));
+          clearTimeout(loadingTimeout);
         }
       }
     };
@@ -229,6 +271,7 @@ export const useAuthFlow = () => {
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      clearTimeout(loadingTimeout);
     };
   }, []);
 
