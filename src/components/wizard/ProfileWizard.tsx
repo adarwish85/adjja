@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -180,6 +181,7 @@ export const ProfileWizard = () => {
       // 1. Update profiles table with direct values (avoid self-referencing queries)
       const profileData = {
         name: wizardData.name.trim(),
+        email: user.email || '', // Add the required email field
         phone: wizardData.phone.trim(),
         profile_picture_url: wizardData.profile_picture_url,
         cover_photo_url: wizardData.cover_photo_url || null,
@@ -190,13 +192,10 @@ export const ProfileWizard = () => {
 
       console.log('📤 Updating profiles table:', profileData);
 
-      // Use upsert to avoid conflicts
+      // Use upsert to avoid conflicts - remove id from data object
       const { error: profileError } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id, // Explicitly set the ID to match auth.uid()
-          ...profileData
-        }, {
+        .upsert(profileData, {
           onConflict: 'id'
         });
 
