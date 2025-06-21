@@ -13,7 +13,7 @@ const Login = () => {
   const mode = searchParams.get('mode') || 'login';
   const [isSignup, setIsSignup] = useState(mode === 'signup');
   
-  const { isAuthenticated, loading, error } = useAuthFlow();
+  const { isAuthenticated, loading, error, authInitialized } = useAuthFlow();
 
   useEffect(() => {
     setIsSignup(mode === 'signup');
@@ -26,12 +26,14 @@ const Login = () => {
   };
 
   // Show loading state while checking authentication
-  if (loading) {
+  if (loading || !authInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bjj-gold mx-auto mb-4"></div>
-          <p className="text-bjj-gray">Checking authentication...</p>
+          <p className="text-bjj-gray">
+            {loading ? "Checking authentication..." : "Initializing..."}
+          </p>
         </div>
       </div>
     );

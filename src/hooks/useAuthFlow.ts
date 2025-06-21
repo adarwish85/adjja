@@ -20,6 +20,7 @@ interface AuthState {
   loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
+  authInitialized: boolean; // NEW: Track if auth is fully initialized
 }
 
 export const useAuthFlow = () => {
@@ -30,6 +31,7 @@ export const useAuthFlow = () => {
     loading: true,
     error: null,
     isAuthenticated: false,
+    authInitialized: false,
   });
 
   const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
@@ -89,16 +91,25 @@ export const useAuthFlow = () => {
       });
 
       if (error) {
-        setAuthState(prev => ({ ...prev, loading: false, error: error.message }));
+        setAuthState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: error.message,
+          authInitialized: true 
+        }));
         return { success: false, error: error.message };
       }
 
-      // Don't manually fetch profile here - let the auth state change handler do it
       console.log('✅ Sign in successful, waiting for auth state change...');
       return { success: true, error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
-      setAuthState(prev => ({ ...prev, loading: false, error: errorMessage }));
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: errorMessage,
+        authInitialized: true 
+      }));
       return { success: false, error: errorMessage };
     }
   };
@@ -113,6 +124,7 @@ export const useAuthFlow = () => {
         loading: false,
         error: null,
         isAuthenticated: false,
+        authInitialized: true,
       });
     } catch (error) {
       console.error('Sign out error:', error);
@@ -123,21 +135,22 @@ export const useAuthFlow = () => {
     let mounted = true;
     let profileFetchController: AbortController | null = null;
     
-    // Add a 10-second timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
+    // CRITICAL: Add 10-second timeout to prevent infinite loading
+    const authTimeout = setTimeout(() => {
       if (mounted) {
-        console.log('⏰ Auth loading timeout reached');
+        console.log('⏰ Auth timeout reached - forcing initialization');
         setAuthState(prev => ({
           ...prev,
           loading: false,
-          error: 'Authentication timeout. Please try refreshing the page.'
+          authInitialized: true,
+          error: prev.user ? null : 'Authentication timeout. Please try refreshing the page.'
         }));
       }
     }, 10000);
     
-    // Set up auth state listener - CRITICAL: No async operations in the callback!
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('🔄 Auth state changed:', event, session?.user?.id);
         
         if (!mounted) return;
@@ -148,6 +161,8 @@ export const useAuthFlow = () => {
         }
         
         if (session?.user) {
+          console.log('👤 User authenticated, setting up profile fetch...');
+          
           // Update state immediately with user/session
           setAuthState(prev => ({
             ...prev,
@@ -156,40 +171,56 @@ export const useAuthFlow = () => {
             isAuthenticated: true,
             error: null,
             loading: true, // Keep loading true while fetching profile
+            authInitialized: false, // Not fully initialized until profile is loaded
           }));
           
-          // Fetch profile in a separate async context to avoid recursion
+          // Fetch profile with timeout
           profileFetchController = new AbortController();
           
-          setTimeout(async () => {
-            try {
-              if (!mounted) return;
-              
-              const profile = await fetchUserProfile(session.user.id);
-              
-              if (mounted && !profileFetchController?.signal.aborted) {
-                setAuthState(prev => ({
-                  ...prev,
-                  userProfile: profile,
-                  loading: false,
-                  error: profile ? null : 'Failed to load user profile',
-                }));
-                clearTimeout(loadingTimeout);
-              }
-            } catch (error) {
-              if (mounted && !profileFetchController?.signal.aborted) {
-                console.error('Profile fetch error:', error);
-                setAuthState(prev => ({
-                  ...prev,
-                  loading: false,
-                  error: 'Failed to load user profile',
-                }));
-                clearTimeout(loadingTimeout);
-              }
+          // Use a shorter timeout for profile fetch
+          const profileTimeout = setTimeout(() => {
+            if (mounted && !profileFetchController?.signal.aborted) {
+              console.log('⚠️ Profile fetch timeout - proceeding without profile');
+              setAuthState(prev => ({
+                ...prev,
+                loading: false,
+                authInitialized: true,
+                error: 'Profile loading timed out. Some features may be limited.',
+              }));
+              clearTimeout(authTimeout);
             }
-          }, 0);
+          }, 5000);
+          
+          try {
+            const profile = await fetchUserProfile(session.user.id);
+            
+            if (mounted && !profileFetchController?.signal.aborted) {
+              clearTimeout(profileTimeout);
+              setAuthState(prev => ({
+                ...prev,
+                userProfile: profile,
+                loading: false,
+                authInitialized: true,
+                error: profile ? null : 'Failed to load user profile',
+              }));
+              clearTimeout(authTimeout);
+            }
+          } catch (error) {
+            if (mounted && !profileFetchController?.signal.aborted) {
+              clearTimeout(profileTimeout);
+              console.error('Profile fetch error:', error);
+              setAuthState(prev => ({
+                ...prev,
+                loading: false,
+                authInitialized: true,
+                error: 'Failed to load user profile',
+              }));
+              clearTimeout(authTimeout);
+            }
+          }
         } else {
           // No session - user logged out or not authenticated
+          console.log('❌ No user session');
           if (mounted) {
             setAuthState({
               user: null,
@@ -198,8 +229,9 @@ export const useAuthFlow = () => {
               loading: false,
               error: null,
               isAuthenticated: false,
+              authInitialized: true,
             });
-            clearTimeout(loadingTimeout);
+            clearTimeout(authTimeout);
           }
         }
       }
@@ -208,6 +240,7 @@ export const useAuthFlow = () => {
     // Get initial session
     const initializeAuth = async () => {
       try {
+        console.log('🚀 Initializing auth...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -216,17 +249,22 @@ export const useAuthFlow = () => {
             setAuthState(prev => ({ 
               ...prev, 
               loading: false, 
-              error: error.message 
+              error: error.message,
+              authInitialized: true,
             }));
-            clearTimeout(loadingTimeout);
+            clearTimeout(authTimeout);
           }
           return;
         }
         
-        // The auth state change listener will handle the session
+        // Let the auth state change listener handle the session
         if (!session && mounted) {
-          setAuthState(prev => ({ ...prev, loading: false }));
-          clearTimeout(loadingTimeout);
+          setAuthState(prev => ({ 
+            ...prev, 
+            loading: false,
+            authInitialized: true,
+          }));
+          clearTimeout(authTimeout);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -234,9 +272,10 @@ export const useAuthFlow = () => {
           setAuthState(prev => ({ 
             ...prev, 
             loading: false, 
-            error: 'Authentication initialization failed' 
+            error: 'Authentication initialization failed',
+            authInitialized: true,
           }));
-          clearTimeout(loadingTimeout);
+          clearTimeout(authTimeout);
         }
       }
     };
@@ -246,7 +285,7 @@ export const useAuthFlow = () => {
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      clearTimeout(loadingTimeout);
+      clearTimeout(authTimeout);
       if (profileFetchController) {
         profileFetchController.abort();
       }
