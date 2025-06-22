@@ -20,7 +20,7 @@ interface AuthState {
   loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
-  authInitialized: boolean; // NEW: Track if auth is fully initialized
+  authInitialized: boolean;
 }
 
 export const useAuthFlow = () => {
@@ -56,11 +56,12 @@ export const useAuthFlow = () => {
 
       if (error) {
         console.error('❌ Profile fetch error:', error);
-        throw new Error(`Profile fetch failed: ${error.message}`);
+        return null;
       }
 
       if (!profile) {
-        throw new Error('Profile not found');
+        console.error('❌ No profile found for user:', userId);
+        return null;
       }
 
       const enrichedProfile: UserProfile = {
@@ -100,10 +101,49 @@ export const useAuthFlow = () => {
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Sign in successful, waiting for auth state change...');
+      console.log('✅ Sign in successful');
       return { success: true, error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: errorMessage,
+        authInitialized: true 
+      }));
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const signUp = async (email: string, password: string, name: string) => {
+    try {
+      setAuthState(prev => ({ ...prev, loading: true, error: null }));
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name,
+          },
+          emailRedirectTo: `${window.location.origin}/profile-wizard`,
+        },
+      });
+
+      if (error) {
+        setAuthState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: error.message,
+          authInitialized: true 
+        }));
+        return { success: false, error: error.message };
+      }
+
+      console.log('✅ Sign up successful');
+      return { success: true, error: null, user: data.user };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Signup failed';
       setAuthState(prev => ({ 
         ...prev, 
         loading: false, 
@@ -135,7 +175,7 @@ export const useAuthFlow = () => {
     let mounted = true;
     let profileFetchController: AbortController | null = null;
     
-    // CRITICAL: Add 10-second timeout to prevent infinite loading
+    // Add timeout to prevent infinite loading
     const authTimeout = setTimeout(() => {
       if (mounted) {
         console.log('⏰ Auth timeout reached - forcing initialization');
@@ -161,7 +201,7 @@ export const useAuthFlow = () => {
         }
         
         if (session?.user) {
-          console.log('👤 User authenticated, setting up profile fetch...');
+          console.log('👤 User authenticated, fetching profile...');
           
           // Update state immediately with user/session
           setAuthState(prev => ({
@@ -170,14 +210,13 @@ export const useAuthFlow = () => {
             session: session,
             isAuthenticated: true,
             error: null,
-            loading: true, // Keep loading true while fetching profile
-            authInitialized: false, // Not fully initialized until profile is loaded
+            loading: true,
+            authInitialized: false,
           }));
           
           // Fetch profile with timeout
           profileFetchController = new AbortController();
           
-          // Use a shorter timeout for profile fetch
           const profileTimeout = setTimeout(() => {
             if (mounted && !profileFetchController?.signal.aborted) {
               console.log('⚠️ Profile fetch timeout - proceeding without profile');
@@ -295,6 +334,7 @@ export const useAuthFlow = () => {
   return {
     ...authState,
     signIn,
+    signUp,
     signOut,
   };
 };

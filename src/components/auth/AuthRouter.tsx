@@ -11,12 +11,10 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
   const { user, userProfile, loading, error, isAuthenticated, authInitialized } = useAuthFlow();
   const navigate = useNavigate();
   const [hasNavigated, setHasNavigated] = useState(false);
-  const [showTimeout, setShowTimeout] = useState(false);
 
   useEffect(() => {
     // Don't do anything while loading or if we've already navigated
     if (loading || !authInitialized || hasNavigated) {
-      console.log('🔄 AuthRouter: Waiting for auth to initialize...', { loading, authInitialized, hasNavigated });
       return;
     }
 
@@ -99,53 +97,20 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
     }
   }, [user, userProfile, loading, error, isAuthenticated, authInitialized, navigate, hasNavigated]);
 
-  // Add timeout fallback for stuck redirects
-  useEffect(() => {
-    if (isAuthenticated && authInitialized && !hasNavigated) {
-      const timeoutId = setTimeout(() => {
-        console.log('⏰ AuthRouter: Navigation timeout reached');
-        setShowTimeout(true);
-      }, 8000);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [isAuthenticated, authInitialized, hasNavigated]);
-
   // Reset navigation state when user changes
   useEffect(() => {
     if (!user) {
       setHasNavigated(false);
-      setShowTimeout(false);
     }
   }, [user]);
 
-  // Show timeout fallback
-  if (showTimeout && isAuthenticated && !hasNavigated) {
+  // Show loading while auth is initializing
+  if (!authInitialized || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Login Issue</h2>
-          <p className="text-gray-600 mb-6">
-            We couldn't complete the login process. This might be due to a connection issue or server problem.
-          </p>
-          <div className="space-y-3">
-            <button 
-              onClick={() => window.location.reload()} 
-              className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Refresh Page
-            </button>
-            <button 
-              onClick={() => navigate("/dashboard", { replace: true })} 
-              className="w-full bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-            >
-              Go to Dashboard
-            </button>
-          </div>
-          <p className="text-sm text-gray-500 mt-4">
-            If this persists, please contact support.
-          </p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bjj-gold mx-auto mb-4"></div>
+          <p className="text-bjj-gray">Initializing...</p>
         </div>
       </div>
     );

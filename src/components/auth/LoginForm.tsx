@@ -22,7 +22,7 @@ export const LoginForm = ({ isSignup = false, onToggleMode }: LoginFormProps) =>
   const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { signIn, loading, error } = useAuthFlow();
+  const { signIn, signUp, loading, error } = useAuthFlow();
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -34,9 +34,9 @@ export const LoginForm = ({ isSignup = false, onToggleMode }: LoginFormProps) =>
       const result = await signIn(email, password);
       
       if (result.success) {
-        console.log('✅ Login successful, waiting for redirect...');
+        console.log('✅ Login successful');
         toast.success("Login successful!");
-        // The useEffect in the parent component will handle navigation
+        // Navigation will be handled by AuthRouter
       } else {
         console.error("❌ Login failed:", result.error);
         toast.error(result.error || "Login failed");
@@ -62,13 +62,26 @@ export const LoginForm = ({ isSignup = false, onToggleMode }: LoginFormProps) =>
       return;
     }
 
+    if (!name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       console.log('📝 Attempting signup for:', email);
-      // TODO: Implement signup logic
-      toast.success("Account created successfully! Please complete your profile.");
-      navigate("/profile-wizard", { replace: true });
+      const result = await signUp(email, password, name.trim());
+      
+      if (result.success) {
+        console.log('✅ Signup successful');
+        toast.success("Account created successfully! Please complete your profile.");
+        // Navigate to profile wizard
+        navigate("/profile-wizard", { replace: true });
+      } else {
+        console.error("❌ Signup failed:", result.error);
+        toast.error(result.error || "Signup failed");
+      }
     } catch (error) {
       console.error("💥 Signup failed:", error);
       toast.error("Signup failed. Please try again.");
