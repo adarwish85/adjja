@@ -21,6 +21,20 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
       return; // Wait for auth to initialize
     }
 
+    // CRITICAL FIX: Super Admin bypass - no profile requirement
+    if (userProfile?.role_name?.toLowerCase() === 'super admin') {
+      console.log('👑 RoleGuard: Super Admin detected - bypassing profile checks');
+      const hasPermission = allowedRoles.some(role => role.toLowerCase() === 'super admin');
+      if (hasPermission) {
+        console.log('✅ RoleGuard: Super Admin access granted');
+        setHasValidated(true);
+      } else {
+        console.log('🚫 RoleGuard: Super Admin access denied for this route');
+        navigate("/admin/dashboard", { replace: true });
+      }
+      return;
+    }
+
     if (!userProfile) {
       console.log('❌ RoleGuard: User exists but no profile found');
       return;
@@ -48,9 +62,6 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
       } else if (userRole === 'coach') {
         console.log('👨‍🏫 RoleGuard: Redirecting coach to coach dashboard');
         navigate("/coach/dashboard", { replace: true });
-      } else if (userRole === 'super admin' || userRole === 'admin') {
-        console.log('👑 RoleGuard: Redirecting admin to admin dashboard');
-        navigate("/admin/dashboard", { replace: true });  
       } else {
         console.log('❓ RoleGuard: Unknown role, using fallback redirect');
         navigate(redirectTo || "/dashboard", { replace: true });
@@ -83,7 +94,8 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
     return null; // ProtectedRoute will handle redirect to login
   }
 
-  if (!userProfile) {
+  // CRITICAL FIX: Super Admin should never see "Profile Not Found"
+  if (!userProfile && userProfile?.role_name?.toLowerCase() !== 'super admin') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -94,7 +106,7 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
     );
   }
 
-  const userRole = userProfile.role_name?.toLowerCase();
+  const userRole = userProfile?.role_name?.toLowerCase();
   const hasPermission = allowedRoles.some(role => role.toLowerCase() === userRole);
 
   if (!hasPermission) {

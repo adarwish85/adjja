@@ -50,6 +50,14 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
       return;
     }
 
+    // CRITICAL FIX: Super Admin bypass - no profile checks needed
+    if (userProfile?.role_name?.toLowerCase() === 'super admin') {
+      console.log('👑 AuthRouter: Super Admin detected - bypassing all profile checks');
+      setHasNavigated(true);
+      navigate("/admin/dashboard", { replace: true });
+      return;
+    }
+
     // If we don't have profile data but user is authenticated, provide fallback navigation
     if (!userProfile) {
       console.log('⚠️ AuthRouter: No profile data, redirecting to default dashboard');
@@ -58,7 +66,7 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
       return;
     }
 
-    // Role-based navigation
+    // Role-based navigation for non-Super Admin users
     const role = userProfile.role_name?.toLowerCase();
     const approvalStatus = userProfile.approval_status;
     const mandatoryCompleted = userProfile.mandatory_fields_completed;
@@ -67,11 +75,6 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
     setHasNavigated(true);
 
     switch (role) {
-      case 'super admin':
-        console.log('👑 AuthRouter: Redirecting Super Admin to admin dashboard');
-        navigate("/admin/dashboard", { replace: true });
-        break;
-        
       case 'coach':
         console.log('👨‍🏫 AuthRouter: Redirecting Coach to coach dashboard');
         navigate("/coach/dashboard", { replace: true });

@@ -11,6 +11,8 @@ interface UserProfile {
   role_id: string;
   approval_status: string;
   mandatory_fields_completed: boolean;
+  profile_picture_url?: string;
+  rejection_reason?: string;
 }
 
 interface AuthState {
@@ -44,6 +46,8 @@ export const useAuthFlow = () => {
           id,
           name,
           email,
+          profile_picture_url,
+          rejection_reason,
           user_roles (
             id,
             name
@@ -56,6 +60,69 @@ export const useAuthFlow = () => {
 
       if (error) {
         console.error('❌ Profile fetch error:', error);
+        
+        // CRITICAL FIX: For Super Admin, create minimal profile if missing
+        if (error.code === 'PGRST116') { // No rows returned
+          console.log('⚠️ No profile found, checking if user is Super Admin...');
+          
+          // Get user email to check if it's the Super Admin
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.email === 'Ahmeddarwesh@gmail.com') {
+            console.log('👑 Super Admin detected, creating minimal profile...');
+            
+            // Get Super Admin role
+            const { data: superAdminRole } = await supabase
+              .from('user_roles')
+              .select('id')
+              .eq('name', 'Super Admin')
+              .single();
+            
+            if (superAdminRole) {
+              // Create Super Admin profile
+              const { data: newProfile, error: insertError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: userId,
+                  name: 'Ahmed Darwish',
+                  email: user.email,
+                  role_id: superAdminRole.id,
+                  approval_status: 'approved',
+                  mandatory_fields_completed: true,
+                  profile_completed: true
+                })
+                .select(`
+                  id,
+                  name,
+                  email,
+                  profile_picture_url,
+                  rejection_reason,
+                  user_roles (
+                    id,
+                    name
+                  ),
+                  approval_status,
+                  mandatory_fields_completed
+                `)
+                .single();
+              
+              if (!insertError && newProfile) {
+                console.log('✅ Super Admin profile created successfully');
+                return {
+                  id: newProfile.id,
+                  name: newProfile.name,
+                  email: newProfile.email,
+                  role_name: newProfile.user_roles?.name || 'Super Admin',
+                  role_id: newProfile.user_roles?.id || '',
+                  approval_status: newProfile.approval_status || 'approved',
+                  mandatory_fields_completed: newProfile.mandatory_fields_completed || true,
+                  profile_picture_url: newProfile.profile_picture_url,
+                  rejection_reason: newProfile.rejection_reason,
+                };
+              }
+            }
+          }
+        }
+        
         return null;
       }
 
@@ -72,6 +139,8 @@ export const useAuthFlow = () => {
         role_id: profile.user_roles?.id || '',
         approval_status: profile.approval_status || 'pending',
         mandatory_fields_completed: profile.mandatory_fields_completed || false,
+        profile_picture_url: profile.profile_picture_url,
+        rejection_reason: profile.rejection_reason,
       };
 
       console.log('✅ Profile loaded:', enrichedProfile);
