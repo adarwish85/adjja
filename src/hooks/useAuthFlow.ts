@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,24 +60,39 @@ export const useAuthFlow = () => {
       if (error) {
         console.error('❌ Profile fetch error:', error);
         
-        // CRITICAL FIX: For Super Admin, create minimal profile if missing
+        // CRITICAL FIX: Enhanced Super Admin handling
         if (error.code === 'PGRST116') { // No rows returned
           console.log('⚠️ No profile found, checking if user is Super Admin...');
           
           // Get user email to check if it's the Super Admin
           const { data: { user } } = await supabase.auth.getUser();
           if (user?.email === 'Ahmeddarwesh@gmail.com') {
-            console.log('👑 Super Admin detected, creating minimal profile...');
+            console.log('👑 Super Admin detected, creating profile...');
             
-            // Get Super Admin role
-            const { data: superAdminRole } = await supabase
+            // Get or create Super Admin role
+            let { data: superAdminRole } = await supabase
               .from('user_roles')
               .select('id')
               .eq('name', 'Super Admin')
               .single();
             
+            if (!superAdminRole) {
+              console.log('Creating Super Admin role...');
+              const { data: newRole } = await supabase
+                .from('user_roles')
+                .insert({
+                  name: 'Super Admin',
+                  description: 'System administrator with full access',
+                  is_system: true,
+                  permissions: ['*']
+                })
+                .select('id')
+                .single();
+              superAdminRole = newRole;
+            }
+            
             if (superAdminRole) {
-              // Create Super Admin profile
+              // Create Super Admin profile with proper status
               const { data: newProfile, error: insertError } = await supabase
                 .from('profiles')
                 .insert({
@@ -88,7 +102,8 @@ export const useAuthFlow = () => {
                   role_id: superAdminRole.id,
                   approval_status: 'approved',
                   mandatory_fields_completed: true,
-                  profile_completed: true
+                  profile_completed: true,
+                  status: 'active'
                 })
                 .select(`
                   id,
@@ -118,6 +133,8 @@ export const useAuthFlow = () => {
                   profile_picture_url: newProfile.profile_picture_url,
                   rejection_reason: newProfile.rejection_reason,
                 };
+              } else {
+                console.error('Failed to create Super Admin profile:', insertError);
               }
             }
           }
@@ -260,7 +277,7 @@ export const useAuthFlow = () => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔄 Auth state changed:', event, session?.user?.id);
+        console.log('🔄 Auth state changed:', event, session?.user?.id, session?.user?.email);
         
         if (!mounted) return;
         
@@ -293,7 +310,7 @@ export const useAuthFlow = () => {
                 ...prev,
                 loading: false,
                 authInitialized: true,
-                error: 'Profile loading timed out. Some features may be limited.',
+                error: session.user.email === 'Ahmeddarwesh@gmail.com' ? null : 'Profile loading timed out. Some features may be limited.',
               }));
               clearTimeout(authTimeout);
             }
@@ -309,7 +326,7 @@ export const useAuthFlow = () => {
                 userProfile: profile,
                 loading: false,
                 authInitialized: true,
-                error: profile ? null : 'Failed to load user profile',
+                error: null, // Clear any previous errors on successful profile load
               }));
               clearTimeout(authTimeout);
             }
@@ -321,7 +338,7 @@ export const useAuthFlow = () => {
                 ...prev,
                 loading: false,
                 authInitialized: true,
-                error: 'Failed to load user profile',
+                error: session.user.email === 'Ahmeddarwesh@gmail.com' ? null : 'Failed to load user profile',
               }));
               clearTimeout(authTimeout);
             }

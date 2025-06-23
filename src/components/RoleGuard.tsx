@@ -94,8 +94,8 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
     return null; // ProtectedRoute will handle redirect to login
   }
 
-  // CRITICAL FIX: Super Admin should never see "Profile Not Found"
-  if (!userProfile && userProfile?.role_name?.toLowerCase() !== 'super admin') {
+  // FIXED: Correct condition for showing "Profile Not Found"
+  if (!userProfile && user.email !== 'Ahmeddarwesh@gmail.com') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

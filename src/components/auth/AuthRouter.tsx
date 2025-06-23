@@ -35,7 +35,8 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
       role: userProfile?.role_name,
       approvalStatus: userProfile?.approval_status,
       mandatoryCompleted: userProfile?.mandatory_fields_completed,
-      currentPath: window.location.pathname
+      currentPath: window.location.pathname,
+      userEmail: user.email
     });
 
     // Skip navigation if already on the correct page
@@ -50,8 +51,8 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
       return;
     }
 
-    // CRITICAL FIX: Super Admin bypass - no profile checks needed
-    if (userProfile?.role_name?.toLowerCase() === 'super admin') {
+    // CRITICAL FIX: Super Admin bypass - check by email and role
+    if (user.email === 'Ahmeddarwesh@gmail.com' || userProfile?.role_name?.toLowerCase() === 'super admin') {
       console.log('👑 AuthRouter: Super Admin detected - bypassing all profile checks');
       setHasNavigated(true);
       navigate("/admin/dashboard", { replace: true });
