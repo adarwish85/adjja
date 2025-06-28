@@ -35,9 +35,9 @@ export const useAuthFlow = () => {
     authInitialized: false,
   });
 
-  const fetchUserProfile = async (userId: string, retryCount = 0): Promise<UserProfile | null> => {
+  const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
-      console.log(`🔍 Fetching profile for user: ${userId} (attempt ${retryCount + 1})`);
+      console.log(`🔍 Fetching profile for user: ${userId}`);
       
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -60,20 +60,17 @@ export const useAuthFlow = () => {
       if (error) {
         console.error('❌ Profile fetch error:', error);
         
-        // CRITICAL FIX: Enhanced Super Admin handling with auto-creation
+        // For Super Admin, create the profile if it doesn't exist
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email === 'Ahmeddarwesh@gmail.com') {
+          console.log('👑 Super Admin profile missing, creating it...');
+          return await createSuperAdminProfile(userId, user.email);
+        }
+        
+        // For regular users, try to create a basic profile
         if (error.code === 'PGRST116') { // No rows returned
-          console.log('⚠️ No profile found, checking if user is Super Admin...');
-          
-          // Get user email to check if it's the Super Admin
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user?.email === 'Ahmeddarwesh@gmail.com') {
-            console.log('👑 Super Admin detected, creating/fixing profile...');
-            return await createSuperAdminProfile(userId, user.email);
-          } else {
-            // For regular users, attempt to create a profile if none exists
-            console.log('👤 Regular user missing profile, attempting creation...');
-            return await createUserProfile(userId, user?.email || '');
-          }
+          console.log('👤 Regular user missing profile, attempting creation...');
+          return await createUserProfile(userId, user?.email || '');
         }
         
         return null;
@@ -100,20 +97,14 @@ export const useAuthFlow = () => {
       return enrichedProfile;
     } catch (error) {
       console.error('💥 Profile fetch failed:', error);
-      
-      // Retry logic for regular users
-      if (retryCount < 2) {
-        console.log(`🔄 Retrying profile fetch (${retryCount + 1}/2)...`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return await fetchUserProfile(userId, retryCount + 1);
-      }
-      
       return null;
     }
   };
 
   const createSuperAdminProfile = async (userId: string, email: string): Promise<UserProfile | null> => {
     try {
+      console.log('🔧 Creating Super Admin profile...');
+      
       // Get or create Super Admin role
       let { data: superAdminRole } = await supabase
         .from('user_roles')
@@ -137,7 +128,7 @@ export const useAuthFlow = () => {
       }
       
       if (superAdminRole) {
-        // Create Super Admin profile with proper status
+        // Create Super Admin profile
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert({
@@ -354,20 +345,6 @@ export const useAuthFlow = () => {
 
   useEffect(() => {
     let mounted = true;
-    let profileFetchController: AbortController | null = null;
-    
-    // Reduced timeout to prevent long waits
-    const authTimeout = setTimeout(() => {
-      if (mounted) {
-        console.log('⏰ Auth timeout reached - forcing initialization');
-        setAuthState(prev => ({
-          ...prev,
-          loading: false,
-          authInitialized: true,
-          error: prev.user ? null : 'Authentication timeout. Please try refreshing the page.'
-        }));
-      }
-    }, 8000); // Reduced from 10s to 8s
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -375,11 +352,6 @@ export const useAuthFlow = () => {
         console.log('🔄 Auth state changed:', event, session?.user?.id, session?.user?.email);
         
         if (!mounted) return;
-        
-        // Cancel any ongoing profile fetch
-        if (profileFetchController) {
-          profileFetchController.abort();
-        }
         
         if (session?.user) {
           console.log('👤 User authenticated, fetching profile...');
@@ -395,51 +367,27 @@ export const useAuthFlow = () => {
             authInitialized: false,
           }));
           
-          // Fetch profile with reduced timeout
-          profileFetchController = new AbortController();
-          
-          const profileTimeout = setTimeout(() => {
-            if (mounted && !profileFetchController?.signal.aborted) {
-              console.log('⚠️ Profile fetch timeout - proceeding with fallback');
-              setAuthState(prev => ({
-                ...prev,
-                loading: false,
-                authInitialized: true,
-                // Only show error for non-Super Admin users
-                error: session.user.email === 'Ahmeddarwesh@gmail.com' ? null : null, // Don't show error, let routing handle it
-              }));
-              clearTimeout(authTimeout);
-            }
-          }, 4000); // Reduced from 5s to 4s
-          
           try {
             const profile = await fetchUserProfile(session.user.id);
             
-            if (mounted && !profileFetchController?.signal.aborted) {
-              clearTimeout(profileTimeout);
+            if (mounted) {
               setAuthState(prev => ({
                 ...prev,
                 userProfile: profile,
                 loading: false,
                 authInitialized: true,
-                error: null, // Clear any previous errors on successful profile load
+                error: null,
               }));
-              clearTimeout(authTimeout);
             }
           } catch (error) {
-            if (mounted && !profileFetchController?.signal.aborted) {
-              clearTimeout(profileTimeout);
+            if (mounted) {
               console.error('Profile fetch error:', error);
               setAuthState(prev => ({
                 ...prev,
                 loading: false,
                 authInitialized: true,
-                // Only show error message for non-Super Admin users, and make it less alarming
-                error: session.user.email === 'Ahmeddarwesh@gmail.com' 
-                  ? null 
-                  : null, // Don't show error here, let routing components handle it
+                error: session.user.email === 'Ahmeddarwesh@gmail.com' ? null : null,
               }));
-              clearTimeout(authTimeout);
             }
           }
         } else {
@@ -455,7 +403,6 @@ export const useAuthFlow = () => {
               isAuthenticated: false,
               authInitialized: true,
             });
-            clearTimeout(authTimeout);
           }
         }
       }
@@ -476,7 +423,6 @@ export const useAuthFlow = () => {
               error: error.message,
               authInitialized: true,
             }));
-            clearTimeout(authTimeout);
           }
           return;
         }
@@ -488,7 +434,6 @@ export const useAuthFlow = () => {
             loading: false,
             authInitialized: true,
           }));
-          clearTimeout(authTimeout);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -499,7 +444,6 @@ export const useAuthFlow = () => {
             error: 'Authentication initialization failed',
             authInitialized: true,
           }));
-          clearTimeout(authTimeout);
         }
       }
     };
@@ -509,10 +453,6 @@ export const useAuthFlow = () => {
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      clearTimeout(authTimeout);
-      if (profileFetchController) {
-        profileFetchController.abort();
-      }
     };
   }, []);
 

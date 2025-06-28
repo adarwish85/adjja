@@ -11,7 +11,6 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
   const { user, userProfile, loading, error, isAuthenticated, authInitialized } = useAuthFlow();
   const navigate = useNavigate();
   const [hasNavigated, setHasNavigated] = useState(false);
-  const [profileRetryCount, setProfileRetryCount] = useState(0);
 
   useEffect(() => {
     // Don't do anything while loading or if we've already navigated
@@ -37,8 +36,7 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
       approvalStatus: userProfile?.approval_status,
       mandatoryCompleted: userProfile?.mandatory_fields_completed,
       currentPath: window.location.pathname,
-      userEmail: user.email,
-      profileRetryCount
+      userEmail: user.email
     });
 
     // Skip navigation if already on the correct page
@@ -53,33 +51,23 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
       return;
     }
 
-    // CRITICAL FIX: Super Admin bypass - check by email and role
-    if (user.email === 'Ahmeddarwesh@gmail.com' || userProfile?.role_name?.toLowerCase() === 'super admin') {
-      console.log('👑 AuthRouter: Super Admin detected - bypassing all profile checks');
+    // CRITICAL FIX: Super Admin bypass - immediate redirect
+    const isSuperAdmin = user.email === 'Ahmeddarwesh@gmail.com' || userProfile?.role_name?.toLowerCase() === 'super admin';
+    
+    if (isSuperAdmin) {
+      console.log('👑 AuthRouter: Super Admin detected - bypassing all checks');
       setHasNavigated(true);
       navigate("/admin/dashboard", { replace: true });
       return;
     }
 
-    // If we don't have profile data but user is authenticated, implement retry logic
+    // If we don't have profile data but user is authenticated, wait for it
     if (!userProfile) {
-      if (profileRetryCount < 3) {
-        console.log(`⚠️ AuthRouter: No profile data, retry attempt ${profileRetryCount + 1}/3`);
-        setProfileRetryCount(prev => prev + 1);
-        // Wait a bit before retrying
-        setTimeout(() => {
-          // This will trigger the useEffect again
-        }, 1000);
-        return;
-      } else {
-        console.log('❌ AuthRouter: Profile fetch failed after retries, proceeding with default navigation');
-        setHasNavigated(true);
-        navigate("/dashboard", { replace: true });
-        return;
-      }
+      console.log('⏳ AuthRouter: No profile data, waiting for profile to load...');
+      return;
     }
 
-    // Role-based navigation for non-Super Admin users
+    // Role-based navigation for regular users
     const role = userProfile.role_name?.toLowerCase();
     const approvalStatus = userProfile.approval_status;
     const mandatoryCompleted = userProfile.mandatory_fields_completed;
@@ -111,13 +99,12 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
         console.log('🔄 AuthRouter: Unknown role, defaulting to student dashboard');
         navigate("/dashboard", { replace: true });
     }
-  }, [user, userProfile, loading, error, isAuthenticated, authInitialized, navigate, hasNavigated, profileRetryCount]);
+  }, [user, userProfile, loading, error, isAuthenticated, authInitialized, navigate, hasNavigated]);
 
   // Reset navigation state when user changes
   useEffect(() => {
     if (!user) {
       setHasNavigated(false);
-      setProfileRetryCount(0);
     }
   }, [user]);
 
