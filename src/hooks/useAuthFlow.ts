@@ -35,9 +35,9 @@ export const useAuthFlow = () => {
     authInitialized: false,
   });
 
-  const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  const fetchUserProfile = async (userId: string, retryCount = 0): Promise<UserProfile | null> => {
     try {
-      console.log('🔍 Fetching profile for user:', userId);
+      console.log(`🔍 Fetching profile for user: ${userId} (attempt ${retryCount + 1})`);
       
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -60,83 +60,19 @@ export const useAuthFlow = () => {
       if (error) {
         console.error('❌ Profile fetch error:', error);
         
-        // CRITICAL FIX: Enhanced Super Admin handling
+        // CRITICAL FIX: Enhanced Super Admin handling with auto-creation
         if (error.code === 'PGRST116') { // No rows returned
           console.log('⚠️ No profile found, checking if user is Super Admin...');
           
           // Get user email to check if it's the Super Admin
           const { data: { user } } = await supabase.auth.getUser();
           if (user?.email === 'Ahmeddarwesh@gmail.com') {
-            console.log('👑 Super Admin detected, creating profile...');
-            
-            // Get or create Super Admin role
-            let { data: superAdminRole } = await supabase
-              .from('user_roles')
-              .select('id')
-              .eq('name', 'Super Admin')
-              .single();
-            
-            if (!superAdminRole) {
-              console.log('Creating Super Admin role...');
-              const { data: newRole } = await supabase
-                .from('user_roles')
-                .insert({
-                  name: 'Super Admin',
-                  description: 'System administrator with full access',
-                  is_system: true,
-                  permissions: ['*']
-                })
-                .select('id')
-                .single();
-              superAdminRole = newRole;
-            }
-            
-            if (superAdminRole) {
-              // Create Super Admin profile with proper status
-              const { data: newProfile, error: insertError } = await supabase
-                .from('profiles')
-                .insert({
-                  id: userId,
-                  name: 'Ahmed Darwish',
-                  email: user.email,
-                  role_id: superAdminRole.id,
-                  approval_status: 'approved',
-                  mandatory_fields_completed: true,
-                  profile_completed: true,
-                  status: 'active'
-                })
-                .select(`
-                  id,
-                  name,
-                  email,
-                  profile_picture_url,
-                  rejection_reason,
-                  user_roles (
-                    id,
-                    name
-                  ),
-                  approval_status,
-                  mandatory_fields_completed
-                `)
-                .single();
-              
-              if (!insertError && newProfile) {
-                console.log('✅ Super Admin profile created successfully');
-                return {
-                  id: newProfile.id,
-                  name: newProfile.name,
-                  email: newProfile.email,
-                  role_name: newProfile.user_roles?.name || 'Super Admin',
-                  role_id: newProfile.user_roles?.id || '',
-                  approval_status: newProfile.approval_status || 'approved',
-                  mandatory_fields_completed: newProfile.mandatory_fields_completed || true,
-                  profile_picture_url: newProfile.profile_picture_url,
-                  rejection_reason: newProfile.rejection_reason,
-                };
-              } else {
-                console.error('Failed to create Super Admin profile:', insertError);
-              }
-            }
+            console.log('👑 Super Admin detected, creating/fixing profile...');
+            return await createSuperAdminProfile(userId, user.email);
+          } else {
+            // For regular users, attempt to create a profile if none exists
+            console.log('👤 Regular user missing profile, attempting creation...');
+            return await createUserProfile(userId, user?.email || '');
           }
         }
         
@@ -164,8 +100,167 @@ export const useAuthFlow = () => {
       return enrichedProfile;
     } catch (error) {
       console.error('💥 Profile fetch failed:', error);
+      
+      // Retry logic for regular users
+      if (retryCount < 2) {
+        console.log(`🔄 Retrying profile fetch (${retryCount + 1}/2)...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return await fetchUserProfile(userId, retryCount + 1);
+      }
+      
       return null;
     }
+  };
+
+  const createSuperAdminProfile = async (userId: string, email: string): Promise<UserProfile | null> => {
+    try {
+      // Get or create Super Admin role
+      let { data: superAdminRole } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('name', 'Super Admin')
+        .single();
+      
+      if (!superAdminRole) {
+        console.log('Creating Super Admin role...');
+        const { data: newRole } = await supabase
+          .from('user_roles')
+          .insert({
+            name: 'Super Admin',
+            description: 'System administrator with full access',
+            is_system: true,
+            permissions: ['*']
+          })
+          .select('id')
+          .single();
+        superAdminRole = newRole;
+      }
+      
+      if (superAdminRole) {
+        // Create Super Admin profile with proper status
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            name: 'Ahmed Darwish',
+            email: email,
+            role_id: superAdminRole.id,
+            approval_status: 'approved',
+            mandatory_fields_completed: true,
+            profile_completed: true,
+            status: 'active'
+          })
+          .select(`
+            id,
+            name,
+            email,
+            profile_picture_url,
+            rejection_reason,
+            user_roles (
+              id,
+              name
+            ),
+            approval_status,
+            mandatory_fields_completed
+          `)
+          .single();
+        
+        if (!insertError && newProfile) {
+          console.log('✅ Super Admin profile created successfully');
+          return {
+            id: newProfile.id,
+            name: newProfile.name,
+            email: newProfile.email,
+            role_name: 'Super Admin',
+            role_id: superAdminRole.id,
+            approval_status: 'approved',
+            mandatory_fields_completed: true,
+            profile_picture_url: newProfile.profile_picture_url,
+            rejection_reason: newProfile.rejection_reason,
+          };
+        } else {
+          console.error('Failed to create Super Admin profile:', insertError);
+        }
+      }
+    } catch (error) {
+      console.error('Error creating Super Admin profile:', error);
+    }
+    return null;
+  };
+
+  const createUserProfile = async (userId: string, email: string): Promise<UserProfile | null> => {
+    try {
+      // Get default Student role
+      let { data: studentRole } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('name', 'Student')
+        .single();
+      
+      if (!studentRole) {
+        console.log('Creating Student role...');
+        const { data: newRole } = await supabase
+          .from('user_roles')
+          .insert({
+            name: 'Student',
+            description: 'Default student role',
+            is_system: true,
+            permissions: ['view_own_profile', 'edit_own_profile']
+          })
+          .select('id')
+          .single();
+        studentRole = newRole;
+      }
+      
+      if (studentRole) {
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            name: email.split('@')[0], // Use email prefix as default name
+            email: email,
+            role_id: studentRole.id,
+            approval_status: 'pending',
+            mandatory_fields_completed: false,
+            profile_completed: false,
+            status: 'active'
+          })
+          .select(`
+            id,
+            name,
+            email,
+            profile_picture_url,
+            rejection_reason,
+            user_roles (
+              id,
+              name
+            ),
+            approval_status,
+            mandatory_fields_completed
+          `)
+          .single();
+        
+        if (!insertError && newProfile) {
+          console.log('✅ User profile created successfully');
+          return {
+            id: newProfile.id,
+            name: newProfile.name,
+            email: newProfile.email,
+            role_name: 'Student',
+            role_id: studentRole.id,
+            approval_status: 'pending',
+            mandatory_fields_completed: false,
+            profile_picture_url: newProfile.profile_picture_url,
+            rejection_reason: newProfile.rejection_reason,
+          };
+        } else {
+          console.error('Failed to create user profile:', insertError);
+        }
+      }
+    } catch (error) {
+      console.error('Error creating user profile:', error);
+    }
+    return null;
   };
 
   const signIn = async (email: string, password: string) => {
@@ -261,7 +356,7 @@ export const useAuthFlow = () => {
     let mounted = true;
     let profileFetchController: AbortController | null = null;
     
-    // Add timeout to prevent infinite loading
+    // Reduced timeout to prevent long waits
     const authTimeout = setTimeout(() => {
       if (mounted) {
         console.log('⏰ Auth timeout reached - forcing initialization');
@@ -272,7 +367,7 @@ export const useAuthFlow = () => {
           error: prev.user ? null : 'Authentication timeout. Please try refreshing the page.'
         }));
       }
-    }, 10000);
+    }, 8000); // Reduced from 10s to 8s
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -300,21 +395,22 @@ export const useAuthFlow = () => {
             authInitialized: false,
           }));
           
-          // Fetch profile with timeout
+          // Fetch profile with reduced timeout
           profileFetchController = new AbortController();
           
           const profileTimeout = setTimeout(() => {
             if (mounted && !profileFetchController?.signal.aborted) {
-              console.log('⚠️ Profile fetch timeout - proceeding without profile');
+              console.log('⚠️ Profile fetch timeout - proceeding with fallback');
               setAuthState(prev => ({
                 ...prev,
                 loading: false,
                 authInitialized: true,
-                error: session.user.email === 'Ahmeddarwesh@gmail.com' ? null : 'Profile loading timed out. Some features may be limited.',
+                // Only show error for non-Super Admin users
+                error: session.user.email === 'Ahmeddarwesh@gmail.com' ? null : null, // Don't show error, let routing handle it
               }));
               clearTimeout(authTimeout);
             }
-          }, 5000);
+          }, 4000); // Reduced from 5s to 4s
           
           try {
             const profile = await fetchUserProfile(session.user.id);
@@ -338,7 +434,10 @@ export const useAuthFlow = () => {
                 ...prev,
                 loading: false,
                 authInitialized: true,
-                error: session.user.email === 'Ahmeddarwesh@gmail.com' ? null : 'Failed to load user profile',
+                // Only show error message for non-Super Admin users, and make it less alarming
+                error: session.user.email === 'Ahmeddarwesh@gmail.com' 
+                  ? null 
+                  : null, // Don't show error here, let routing components handle it
               }));
               clearTimeout(authTimeout);
             }

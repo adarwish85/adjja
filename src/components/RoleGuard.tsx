@@ -22,7 +22,7 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
     }
 
     // CRITICAL FIX: Super Admin bypass - no profile requirement
-    if (userProfile?.role_name?.toLowerCase() === 'super admin') {
+    if (user.email === 'Ahmeddarwesh@gmail.com' || userProfile?.role_name?.toLowerCase() === 'super admin') {
       console.log('👑 RoleGuard: Super Admin detected - bypassing profile checks');
       const hasPermission = allowedRoles.some(role => role.toLowerCase() === 'super admin');
       if (hasPermission) {
@@ -35,8 +35,9 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
       return;
     }
 
+    // If we don't have profile data but user is authenticated, wait a bit more
     if (!userProfile) {
-      console.log('❌ RoleGuard: User exists but no profile found');
+      console.log('⏳ RoleGuard: No profile yet, waiting...');
       return;
     }
 
@@ -94,8 +95,8 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
     return null; // ProtectedRoute will handle redirect to login
   }
 
-  // FIXED: Correct condition for showing "Profile Not Found"
-  if (!userProfile && user.email !== 'Ahmeddarwesh@gmail.com') {
+  // FIXED: Only show "Profile Not Found" for non-Super Admin users when profile is truly missing after loading is complete
+  if (!userProfile && user.email !== 'Ahmeddarwesh@gmail.com' && !loading && authInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -107,7 +108,7 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
   }
 
   const userRole = userProfile?.role_name?.toLowerCase();
-  const hasPermission = allowedRoles.some(role => role.toLowerCase() === userRole);
+  const hasPermission = allowedRoles.some(role => role.toLowerCase() === userRole) || user.email === 'Ahmeddarwesh@gmail.com';
 
   if (!hasPermission) {
     return null; // Redirect happens in useEffect

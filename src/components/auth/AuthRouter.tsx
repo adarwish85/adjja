@@ -11,6 +11,7 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
   const { user, userProfile, loading, error, isAuthenticated, authInitialized } = useAuthFlow();
   const navigate = useNavigate();
   const [hasNavigated, setHasNavigated] = useState(false);
+  const [profileRetryCount, setProfileRetryCount] = useState(0);
 
   useEffect(() => {
     // Don't do anything while loading or if we've already navigated
@@ -36,7 +37,8 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
       approvalStatus: userProfile?.approval_status,
       mandatoryCompleted: userProfile?.mandatory_fields_completed,
       currentPath: window.location.pathname,
-      userEmail: user.email
+      userEmail: user.email,
+      profileRetryCount
     });
 
     // Skip navigation if already on the correct page
@@ -59,12 +61,22 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
       return;
     }
 
-    // If we don't have profile data but user is authenticated, provide fallback navigation
+    // If we don't have profile data but user is authenticated, implement retry logic
     if (!userProfile) {
-      console.log('⚠️ AuthRouter: No profile data, redirecting to default dashboard');
-      setHasNavigated(true);
-      navigate("/dashboard", { replace: true });
-      return;
+      if (profileRetryCount < 3) {
+        console.log(`⚠️ AuthRouter: No profile data, retry attempt ${profileRetryCount + 1}/3`);
+        setProfileRetryCount(prev => prev + 1);
+        // Wait a bit before retrying
+        setTimeout(() => {
+          // This will trigger the useEffect again
+        }, 1000);
+        return;
+      } else {
+        console.log('❌ AuthRouter: Profile fetch failed after retries, proceeding with default navigation');
+        setHasNavigated(true);
+        navigate("/dashboard", { replace: true });
+        return;
+      }
     }
 
     // Role-based navigation for non-Super Admin users
@@ -99,12 +111,13 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
         console.log('🔄 AuthRouter: Unknown role, defaulting to student dashboard');
         navigate("/dashboard", { replace: true });
     }
-  }, [user, userProfile, loading, error, isAuthenticated, authInitialized, navigate, hasNavigated]);
+  }, [user, userProfile, loading, error, isAuthenticated, authInitialized, navigate, hasNavigated, profileRetryCount]);
 
   // Reset navigation state when user changes
   useEffect(() => {
     if (!user) {
       setHasNavigated(false);
+      setProfileRetryCount(0);
     }
   }, [user]);
 
