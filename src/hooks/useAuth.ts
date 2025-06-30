@@ -11,6 +11,7 @@ interface UserProfile {
   role_id: string;
   approval_status: string;
   mandatory_fields_completed: boolean;
+  profile_completed: boolean;
   profile_picture_url?: string;
   rejection_reason?: string;
 }
@@ -38,13 +39,22 @@ export const useAuth = () => {
 
   // Helper function to check if user is Super Admin
   const isSuperAdmin = (user: User | null, profile: UserProfile | null = null) => {
-    return user?.email === 'Ahmeddarwesh@gmail.com' || 
-           profile?.role_name?.toLowerCase() === 'super admin';
+    const emailCheck = user?.email === 'Ahmeddarwesh@gmail.com';
+    const roleCheck = profile?.role_name?.toLowerCase() === 'super admin';
+    
+    console.log('🔍 Super Admin Check:');
+    console.log('- Email match:', emailCheck, user?.email);
+    console.log('- Role match:', roleCheck, profile?.role_name);
+    console.log('- Final result:', emailCheck || roleCheck);
+    
+    return emailCheck || roleCheck;
   };
 
   // Simple profile fetch function
   const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
+      console.log('📡 Fetching profile for user:', userId);
+      
       const { data: profile, error } = await supabase
         .from('profiles')
         .select(`
@@ -53,6 +63,7 @@ export const useAuth = () => {
           email,
           profile_picture_url,
           rejection_reason,
+          profile_completed,
           user_roles (
             id,
             name
@@ -63,10 +74,17 @@ export const useAuth = () => {
         .eq('id', userId)
         .single();
 
-      if (error || !profile) {
-        console.error('Profile fetch error:', error);
+      if (error) {
+        console.error('❌ Profile fetch error:', error);
         return null;
       }
+
+      if (!profile) {
+        console.log('📋 No profile found');
+        return null;
+      }
+
+      console.log('✅ Profile fetched:', profile);
 
       return {
         id: profile.id,
@@ -76,11 +94,12 @@ export const useAuth = () => {
         role_id: profile.user_roles?.id || '',
         approval_status: profile.approval_status || 'pending',
         mandatory_fields_completed: profile.mandatory_fields_completed || false,
+        profile_completed: profile.profile_completed || false,
         profile_picture_url: profile.profile_picture_url,
         rejection_reason: profile.rejection_reason,
       };
     } catch (error) {
-      console.error('Profile fetch failed:', error);
+      console.error('💥 Profile fetch failed:', error);
       return null;
     }
   };
@@ -188,7 +207,7 @@ export const useAuth = () => {
             loading: true, // Keep loading until profile is fetched
           }));
           
-          // Check if Super Admin - if so, skip profile fetch complexities
+          // Check if Super Admin - if so, create minimal profile
           if (isSuperAdmin(session.user)) {
             console.log('👑 Super Admin detected, creating minimal profile');
             const superAdminProfile: UserProfile = {
@@ -199,6 +218,7 @@ export const useAuth = () => {
               role_id: '',
               approval_status: 'approved',
               mandatory_fields_completed: true,
+              profile_completed: true,
             };
             
             if (mounted) {
@@ -214,9 +234,20 @@ export const useAuth = () => {
               if (mounted) {
                 fetchProfile(session.user.id).then(profile => {
                   if (mounted) {
+                    // Double-check Super Admin status with profile data
+                    const finalProfile = profile && isSuperAdmin(session.user, profile) 
+                      ? {
+                          ...profile,
+                          role_name: 'Super Admin',
+                          approval_status: 'approved',
+                          mandatory_fields_completed: true,
+                          profile_completed: true,
+                        }
+                      : profile;
+
                     setAuthState(prev => ({
                       ...prev,
-                      userProfile: profile,
+                      userProfile: finalProfile,
                       loading: false,
                     }));
                   }

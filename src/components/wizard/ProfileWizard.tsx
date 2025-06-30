@@ -1,7 +1,9 @@
 
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 import { BasicInfoStep } from "./steps/BasicInfoStep";
 import { BJJDetailsStep } from "./steps/BJJDetailsStep";
 import { OptionalProfileStep } from "./steps/OptionalProfileStep";
@@ -18,9 +20,8 @@ const steps = [
 
 export const ProfileWizard = () => {
   const navigate = useNavigate();
+  const { user, userProfile, isSuperAdmin, authInitialized } = useAuth();
   const {
-    user,
-    userProfile,
     currentStep,
     setCurrentStep,
     isSubmitting,
@@ -31,9 +32,84 @@ export const ProfileWizard = () => {
     handleSubmit
   } = useProfileWizard();
 
-  // Skip wizard for non-Students
-  if (userProfile && userProfile.role_name !== 'Student') {
-    navigate("/dashboard");
+  // Redirect Super Admin immediately
+  useEffect(() => {
+    if (authInitialized && user) {
+      console.log('🔍 ProfileWizard: Checking user redirect');
+      console.log('👤 User:', user.email);
+      console.log('👑 Is Super Admin:', isSuperAdmin());
+      console.log('📋 User Profile:', userProfile);
+
+      // Super Admin should never see profile wizard
+      if (isSuperAdmin()) {
+        console.log('🎯 Super Admin detected, redirecting to admin dashboard');
+        navigate("/admin/dashboard", { replace: true });
+        return;
+      }
+
+      // Regular users with completed profiles who are approved should go to dashboard
+      if (userProfile) {
+        const role = userProfile.role_name?.toLowerCase();
+        const approvalStatus = userProfile.approval_status;
+        const profileCompleted = userProfile.profile_completed;
+        const mandatoryCompleted = userProfile.mandatory_fields_completed;
+
+        console.log('📊 Profile Status Check:');
+        console.log('- Role:', role);
+        console.log('- Approval Status:', approvalStatus);
+        console.log('- Profile Completed:', profileCompleted);
+        console.log('- Mandatory Completed:', mandatoryCompleted);
+
+        // If profile is already completed and approved, redirect to appropriate dashboard
+        if (profileCompleted && approvalStatus === 'approved') {
+          if (role === 'coach') {
+            console.log('🎯 Redirecting approved coach to coach dashboard');
+            navigate("/coach/dashboard", { replace: true });
+          } else {
+            console.log('🎯 Redirecting approved student to dashboard');
+            navigate("/dashboard", { replace: true });
+          }
+          return;
+        }
+
+        // If mandatory fields are completed but pending approval, go to pending page
+        if (mandatoryCompleted && (approvalStatus === 'pending' || approvalStatus === 'rejected')) {
+          console.log('🎯 Redirecting to profile pending page');
+          navigate("/profile-pending", { replace: true });
+          return;
+        }
+      }
+    }
+  }, [user, userProfile, isSuperAdmin, authInitialized, navigate]);
+
+  // Show loading while auth is initializing
+  if (!authInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bjj-gold mx-auto mb-4"></div>
+          <p className="text-bjj-gray">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render wizard for Super Admin (should have been redirected)
+  if (isSuperAdmin()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bjj-gold mx-auto mb-4"></div>
+          <p className="text-bjj-gray">Redirecting to Admin Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Skip wizard for non-Students (Coaches shouldn't use wizard)
+  if (userProfile && userProfile.role_name?.toLowerCase() === 'coach') {
+    console.log('🎯 Coach detected, redirecting to coach dashboard');
+    navigate("/coach/dashboard", { replace: true });
     return null;
   }
 
