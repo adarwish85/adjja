@@ -15,6 +15,7 @@ const RoleGuard = ({ children, allowedRoles, redirectTo = "/dashboard" }: RoleGu
   console.log('👤 User:', user?.email);
   console.log('🎭 User profile role:', userProfile?.role_name);
   console.log('🔐 Allowed roles:', allowedRoles);
+  console.log('👑 Is Super Admin:', isSuperAdmin());
 
   // Show loading while auth/profile is loading
   if (!authInitialized || loading) {
@@ -37,9 +38,6 @@ const RoleGuard = ({ children, allowedRoles, redirectTo = "/dashboard" }: RoleGu
   // Super Admin bypass - always allow if Super Admin role is in allowedRoles
   const allowsSuperAdmin = allowedRoles.some(role => role.toLowerCase() === 'super admin');
   
-  console.log('👑 RoleGuard: Is Super Admin?', isSuperAdmin());
-  console.log('✅ RoleGuard: Allows Super Admin?', allowsSuperAdmin);
-
   if (isSuperAdmin() && allowsSuperAdmin) {
     console.log('🎯 RoleGuard: Super Admin access granted');
     return <>{children}</>;
@@ -58,22 +56,24 @@ const RoleGuard = ({ children, allowedRoles, redirectTo = "/dashboard" }: RoleGu
     );
   }
 
-  // Check role permissions
-  const userRole = userProfile?.role_name?.toLowerCase();
-  const hasPermission = allowedRoles.some(role => role.toLowerCase() === userRole);
+  // Check role permissions for regular users
+  if (!isSuperAdmin()) {
+    const userRole = userProfile?.role_name?.toLowerCase();
+    const hasPermission = allowedRoles.some(role => role.toLowerCase() === userRole);
 
-  console.log('🔍 RoleGuard: User role:', userRole);
-  console.log('✅ RoleGuard: Has permission?', hasPermission);
+    console.log('🔍 RoleGuard: User role:', userRole);
+    console.log('✅ RoleGuard: Has permission?', hasPermission);
 
-  if (!hasPermission) {
-    console.log('🚫 RoleGuard: Access denied, redirecting');
-    // Redirect based on user role
-    if (userRole === 'student') {
-      return <Navigate to="/dashboard" replace />;
-    } else if (userRole === 'coach') {
-      return <Navigate to="/coach/dashboard" replace />;
-    } else {
-      return <Navigate to={redirectTo} replace />;
+    if (!hasPermission) {
+      console.log('🚫 RoleGuard: Access denied, redirecting');
+      // Redirect based on user role
+      if (userRole === 'student') {
+        return <Navigate to="/dashboard" replace />;
+      } else if (userRole === 'coach') {
+        return <Navigate to="/coach/dashboard" replace />;
+      } else {
+        return <Navigate to={redirectTo} replace />;
+      }
     }
   }
 

@@ -39,7 +39,7 @@ export const useAuth = () => {
 
   // Helper function to check if user is Super Admin
   const isSuperAdmin = (user: User | null, profile: UserProfile | null = null) => {
-    const emailCheck = user?.email === 'Ahmeddarwesh@gmail.com';
+    const emailCheck = user?.email === 'ahmeddarwesh@gmail.com';
     const roleCheck = profile?.role_name?.toLowerCase() === 'super admin';
     
     console.log('🔍 Super Admin Check:');
@@ -204,12 +204,12 @@ export const useAuth = () => {
             isAuthenticated: true,
             error: null,
             authInitialized: true,
-            loading: true, // Keep loading until profile is fetched
+            loading: true, // Keep loading until profile is resolved
           }));
           
-          // Check if Super Admin - if so, create minimal profile
+          // Check if Super Admin first - if so, create minimal profile immediately
           if (isSuperAdmin(session.user)) {
-            console.log('👑 Super Admin detected, creating minimal profile');
+            console.log('👑 Super Admin detected, creating profile');
             const superAdminProfile: UserProfile = {
               id: session.user.id,
               name: 'Ahmed Darwish',
@@ -230,30 +230,15 @@ export const useAuth = () => {
             }
           } else {
             // Fetch profile for regular users
-            setTimeout(() => {
+            fetchProfile(session.user.id).then(profile => {
               if (mounted) {
-                fetchProfile(session.user.id).then(profile => {
-                  if (mounted) {
-                    // Double-check Super Admin status with profile data
-                    const finalProfile = profile && isSuperAdmin(session.user, profile) 
-                      ? {
-                          ...profile,
-                          role_name: 'Super Admin',
-                          approval_status: 'approved',
-                          mandatory_fields_completed: true,
-                          profile_completed: true,
-                        }
-                      : profile;
-
-                    setAuthState(prev => ({
-                      ...prev,
-                      userProfile: finalProfile,
-                      loading: false,
-                    }));
-                  }
-                });
+                setAuthState(prev => ({
+                  ...prev,
+                  userProfile: profile,
+                  loading: false,
+                }));
               }
-            }, 0);
+            });
           }
         } else {
           // User is not authenticated
