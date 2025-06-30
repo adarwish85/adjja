@@ -39,10 +39,27 @@ const Login = () => {
 
   // If authenticated, redirect based on role
   if (isAuthenticated && user) {
-    // Super Admin goes to admin dashboard
-    if (user.email === 'Ahmeddarwesh@gmail.com' || userProfile?.role_name?.toLowerCase() === 'super admin') {
+    console.log('🔍 Login: User authenticated, checking redirect logic');
+    console.log('📧 User email:', user.email);
+    console.log('👤 User profile:', userProfile);
+    
+    // Super Admin goes to admin dashboard - check by email first, then role
+    const isSuperAdmin = user.email === 'Ahmeddarwesh@gmail.com' || 
+                        (userProfile?.role_name?.toLowerCase() === 'super admin');
+    
+    console.log('👑 Is Super Admin?', isSuperAdmin);
+    
+    if (isSuperAdmin) {
+      console.log('🎯 Redirecting Super Admin to admin dashboard');
       navigate("/admin/dashboard", { replace: true });
-      return null;
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bjj-gold mx-auto mb-4"></div>
+            <p className="text-bjj-gray">Redirecting to Admin Dashboard...</p>
+          </div>
+        </div>
+      );
     }
 
     // Regular users - check profile completion
@@ -50,6 +67,10 @@ const Login = () => {
       const role = userProfile.role_name?.toLowerCase();
       const approvalStatus = userProfile.approval_status;
       const mandatoryCompleted = userProfile.mandatory_fields_completed;
+
+      console.log('👤 User role:', role);
+      console.log('✅ Approval status:', approvalStatus);
+      console.log('📋 Mandatory completed:', mandatoryCompleted);
 
       if (role === 'coach') {
         navigate("/coach/dashboard", { replace: true });
