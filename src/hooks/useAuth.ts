@@ -36,6 +36,12 @@ export const useAuth = () => {
     authInitialized: false,
   });
 
+  // Helper function to check if user is Super Admin
+  const isSuperAdmin = (user: User | null, profile: UserProfile | null = null) => {
+    return user?.email === 'Ahmeddarwesh@gmail.com' || 
+           profile?.role_name?.toLowerCase() === 'super admin';
+  };
+
   // Simple profile fetch function
   const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
@@ -182,20 +188,42 @@ export const useAuth = () => {
             loading: true, // Keep loading until profile is fetched
           }));
           
-          // Fetch profile in next tick to avoid blocking auth flow
-          setTimeout(() => {
+          // Check if Super Admin - if so, skip profile fetch complexities
+          if (isSuperAdmin(session.user)) {
+            console.log('👑 Super Admin detected, creating minimal profile');
+            const superAdminProfile: UserProfile = {
+              id: session.user.id,
+              name: 'Ahmed Darwish',
+              email: session.user.email || '',
+              role_name: 'Super Admin',
+              role_id: '',
+              approval_status: 'approved',
+              mandatory_fields_completed: true,
+            };
+            
             if (mounted) {
-              fetchProfile(session.user.id).then(profile => {
-                if (mounted) {
-                  setAuthState(prev => ({
-                    ...prev,
-                    userProfile: profile,
-                    loading: false,
-                  }));
-                }
-              });
+              setAuthState(prev => ({
+                ...prev,
+                userProfile: superAdminProfile,
+                loading: false,
+              }));
             }
-          }, 0);
+          } else {
+            // Fetch profile for regular users
+            setTimeout(() => {
+              if (mounted) {
+                fetchProfile(session.user.id).then(profile => {
+                  if (mounted) {
+                    setAuthState(prev => ({
+                      ...prev,
+                      userProfile: profile,
+                      loading: false,
+                    }));
+                  }
+                });
+              }
+            }, 0);
+          }
         } else {
           // User is not authenticated
           setAuthState({
@@ -238,5 +266,6 @@ export const useAuth = () => {
     signIn,
     signUp,
     signOut,
+    isSuperAdmin: (user: User | null = authState.user) => isSuperAdmin(user, authState.userProfile),
   };
 };

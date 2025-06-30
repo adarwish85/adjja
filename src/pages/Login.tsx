@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Shield } from "lucide-react";
@@ -13,7 +12,7 @@ const Login = () => {
   const mode = searchParams.get('mode') || 'login';
   const [isSignup, setIsSignup] = useState(mode === 'signup');
   
-  const { isAuthenticated, loading, error, authInitialized, user, userProfile } = useAuth();
+  const { isAuthenticated, loading, error, authInitialized, user, userProfile, isSuperAdmin } = useAuth();
 
   useEffect(() => {
     setIsSignup(mode === 'signup');
@@ -43,13 +42,8 @@ const Login = () => {
     console.log('📧 User email:', user.email);
     console.log('👤 User profile:', userProfile);
     
-    // Super Admin goes to admin dashboard - check by email first, then role
-    const isSuperAdmin = user.email === 'Ahmeddarwesh@gmail.com' || 
-                        (userProfile?.role_name?.toLowerCase() === 'super admin');
-    
-    console.log('👑 Is Super Admin?', isSuperAdmin);
-    
-    if (isSuperAdmin) {
+    // Super Admin check using the helper function
+    if (isSuperAdmin()) {
       console.log('🎯 Redirecting Super Admin to admin dashboard');
       navigate("/admin/dashboard", { replace: true });
       return (

@@ -9,7 +9,7 @@ interface RoleGuardProps {
 }
 
 const RoleGuard = ({ children, allowedRoles, redirectTo = "/dashboard" }: RoleGuardProps) => {
-  const { user, userProfile, loading, authInitialized } = useAuth();
+  const { user, userProfile, loading, authInitialized, isSuperAdmin } = useAuth();
 
   console.log('🛡️ RoleGuard: Checking access');
   console.log('👤 User:', user?.email);
@@ -35,20 +35,18 @@ const RoleGuard = ({ children, allowedRoles, redirectTo = "/dashboard" }: RoleGu
   }
 
   // Super Admin bypass - always allow if Super Admin role is in allowedRoles
-  const isSuperAdmin = user.email === 'Ahmeddarwesh@gmail.com' || 
-                      userProfile?.role_name?.toLowerCase() === 'super admin';
   const allowsSuperAdmin = allowedRoles.some(role => role.toLowerCase() === 'super admin');
   
-  console.log('👑 RoleGuard: Is Super Admin?', isSuperAdmin);
+  console.log('👑 RoleGuard: Is Super Admin?', isSuperAdmin());
   console.log('✅ RoleGuard: Allows Super Admin?', allowsSuperAdmin);
 
-  if (isSuperAdmin && allowsSuperAdmin) {
+  if (isSuperAdmin() && allowsSuperAdmin) {
     console.log('🎯 RoleGuard: Super Admin access granted');
     return <>{children}</>;
   }
 
   // If no profile and not Super Admin, show profile not found
-  if (!userProfile && !isSuperAdmin) {
+  if (!userProfile && !isSuperAdmin()) {
     console.log('📋 RoleGuard: No profile found for non-Super Admin');
     return (
       <div className="min-h-screen flex items-center justify-center">
