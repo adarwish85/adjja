@@ -25,13 +25,13 @@ const Login = () => {
     setSearchParams({ mode: newMode ? 'signup' : 'login' });
   };
 
-  // Show loading state while checking authentication
-  if (loading || !authInitialized) {
+  // Show loading state only while checking authentication initially
+  if (!authInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bjj-gold mx-auto mb-4"></div>
-          <p className="text-bjj-gray">Checking authentication...</p>
+          <p className="text-bjj-gray">Initializing...</p>
         </div>
       </div>
     );

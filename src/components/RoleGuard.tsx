@@ -17,7 +17,7 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
   useEffect(() => {
     console.log('🛡️ RoleGuard: Validating access - user:', !!user, 'profile:', userProfile, 'loading:', loading, 'allowedRoles:', allowedRoles);
     
-    if (!authInitialized || loading) {
+    if (!authInitialized) {
       return; // Wait for auth to initialize
     }
 
@@ -40,6 +40,12 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
         navigate("/admin/dashboard", { replace: true });
         return;
       }
+    }
+
+    // If still loading profile, wait
+    if (loading) {
+      console.log('⏳ RoleGuard: Still loading, waiting...');
+      return;
     }
 
     // For non-Super Admin users, check if we have profile data
@@ -86,7 +92,7 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
     }
   }, [user]);
 
-  if (!authInitialized || loading) {
+  if (!authInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

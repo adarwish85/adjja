@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -346,50 +347,52 @@ export const useAuthFlow = () => {
   useEffect(() => {
     let mounted = true;
     
-    // Set up auth state listener
+    console.log('🚀 Setting up auth state listener...');
+    
+    // Set up auth state listener - NO ASYNC CALLS HERE
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔄 Auth state changed:', event, session?.user?.id, session?.user?.email);
+      (event, session) => {
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
         
         if (!mounted) return;
         
         if (session?.user) {
-          console.log('👤 User authenticated, fetching profile...');
+          console.log('👤 User authenticated');
           
-          // Update state immediately with user/session
+          // CRITICAL: Only synchronous state updates here
           setAuthState(prev => ({
             ...prev,
             user: session.user,
             session: session,
             isAuthenticated: true,
             error: null,
-            loading: true,
-            authInitialized: false,
+            loading: true, // Keep loading until profile is fetched
+            authInitialized: true, // Set this immediately
           }));
           
-          try {
-            const profile = await fetchUserProfile(session.user.id);
-            
+          // Defer profile fetching to prevent deadlock
+          setTimeout(() => {
             if (mounted) {
-              setAuthState(prev => ({
-                ...prev,
-                userProfile: profile,
-                loading: false,
-                authInitialized: true,
-                error: null,
-              }));
+              fetchUserProfile(session.user.id).then(profile => {
+                if (mounted) {
+                  setAuthState(prev => ({
+                    ...prev,
+                    userProfile: profile,
+                    loading: false,
+                  }));
+                }
+              }).catch(error => {
+                if (mounted) {
+                  console.error('Profile fetch error:', error);
+                  setAuthState(prev => ({
+                    ...prev,
+                    loading: false,
+                    error: session.user.email === 'Ahmeddarwesh@gmail.com' ? null : 'Failed to load profile',
+                  }));
+                }
+              });
             }
-          } catch (error) {
-            if (mounted) {
-              console.error('Profile fetch error:', error);
-              setAuthState(prev => ({
-                ...prev,
-                loading: false,
-                authInitialized: true,
-                error: session.user.email === 'Ahmeddarwesh@gmail.com' ? null : null,
-              }));
-            }
-          }
+          }, 0);
         } else {
           // No session - user logged out or not authenticated
           console.log('❌ No user session');
@@ -401,7 +404,7 @@ export const useAuthFlow = () => {
               loading: false,
               error: null,
               isAuthenticated: false,
-              authInitialized: true,
+              authInitialized: true, // CRITICAL: Set this immediately for unauthenticated users
             });
           }
         }
@@ -411,7 +414,7 @@ export const useAuthFlow = () => {
     // Get initial session
     const initializeAuth = async () => {
       try {
-        console.log('🚀 Initializing auth...');
+        console.log('🚀 Getting initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -427,7 +430,8 @@ export const useAuthFlow = () => {
           return;
         }
         
-        // Let the auth state change listener handle the session
+        // The auth state change listener will handle the session
+        // If no session, ensure we're initialized
         if (!session && mounted) {
           setAuthState(prev => ({ 
             ...prev, 

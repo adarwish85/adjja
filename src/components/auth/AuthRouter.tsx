@@ -13,10 +13,27 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
   const [hasNavigated, setHasNavigated] = useState(false);
 
   useEffect(() => {
-    // Don't do anything while loading or if we've already navigated
-    if (loading || !authInitialized || hasNavigated) {
+    // Don't do anything while auth is not initialized
+    if (!authInitialized) {
+      console.log('⏳ AuthRouter: Auth not initialized yet');
       return;
     }
+
+    // Don't navigate if we've already done so
+    if (hasNavigated) {
+      return;
+    }
+
+    console.log('🧭 AuthRouter: Starting navigation logic', {
+      isAuthenticated,
+      hasProfile: !!userProfile,
+      role: userProfile?.role_name,
+      approvalStatus: userProfile?.approval_status,
+      mandatoryCompleted: userProfile?.mandatory_fields_completed,
+      currentPath: window.location.pathname,
+      userEmail: user?.email,
+      loading
+    });
 
     // Handle authentication errors
     if (error && !isAuthenticated) {
@@ -29,15 +46,6 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
       console.log('❌ AuthRouter: User not authenticated');
       return;
     }
-
-    console.log('🧭 AuthRouter: Starting navigation logic', {
-      hasProfile: !!userProfile,
-      role: userProfile?.role_name,
-      approvalStatus: userProfile?.approval_status,
-      mandatoryCompleted: userProfile?.mandatory_fields_completed,
-      currentPath: window.location.pathname,
-      userEmail: user.email
-    });
 
     // Skip navigation if already on the correct page
     const currentPath = window.location.pathname;
@@ -58,6 +66,12 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
       console.log('👑 AuthRouter: Super Admin detected - bypassing all checks');
       setHasNavigated(true);
       navigate("/admin/dashboard", { replace: true });
+      return;
+    }
+
+    // If still loading profile, wait
+    if (loading) {
+      console.log('⏳ AuthRouter: Still loading profile, waiting...');
       return;
     }
 
@@ -109,7 +123,7 @@ export const AuthRouter = ({ children }: AuthRouterProps) => {
   }, [user]);
 
   // Show loading while auth is initializing
-  if (!authInitialized || loading) {
+  if (!authInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
