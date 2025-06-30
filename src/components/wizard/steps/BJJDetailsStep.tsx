@@ -14,13 +14,13 @@ interface BJJDetailsStepProps {
 }
 
 const beltColors = [
-  { value: "white", label: "White Belt", color: "#FFFFFF" },
-  { value: "blue", label: "Blue Belt", color: "#0066CC" },
-  { value: "purple", label: "Purple Belt", color: "#6600CC" },
-  { value: "brown", label: "Brown Belt", color: "#8B4513" },
-  { value: "black", label: "Black Belt", color: "#000000" },
-  { value: "coral", label: "Coral Belt", color: "#FF6B35" },
-  { value: "red", label: "Red Belt", color: "#CC0000" },
+  { value: "White", label: "White Belt", color: "#FFFFFF" },
+  { value: "Blue", label: "Blue Belt", color: "#0066CC" },
+  { value: "Purple", label: "Purple Belt", color: "#6600CC" },
+  { value: "Brown", label: "Brown Belt", color: "#8B4513" },
+  { value: "Black", label: "Black Belt", color: "#000000" },
+  { value: "Coral", label: "Coral Belt", color: "#FF6B35" },
+  { value: "Red", label: "Red Belt", color: "#CC0000" },
 ];
 
 export const BJJDetailsStep = ({ data, updateData }: BJJDetailsStepProps) => {
