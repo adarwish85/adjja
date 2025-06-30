@@ -1,32 +1,15 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuthFlow } from "@/hooks/useAuthFlow";
+import { useAuth } from "@/hooks/useAuth";
+import { Navigate } from "react-router-dom";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, userProfile, loading, authInitialized } = useAuthFlow();
-  const navigate = useNavigate();
+  const { isAuthenticated, authInitialized, loading } = useAuth();
 
-  useEffect(() => {
-    console.log('🛡️ ProtectedRoute: Auth state - user:', !!user, 'profile:', !!userProfile, 'loading:', loading, 'initialized:', authInitialized);
-    
-    if (!authInitialized || loading) {
-      return; // Wait for auth to initialize
-    }
-
-    if (!user) {
-      console.log('❌ ProtectedRoute: No user, redirecting to login');
-      navigate("/login");
-      return;
-    }
-
-    console.log('✅ ProtectedRoute: User authenticated, allowing access');
-  }, [user, userProfile, loading, authInitialized, navigate]);
-
+  // Show loading while auth is initializing
   if (!authInitialized || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -38,11 +21,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  if (!user) {
-    return null; // Will redirect to login
+  // If not authenticated, redirect to login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
-  // Allow access
   return <>{children}</>;
 };
 

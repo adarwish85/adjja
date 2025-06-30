@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthFlow } from "@/hooks/useAuthFlow";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -29,7 +29,7 @@ export interface WizardData {
 }
 
 export const useProfileWizard = () => {
-  const { user, userProfile } = useAuthFlow();
+  const { user, userProfile } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -126,7 +126,7 @@ export const useProfileWizard = () => {
     try {
       console.log('💾 Starting database updates...');
 
-      // 1. Update profiles table with direct values
+      // Update profiles table
       const profileData = {
         id: user.id,
         name: wizardData.name.trim(),
@@ -143,9 +143,7 @@ export const useProfileWizard = () => {
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .upsert(profileData, {
-          onConflict: 'id'
-        });
+        .upsert(profileData, { onConflict: 'id' });
 
       if (profileError) {
         console.error('❌ Profile update error:', profileError);
@@ -154,7 +152,7 @@ export const useProfileWizard = () => {
 
       console.log('✅ Profile updated successfully');
 
-      // 2. Create/update BJJ profile
+      // Create/update BJJ profile
       const bjjProfileData = {
         user_id: user.id,
         belt_rank: wizardData.belt,
@@ -180,7 +178,7 @@ export const useProfileWizard = () => {
 
       console.log('✅ BJJ profile created successfully');
 
-      // 3. Create/update student record
+      // Create/update student record
       const studentData = {
         auth_user_id: user.id,
         name: wizardData.name.trim(),
@@ -230,26 +228,7 @@ export const useProfileWizard = () => {
         console.log('✅ Student record created successfully');
       }
 
-      // 4. Log completion audit
-      const auditData = {
-        user_id: user.id,
-        step_completed: 'wizard_completed',
-        field_data: wizardData as any
-      };
-
-      console.log('📤 Logging completion audit:', auditData);
-
-      const { error: auditError } = await supabase
-        .from('profile_completion_audit')
-        .insert(auditData);
-
-      if (auditError) {
-        console.error('⚠️ Audit log error (non-critical):', auditError);
-      } else {
-        console.log('✅ Audit log created successfully');
-      }
-
-      // 5. Create notification for user
+      // Create notification for user
       try {
         const { error: notificationError } = await supabase
           .from('notifications')

@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Shield, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { useAuthFlow } from "@/hooks/useAuthFlow";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LoginFormProps {
   isSignup?: boolean;
@@ -22,7 +22,7 @@ export const LoginForm = ({ isSignup = false, onToggleMode }: LoginFormProps) =>
   const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { signIn, signUp, loading, error } = useAuthFlow();
+  const { signIn, signUp, loading, error } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -30,19 +30,16 @@ export const LoginForm = ({ isSignup = false, onToggleMode }: LoginFormProps) =>
     setIsSubmitting(true);
 
     try {
-      console.log('🔐 Attempting login for:', email);
       const result = await signIn(email, password);
       
       if (result.success) {
-        console.log('✅ Login successful');
         toast.success("Login successful!");
-        // Navigation will be handled by AuthRouter
+        // Navigation will be handled by Login component
       } else {
-        console.error("❌ Login failed:", result.error);
         toast.error(result.error || "Login failed");
       }
     } catch (error) {
-      console.error("💥 Login error:", error);
+      console.error("Login error:", error);
       toast.error("Login failed. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -70,20 +67,16 @@ export const LoginForm = ({ isSignup = false, onToggleMode }: LoginFormProps) =>
     setIsSubmitting(true);
 
     try {
-      console.log('📝 Attempting signup for:', email);
       const result = await signUp(email, password, name.trim());
       
       if (result.success) {
-        console.log('✅ Signup successful');
         toast.success("Account created successfully! Please complete your profile.");
-        // Navigate to profile wizard
         navigate("/profile-wizard", { replace: true });
       } else {
-        console.error("❌ Signup failed:", result.error);
         toast.error(result.error || "Signup failed");
       }
     } catch (error) {
-      console.error("💥 Signup failed:", error);
+      console.error("Signup error:", error);
       toast.error("Signup failed. Please try again.");
     } finally {
       setIsSubmitting(false);

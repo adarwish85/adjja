@@ -1,19 +1,19 @@
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Shield } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
-import { AuthRouter } from "@/components/auth/AuthRouter";
-import { useAuthFlow } from "@/hooks/useAuthFlow";
+import { useAuth } from "@/hooks/useAuth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
 const Login = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const mode = searchParams.get('mode') || 'login';
   const [isSignup, setIsSignup] = useState(mode === 'signup');
   
-  const { isAuthenticated, loading, error, authInitialized } = useAuthFlow();
+  const { isAuthenticated, loading, error, authInitialized, user, userProfile } = useAuth();
 
   useEffect(() => {
     setIsSignup(mode === 'signup');
@@ -25,7 +25,7 @@ const Login = () => {
     setSearchParams({ mode: newMode ? 'signup' : 'login' });
   };
 
-  // Show loading state only while checking authentication initially
+  // Show loading while checking auth
   if (!authInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -37,17 +37,45 @@ const Login = () => {
     );
   }
 
-  // If already authenticated, let AuthRouter handle navigation
-  if (isAuthenticated) {
+  // If authenticated, redirect based on role
+  if (isAuthenticated && user) {
+    // Super Admin goes to admin dashboard
+    if (user.email === 'Ahmeddarwesh@gmail.com' || userProfile?.role_name?.toLowerCase() === 'super admin') {
+      navigate("/admin/dashboard", { replace: true });
+      return null;
+    }
+
+    // Regular users - check profile completion
+    if (userProfile) {
+      const role = userProfile.role_name?.toLowerCase();
+      const approvalStatus = userProfile.approval_status;
+      const mandatoryCompleted = userProfile.mandatory_fields_completed;
+
+      if (role === 'coach') {
+        navigate("/coach/dashboard", { replace: true });
+      } else if (role === 'student') {
+        if (!mandatoryCompleted) {
+          navigate("/profile-wizard", { replace: true });
+        } else if (approvalStatus === 'pending' || approvalStatus === 'rejected') {
+          navigate("/profile-pending", { replace: true });
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+    } else if (!loading) {
+      // No profile and not loading - redirect to profile wizard
+      navigate("/profile-wizard", { replace: true });
+    }
+    
     return (
-      <AuthRouter>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bjj-gold mx-auto mb-4"></div>
-            <p className="text-bjj-gray">Redirecting...</p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bjj-gold mx-auto mb-4"></div>
+          <p className="text-bjj-gray">Redirecting...</p>
         </div>
-      </AuthRouter>
+      </div>
     );
   }
 

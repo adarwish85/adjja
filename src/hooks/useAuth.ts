@@ -1,7 +1,242 @@
 
-import { useAuthFlow } from './useAuthFlow';
+import { useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
-// Simple wrapper around useAuthFlow for backward compatibility
+interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role_name: string;
+  role_id: string;
+  approval_status: string;
+  mandatory_fields_completed: boolean;
+  profile_picture_url?: string;
+  rejection_reason?: string;
+}
+
+interface AuthState {
+  user: User | null;
+  session: Session | null;
+  userProfile: UserProfile | null;
+  loading: boolean;
+  error: string | null;
+  isAuthenticated: boolean;
+  authInitialized: boolean;
+}
+
 export const useAuth = () => {
-  return useAuthFlow();
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    session: null,
+    userProfile: null,
+    loading: true,
+    error: null,
+    isAuthenticated: false,
+    authInitialized: false,
+  });
+
+  // Simple profile fetch function
+  const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          name,
+          email,
+          profile_picture_url,
+          rejection_reason,
+          user_roles (
+            id,
+            name
+          ),
+          approval_status,
+          mandatory_fields_completed
+        `)
+        .eq('id', userId)
+        .single();
+
+      if (error || !profile) {
+        console.error('Profile fetch error:', error);
+        return null;
+      }
+
+      return {
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        role_name: profile.user_roles?.name || 'Student',
+        role_id: profile.user_roles?.id || '',
+        approval_status: profile.approval_status || 'pending',
+        mandatory_fields_completed: profile.mandatory_fields_completed || false,
+        profile_picture_url: profile.profile_picture_url,
+        rejection_reason: profile.rejection_reason,
+      };
+    } catch (error) {
+      console.error('Profile fetch failed:', error);
+      return null;
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      setAuthState(prev => ({ ...prev, loading: true, error: null }));
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setAuthState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: error.message 
+        }));
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, error: null };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: errorMessage 
+      }));
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const signUp = async (email: string, password: string, name: string) => {
+    try {
+      setAuthState(prev => ({ ...prev, loading: true, error: null }));
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name },
+          emailRedirectTo: `${window.location.origin}/profile-wizard`,
+        },
+      });
+
+      if (error) {
+        setAuthState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: error.message 
+        }));
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, error: null, user: data.user };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Signup failed';
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: errorMessage 
+      }));
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setAuthState({
+        user: null,
+        session: null,
+        userProfile: null,
+        loading: false,
+        error: null,
+        isAuthenticated: false,
+        authInitialized: true,
+      });
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!mounted) return;
+        
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
+        
+        if (session?.user) {
+          // User is authenticated
+          setAuthState(prev => ({
+            ...prev,
+            user: session.user,
+            session: session,
+            isAuthenticated: true,
+            error: null,
+            authInitialized: true,
+            loading: true, // Keep loading until profile is fetched
+          }));
+          
+          // Fetch profile in next tick to avoid blocking auth flow
+          setTimeout(() => {
+            if (mounted) {
+              fetchProfile(session.user.id).then(profile => {
+                if (mounted) {
+                  setAuthState(prev => ({
+                    ...prev,
+                    userProfile: profile,
+                    loading: false,
+                  }));
+                }
+              });
+            }
+          }, 0);
+        } else {
+          // User is not authenticated
+          setAuthState({
+            user: null,
+            session: null,
+            userProfile: null,
+            loading: false,
+            error: null,
+            isAuthenticated: false,
+            authInitialized: true,
+          });
+        }
+      }
+    );
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Session fetch error:', error);
+        if (mounted) {
+          setAuthState(prev => ({ 
+            ...prev, 
+            loading: false, 
+            error: error.message,
+            authInitialized: true,
+          }));
+        }
+      }
+      // The auth state change listener will handle the session
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  return {
+    ...authState,
+    signIn,
+    signUp,
+    signOut,
+  };
 };

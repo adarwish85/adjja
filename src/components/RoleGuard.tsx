@@ -1,7 +1,6 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuthFlow } from "@/hooks/useAuthFlow";
+import { useAuth } from "@/hooks/useAuth";
+import { Navigate } from "react-router-dom";
 
 interface RoleGuardProps {
   children: React.ReactNode;
@@ -9,90 +8,11 @@ interface RoleGuardProps {
   redirectTo?: string;
 }
 
-const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
-  const { userProfile, loading, user, authInitialized } = useAuthFlow();
-  const navigate = useNavigate();
-  const [hasValidated, setHasValidated] = useState(false);
+const RoleGuard = ({ children, allowedRoles, redirectTo = "/dashboard" }: RoleGuardProps) => {
+  const { user, userProfile, loading, authInitialized } = useAuth();
 
-  useEffect(() => {
-    console.log('🛡️ RoleGuard: Validating access - user:', !!user, 'profile:', userProfile, 'loading:', loading, 'allowedRoles:', allowedRoles);
-    
-    if (!authInitialized) {
-      return; // Wait for auth to initialize
-    }
-
-    if (!user) {
-      return; // ProtectedRoute will handle redirect to login
-    }
-
-    // CRITICAL FIX: Super Admin bypass - immediate access
-    const isSuperAdmin = user.email === 'Ahmeddarwesh@gmail.com' || userProfile?.role_name?.toLowerCase() === 'super admin';
-    
-    if (isSuperAdmin) {
-      console.log('👑 RoleGuard: Super Admin detected - granting access');
-      const hasPermission = allowedRoles.some(role => role.toLowerCase() === 'super admin');
-      if (hasPermission) {
-        console.log('✅ RoleGuard: Super Admin access granted');
-        setHasValidated(true);
-        return;
-      } else {
-        console.log('🚫 RoleGuard: Super Admin access denied for this route');
-        navigate("/admin/dashboard", { replace: true });
-        return;
-      }
-    }
-
-    // If still loading profile, wait
-    if (loading) {
-      console.log('⏳ RoleGuard: Still loading, waiting...');
-      return;
-    }
-
-    // For non-Super Admin users, check if we have profile data
-    if (!userProfile) {
-      console.log('⏳ RoleGuard: No profile yet for regular user, waiting...');
-      return;
-    }
-
-    const userRole = userProfile.role_name?.toLowerCase();
-    const hasPermission = allowedRoles.some(role => {
-      const normalizedRole = role.toLowerCase();
-      const matches = normalizedRole === userRole;
-      console.log(`🔍 RoleGuard: Checking role "${normalizedRole}" against user role "${userRole}": ${matches}`);
-      return matches;
-    });
-
-    console.log('🔍 RoleGuard: User role:', userRole, 'Allowed roles:', allowedRoles, 'Has permission:', hasPermission);
-
-    if (!hasPermission && !hasValidated) {
-      setHasValidated(true);
-      console.log('🚫 RoleGuard: Access denied, redirecting based on role');
-      
-      // Enhanced redirect logic
-      if (userRole === 'student') {
-        console.log('🎓 RoleGuard: Redirecting student to dashboard');
-        navigate("/dashboard", { replace: true });
-      } else if (userRole === 'coach') {
-        console.log('👨‍🏫 RoleGuard: Redirecting coach to coach dashboard');
-        navigate("/coach/dashboard", { replace: true });
-      } else {
-        console.log('❓ RoleGuard: Unknown role, using fallback redirect');
-        navigate(redirectTo || "/dashboard", { replace: true });
-      }
-    } else if (hasPermission) {
-      console.log('✅ RoleGuard: Access granted for role:', userRole);
-      setHasValidated(true);
-    }
-  }, [userProfile, loading, user, navigate, allowedRoles, redirectTo, hasValidated, authInitialized]);
-
-  // Reset validation when user changes
-  useEffect(() => {
-    if (!user) {
-      setHasValidated(false);
-    }
-  }, [user]);
-
-  if (!authInitialized) {
+  // Show loading while auth/profile is loading
+  if (!authInitialized || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -103,23 +23,21 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
     );
   }
 
+  // If no user, ProtectedRoute will handle redirect
   if (!user) {
-    return null; // ProtectedRoute will handle redirect to login
+    return null;
   }
 
-  // Super Admin bypass - never show profile not found
+  // Super Admin bypass - always allow if Super Admin role is in allowedRoles
   const isSuperAdmin = user.email === 'Ahmeddarwesh@gmail.com' || userProfile?.role_name?.toLowerCase() === 'super admin';
+  const allowsSuperAdmin = allowedRoles.some(role => role.toLowerCase() === 'super admin');
   
-  if (isSuperAdmin) {
-    const hasPermission = allowedRoles.some(role => role.toLowerCase() === 'super admin');
-    if (!hasPermission) {
-      return null; // Redirect happens in useEffect
-    }
+  if (isSuperAdmin && allowsSuperAdmin) {
     return <>{children}</>;
   }
 
-  // Only show "Profile Not Found" for non-Super Admin users when profile is truly missing after loading is complete
-  if (!userProfile && !loading && authInitialized) {
+  // If no profile and not Super Admin, show profile not found
+  if (!userProfile && !isSuperAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -130,11 +48,19 @@ const RoleGuard = ({ children, allowedRoles, redirectTo }: RoleGuardProps) => {
     );
   }
 
+  // Check role permissions
   const userRole = userProfile?.role_name?.toLowerCase();
   const hasPermission = allowedRoles.some(role => role.toLowerCase() === userRole);
 
   if (!hasPermission) {
-    return null; // Redirect happens in useEffect
+    // Redirect based on user role
+    if (userRole === 'student') {
+      return <Navigate to="/dashboard" replace />;
+    } else if (userRole === 'coach') {
+      return <Navigate to="/coach/dashboard" replace />;
+    } else {
+      return <Navigate to={redirectTo} replace />;
+    }
   }
 
   return <>{children}</>;
