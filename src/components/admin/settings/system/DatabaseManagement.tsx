@@ -1,213 +1,238 @@
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Database, Play, Square, RefreshCw, Download, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-
-interface DatabaseOperation {
-  id: string;
-  name: string;
-  status: "running" | "completed" | "failed" | "scheduled";
-  progress: number;
-  startTime: string;
-  duration: string;
-  type: "backup" | "optimization" | "cleanup" | "migration";
-}
+import { Progress } from "@/components/ui/progress";
+import { 
+  Database, 
+  Download, 
+  Upload, 
+  Trash2, 
+  RefreshCw, 
+  HardDrive,
+  Activity,
+  Clock
+} from "lucide-react";
 
 export const DatabaseManagement = () => {
-  const { toast } = useToast();
-  const [operations, setOperations] = useState<DatabaseOperation[]>([
+  const databaseStats = [
+    { label: "Total Size", value: "2.4 GB", icon: HardDrive },
+    { label: "Active Connections", value: "12", icon: Activity },
+    { label: "Queries/sec", value: "145", icon: RefreshCw },
+    { label: "Last Backup", value: "2 hours ago", icon: Clock }
+  ];
+
+  const backupHistory = [
     {
       id: "1",
-      name: "Daily Backup",
+      date: "2024-01-15 02:00:00",
+      type: "Full Backup",
+      size: "2.1 GB",
       status: "completed",
-      progress: 100,
-      startTime: "02:00 AM",
-      duration: "5m 32s",
-      type: "backup"
+      duration: "12 minutes"
     },
     {
-      id: "2", 
-      name: "Index Optimization",
-      status: "running",
-      progress: 65,
-      startTime: "10:30 AM",
-      duration: "2m 15s",
-      type: "optimization"
+      id: "2",
+      date: "2024-01-14 02:00:00",
+      type: "Full Backup",
+      size: "2.0 GB",
+      status: "completed",
+      duration: "11 minutes"
     },
     {
       id: "3",
-      name: "Log Cleanup",
-      status: "scheduled",
-      progress: 0,
-      startTime: "11:00 PM",
-      duration: "-",
-      type: "cleanup"
+      date: "2024-01-13 02:00:00",
+      type: "Full Backup",
+      size: "1.9 GB",
+      status: "completed",
+      duration: "10 minutes"
     }
-  ]);
+  ];
 
-  const [isLoading, setIsLoading] = useState(false);
-
-  const runOperation = async (operationId: string, operationType: string) => {
-    setIsLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setOperations(prev => prev.map(op => 
-        op.id === operationId 
-          ? { ...op, status: "running" as const, progress: 0 }
-          : op
-      ));
-
-      toast({
-        title: "Operation Started",
-        description: `${operationType} operation has been started successfully`,
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to start ${operationType} operation`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleBackupNow = () => {
+    console.log('Creating backup...');
+    // Add backup logic here
   };
 
-  const stopOperation = async (operationId: string) => {
-    try {
-      setOperations(prev => prev.map(op => 
-        op.id === operationId 
-          ? { ...op, status: "failed" as const }
-          : op
-      ));
-
-      toast({
-        title: "Operation Stopped",
-        description: "Operation has been stopped successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to stop operation",
-        variant: "destructive",
-      });
-    }
+  const handleRestoreBackup = (backupId: string) => {
+    console.log('Restoring backup:', backupId);
+    // Add restore logic here
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "running": return "bg-blue-500";
-      case "completed": return "bg-green-500";
-      case "failed": return "bg-red-500";
-      case "scheduled": return "bg-yellow-500";
-      default: return "bg-gray-500";
-    }
+  const handleDeleteBackup = (backupId: string) => {
+    console.log('Deleting backup:', backupId);
+    // Add delete logic here
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "backup": return <Download className="h-4 w-4" />;
-      case "optimization": return <RefreshCw className="h-4 w-4" />;
-      case "cleanup": return <Trash2 className="h-4 w-4" />;
-      default: return <Database className="h-4 w-4" />;
-    }
+  const handleOptimizeDatabase = () => {
+    console.log('Optimizing database...');
+    // Add optimization logic here
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-bjj-navy flex items-center gap-2">
-          <Database className="h-5 w-5" />
-          Database Operations
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {operations.map((operation) => (
-            <div key={operation.id} className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center gap-2">
-                  {getTypeIcon(operation.type)}
-                  <span className="font-medium">{operation.name}</span>
+    <div className="space-y-6">
+      {/* Database Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {databaseStats.map((stat) => (
+          <Card key={stat.label}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-bjj-gray">{stat.label}</p>
+                  <p className="text-2xl font-bold text-bjj-navy">{stat.value}</p>
                 </div>
-                <Badge variant="outline" className={`${getStatusColor(operation.status)} text-white`}>
-                  {operation.status}
-                </Badge>
+                <stat.icon className="h-8 w-8 text-bjj-gold" />
               </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="text-sm text-bjj-gray">
-                  <div>Start: {operation.startTime}</div>
-                  <div>Duration: {operation.duration}</div>
-                </div>
-                
-                {operation.status === "running" && (
-                  <div className="w-24">
-                    <div className="text-xs text-bjj-gray mb-1">{operation.progress}%</div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-bjj-gold h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${operation.progress}%` }}
-                      />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Database Storage Usage */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-bjj-navy flex items-center gap-2">
+            <HardDrive className="h-5 w-5" />
+            Storage Usage by Table
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">students</span>
+                <span className="text-bjj-gray">45% (1.1 GB)</span>
+              </div>
+              <Progress value={45} className="h-2" />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">attendance_records</span>
+                <span className="text-bjj-gray">25% (600 MB)</span>
+              </div>
+              <Progress value={25} className="h-2" />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">courses</span>
+                <span className="text-bjj-gray">15% (360 MB)</span>
+              </div>
+              <Progress value={15} className="h-2" />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">payment_transactions</span>
+                <span className="text-bjj-gray">10% (240 MB)</span>
+              </div>
+              <Progress value={10} className="h-2" />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">Other tables</span>
+                <span className="text-bjj-gray">5% (120 MB)</span>
+              </div>
+              <Progress value={5} className="h-2" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Backup Management */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-bjj-navy flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Backup Management
+            </CardTitle>
+            <Button onClick={handleBackupNow} className="bg-bjj-gold hover:bg-bjj-gold-dark">
+              <Download className="h-4 w-4 mr-2" />
+              Backup Now
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {backupHistory.map((backup) => (
+              <div key={backup.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-4">
+                  <Database className="h-8 w-8 text-bjj-navy" />
+                  <div>
+                    <div className="font-medium text-bjj-navy">{backup.type}</div>
+                    <div className="text-sm text-bjj-gray">
+                      {backup.date} • {backup.size} • {backup.duration}
                     </div>
                   </div>
-                )}
-                
-                <div className="flex gap-2">
-                  {operation.status === "scheduled" || operation.status === "failed" ? (
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-green-500">
+                    {backup.status}
+                  </Badge>
+                  <div className="flex gap-2">
                     <Button
+                      variant="outline"
                       size="sm"
-                      onClick={() => runOperation(operation.id, operation.name)}
-                      disabled={isLoading}
+                      onClick={() => handleRestoreBackup(backup.id)}
                     >
-                      <Play className="h-4 w-4 mr-1" />
-                      Run
+                      <Upload className="h-4 w-4" />
                     </Button>
-                  ) : operation.status === "running" ? (
                     <Button
+                      variant="outline"
                       size="sm"
-                      variant="destructive"
-                      onClick={() => stopOperation(operation.id)}
+                      onClick={() => handleDeleteBackup(backup.id)}
+                      className="text-red-600 hover:text-red-700"
                     >
-                      <Square className="h-4 w-4 mr-1" />
-                      Stop
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  ) : null}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-        <div className="mt-6 flex gap-4">
-          <Button 
-            onClick={() => runOperation("new", "Manual Backup")}
-            disabled={isLoading}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Create Backup
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={() => runOperation("new", "Optimization")}
-            disabled={isLoading}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Optimize Database
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={() => runOperation("new", "Cleanup")}
-            disabled={isLoading}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Clean Logs
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      {/* Database Maintenance */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-bjj-navy">Database Maintenance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button
+              variant="outline"
+              className="h-auto p-4"
+              onClick={handleOptimizeDatabase}
+            >
+              <div className="text-center">
+                <RefreshCw className="h-6 w-6 mx-auto mb-2 text-bjj-navy" />
+                <div className="font-medium">Optimize Database</div>
+                <div className="text-xs text-bjj-gray">Improve performance</div>
+              </div>
+            </Button>
+            
+            <Button variant="outline" className="h-auto p-4">
+              <div className="text-center">
+                <Activity className="h-6 w-6 mx-auto mb-2 text-bjj-navy" />
+                <div className="font-medium">Analyze Tables</div>
+                <div className="text-xs text-bjj-gray">Update statistics</div>
+              </div>
+            </Button>
+            
+            <Button variant="outline" className="h-auto p-4">
+              <div className="text-center">
+                <Trash2 className="h-6 w-6 mx-auto mb-2 text-bjj-navy" />
+                <div className="font-medium">Clean Logs</div>
+                <div className="text-xs text-bjj-gray">Remove old logs</div>
+              </div>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

@@ -2116,6 +2116,10 @@ export type Database = {
         Args: { p_category: string; p_key: string; p_branch_id?: string }
         Returns: Json
       }
+      get_setting_value_safe: {
+        Args: { p_category: string; p_key: string; p_branch_id?: string }
+        Returns: Json
+      }
       mark_attendance: {
         Args: {
           p_session_id: string
@@ -2169,13 +2173,20 @@ export type Database = {
         Returns: boolean
       }
       update_setting: {
-        Args: {
-          p_category: string
-          p_key: string
-          p_value: Json
-          p_branch_id?: string
-          p_user_id?: string
-        }
+        Args:
+          | {
+              p_category: string
+              p_key: string
+              p_value: Json
+              p_branch_id?: string
+            }
+          | {
+              p_category: string
+              p_key: string
+              p_value: Json
+              p_branch_id?: string
+              p_user_id?: string
+            }
         Returns: string
       }
       update_student_payment_status: {

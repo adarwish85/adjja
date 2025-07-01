@@ -2,217 +2,159 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { 
-  Shield, 
-  AlertTriangle, 
-  Eye, 
-  Lock,
-  TrendingUp,
-  RefreshCw,
-  Ban
-} from "lucide-react";
-import { useSecurityMonitoring } from "@/hooks/useSecurityMonitoring";
+import { Shield, AlertTriangle, CheckCircle, Users, Key, Clock } from "lucide-react";
 
 export const SecurityDashboard = () => {
-  const { events, metrics, isLoading, refreshEvents, blockIP, resolveEvent } = useSecurityMonitoring();
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+  const securityMetrics = [
+    {
+      title: "Active Sessions",
+      value: "12",
+      status: "normal",
+      icon: Users,
+      description: "Current active user sessions"
+    },
+    {
+      title: "Failed Login Attempts",
+      value: "3",
+      status: "warning",
+      icon: AlertTriangle,
+      description: "Failed attempts in last 24h"
+    },
+    {
+      title: "2FA Enabled Users",
+      value: "85%",
+      status: "good",
+      icon: Shield,
+      description: "Users with 2FA enabled"
+    },
+    {
+      title: "Password Strength",
+      value: "Good",
+      status: "good",
+      icon: Key,
+      description: "Average password security"
     }
-  };
+  ];
+
+  const recentSecurityEvents = [
+    {
+      type: "login_success",
+      user: "admin@example.com",
+      time: "2 minutes ago",
+      status: "success"
+    },
+    {
+      type: "password_change",
+      user: "coach@example.com",
+      time: "1 hour ago",
+      status: "success"
+    },
+    {
+      type: "failed_login",
+      user: "unknown@example.com",
+      time: "3 hours ago",
+      status: "warning"
+    }
+  ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'resolved': return 'bg-green-100 text-green-800';
-      case 'investigating': return 'bg-yellow-100 text-yellow-800';
-      case 'open': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'good': return 'bg-green-500';
+      case 'warning': return 'bg-yellow-500';
+      case 'danger': return 'bg-red-500';
+      default: return 'bg-blue-500';
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'success': return <Badge className="bg-green-500">Success</Badge>;
+      case 'warning': return <Badge className="bg-yellow-500">Warning</Badge>;
+      case 'danger': return <Badge className="bg-red-500">Danger</Badge>;
+      default: return <Badge>Info</Badge>;
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Security Metrics Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Events</p>
-                <p className="text-2xl font-bold text-bjj-navy">{metrics.totalEvents}</p>
+      {/* Security Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {securityMetrics.map((metric) => (
+          <Card key={metric.title}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-bjj-gray">{metric.title}</p>
+                  <p className="text-2xl font-bold text-bjj-navy">{metric.value}</p>
+                  <p className="text-xs text-bjj-gray mt-1">{metric.description}</p>
+                </div>
+                <div className={`p-2 rounded-full ${getStatusColor(metric.status)}`}>
+                  <metric.icon className="h-5 w-5 text-white" />
+                </div>
               </div>
-              <Eye className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Critical Events</p>
-                <p className="text-2xl font-bold text-red-600">{metrics.criticalEvents}</p>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Failed Logins</p>
-                <p className="text-2xl font-bold text-orange-600">{metrics.failedLogins}</p>
-              </div>
-              <Lock className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Suspicious Activity</p>
-                <p className="text-2xl font-bold text-yellow-600">{metrics.suspiciousActivities}</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-yellow-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Blocked IPs</p>
-                <p className="text-2xl font-bold text-purple-600">{metrics.blockedIPs}</p>
-              </div>
-              <Ban className="h-8 w-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Active Threats</p>
-                <p className="text-2xl font-bold text-red-600">{metrics.activeThreats}</p>
-              </div>
-              <Shield className="h-8 w-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
-
-      {/* Security Threat Level */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-bjj-navy flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Security Threat Level
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="font-medium">Overall Security Score</span>
-              <Badge className="bg-green-100 text-green-800">85/100 - Good</Badge>
-            </div>
-            <Progress value={85} className="h-3" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="font-medium text-green-600">✓ 2FA Enabled</p>
-                <p className="font-medium text-green-600">✓ SSL Certificate Valid</p>
-                <p className="font-medium text-green-600">✓ Regular Backups</p>
-              </div>
-              <div>
-                <p className="font-medium text-yellow-600">⚠ Some Failed Login Attempts</p>
-                <p className="font-medium text-red-600">✗ IP Whitelist Not Configured</p>
-                <p className="font-medium text-yellow-600">⚠ Password Policy Could Be Stronger</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Recent Security Events */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-bjj-navy flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Recent Security Events
-            </CardTitle>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={refreshEvents}
-              disabled={isLoading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
+          <CardTitle className="text-bjj-navy flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Recent Security Events
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {events.map((event) => (
-              <div key={event.id} className="border rounded-lg p-4">
-                <div className="flex items-start justify-between">
+          <div className="space-y-3">
+            {recentSecurityEvents.map((event, index) => (
+              <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center space-x-3">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className={getSeverityColor(event.severity)}>
-                        {event.severity.toUpperCase()}
-                      </Badge>
-                      <Badge className={getStatusColor(event.status)}>
-                        {event.status.toUpperCase()}
-                      </Badge>
-                      <span className="text-sm text-gray-500">{event.timestamp}</span>
-                    </div>
-                    <h4 className="font-medium text-bjj-navy">{event.event}</h4>
-                    <p className="text-sm text-gray-600 mt-1">{event.details}</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-xs text-gray-500">
-                      <div><strong>User:</strong> {event.user}</div>
-                      <div><strong>IP:</strong> {event.ipAddress}</div>
-                      <div><strong>Location:</strong> {event.location}</div>
-                      <div><strong>Browser:</strong> {event.userAgent.split(' ')[0]}</div>
-                    </div>
+                    <p className="font-medium text-bjj-navy">
+                      {event.type.replace('_', ' ').toUpperCase()}
+                    </p>
+                    <p className="text-sm text-bjj-gray">{event.user}</p>
                   </div>
-                  <div className="flex flex-col gap-2 ml-4">
-                    {event.status !== 'resolved' && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => resolveEvent(event.id)}
-                        disabled={isLoading}
-                      >
-                        Resolve
-                      </Button>
-                    )}
-                    {event.severity === 'high' || event.severity === 'critical' ? (
-                      <Button 
-                        size="sm" 
-                        variant="destructive"
-                        onClick={() => blockIP(event.ipAddress)}
-                        disabled={isLoading}
-                      >
-                        <Ban className="h-3 w-3 mr-1" />
-                        Block IP
-                      </Button>
-                    ) : null}
-                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  {getStatusBadge(event.status)}
+                  <span className="text-sm text-bjj-gray">{event.time}</span>
                 </div>
               </div>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-bjj-navy">Security Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button variant="outline" className="h-auto p-4">
+              <div className="text-center">
+                <Shield className="h-6 w-6 mx-auto mb-2 text-bjj-navy" />
+                <div className="font-medium">Review Permissions</div>
+                <div className="text-xs text-bjj-gray">Check user access levels</div>
+              </div>
+            </Button>
+            <Button variant="outline" className="h-auto p-4">
+              <div className="text-center">
+                <Key className="h-6 w-6 mx-auto mb-2 text-bjj-navy" />
+                <div className="font-medium">Reset Passwords</div>
+                <div className="text-xs text-bjj-gray">Force password resets</div>
+              </div>
+            </Button>
+            <Button variant="outline" className="h-auto p-4">
+              <div className="text-center">
+                <AlertTriangle className="h-6 w-6 mx-auto mb-2 text-bjj-navy" />
+                <div className="font-medium">Security Audit</div>
+                <div className="text-xs text-bjj-gray">Run security check</div>
+              </div>
+            </Button>
           </div>
         </CardContent>
       </Card>

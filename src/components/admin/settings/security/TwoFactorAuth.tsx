@@ -1,301 +1,144 @@
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { QRCodeSVG } from 'qrcode.react';
-import { 
-  UserCheck, 
-  Shield, 
-  Smartphone,
-  Key,
-  CheckCircle,
-  AlertCircle
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Smartphone, Shield, Users, Settings } from "lucide-react";
 
 export const TwoFactorAuth = () => {
-  const { toast } = useToast();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [qrCode, setQrCode] = useState("");
-  const [backupCodes] = useState([
-    "123456789", "987654321", "456789123", "789123456", 
-    "321654987", "654987321", "159753468", "357159486"
-  ]);
-
-  const [settings, setSettings] = useState({
-    require2FAAdmin: true,
-    require2FACoaches: false,
-    require2FAStudents: false,
-    gracePeriodDays: 7,
-    allowBackupCodes: true,
-    allowSMSBackup: true
-  });
-
-  const generateQRCode = async () => {
-    setIsGenerating(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Generate a sample TOTP secret
-      const secret = "JBSWY3DPEHPK3PXP";
-      const appName = "ADJJA Academy";
-      const userEmail = "admin@adjja.com";
-      const otpauth = `otpauth://totp/${appName}:${userEmail}?secret=${secret}&issuer=${appName}`;
-      setQrCode(otpauth);
-      
-      toast({
-        title: "QR Code Generated",
-        description: "Scan this code with your authenticator app",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate QR code",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const verifySetup = async () => {
-    if (!verificationCode || verificationCode.length !== 6) {
-      toast({
-        title: "Invalid Code",
-        description: "Please enter a 6-digit verification code",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast({
-        title: "2FA Enabled",
-        description: "Two-factor authentication has been successfully enabled",
-      });
-      setVerificationCode("");
-    } catch (error) {
-      toast({
-        title: "Verification Failed",
-        description: "Invalid verification code. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const users2FAStatus = [
-    { name: "John Smith", email: "john@adjja.com", role: "Admin", status: "enabled", lastUsed: "2 hours ago" },
-    { name: "Sarah Jones", email: "sarah@adjja.com", role: "Coach", status: "enabled", lastUsed: "1 day ago" },
-    { name: "Mike Wilson", email: "mike@adjja.com", role: "Coach", status: "pending", lastUsed: "Never" },
-    { name: "Emma Davis", email: "emma@adjja.com", role: "Student", status: "disabled", lastUsed: "Never" },
+  const twoFAStats = [
+    { label: "Total Users", value: "156", enabled: "132", percentage: "85%" },
+    { label: "Admins", value: "8", enabled: "8", percentage: "100%" },
+    { label: "Coaches", value: "24", enabled: "20", percentage: "83%" },
+    { label: "Students", value: "124", enabled: "104", percentage: "84%" }
   ];
 
   return (
     <div className="space-y-6">
-      {/* 2FA Requirements */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-bjj-navy flex items-center gap-2">
-            <UserCheck className="h-5 w-5" />
-            Two-Factor Authentication Requirements
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">Require for Admins</h4>
-                <p className="text-sm text-gray-600">Force all admin users to enable 2FA</p>
-              </div>
-              <Switch 
-                checked={settings.require2FAAdmin}
-                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, require2FAAdmin: checked }))}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">Require for Coaches</h4>
-                <p className="text-sm text-gray-600">Force all coaches to enable 2FA</p>
-              </div>
-              <Switch 
-                checked={settings.require2FACoaches}
-                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, require2FACoaches: checked }))}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">Require for Students</h4>
-                <p className="text-sm text-gray-600">Force all students to enable 2FA</p>
-              </div>
-              <Switch 
-                checked={settings.require2FAStudents}
-                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, require2FAStudents: checked }))}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="grace-period">Grace Period (days)</Label>
-              <Input 
-                id="grace-period" 
-                type="number" 
-                value={settings.gracePeriodDays}
-                onChange={(e) => setSettings(prev => ({ ...prev, gracePeriodDays: parseInt(e.target.value) }))}
-              />
-              <p className="text-xs text-gray-500 mt-1">Time users have to enable 2FA</p>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">Allow Backup Codes</h4>
-                <p className="text-sm text-gray-600">Enable backup recovery codes</p>
-              </div>
-              <Switch 
-                checked={settings.allowBackupCodes}
-                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, allowBackupCodes: checked }))}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">SMS Backup</h4>
-                <p className="text-sm text-gray-600">Allow SMS as backup method</p>
-              </div>
-              <Switch 
-                checked={settings.allowSMSBackup}
-                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, allowSMSBackup: checked }))}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Setup 2FA */}
+      {/* 2FA Overview */}
       <Card>
         <CardHeader>
           <CardTitle className="text-bjj-navy flex items-center gap-2">
             <Smartphone className="h-5 w-5" />
-            Setup Two-Factor Authentication
+            Two-Factor Authentication Overview
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">Step 1: Generate QR Code</h4>
-                <Button 
-                  onClick={generateQRCode} 
-                  disabled={isGenerating}
-                  className="w-full"
-                >
-                  <Key className="h-4 w-4 mr-2" />
-                  {isGenerating ? "Generating..." : "Generate QR Code"}
-                </Button>
-              </div>
-
-              {qrCode && (
-                <div className="border rounded-lg p-4 text-center">
-                  <QRCodeSVG value={qrCode} size={200} className="mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">
-                    Scan this QR code with Google Authenticator, Authy, or any TOTP app
-                  </p>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {twoFAStats.map((stat) => (
+              <div key={stat.label} className="text-center p-4 border rounded-lg">
+                <h3 className="font-medium text-bjj-navy">{stat.label}</h3>
+                <div className="mt-2">
+                  <div className="text-2xl font-bold text-bjj-navy">{stat.enabled}</div>
+                  <div className="text-sm text-bjj-gray">of {stat.value} users</div>
+                  <Badge className="mt-1 bg-green-500">{stat.percentage}</Badge>
                 </div>
-              )}
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">Step 2: Verify Setup</h4>
-                <Label htmlFor="verification-code">Enter 6-digit code from your app</Label>
-                <Input 
-                  id="verification-code"
-                  type="text" 
-                  placeholder="123456"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  maxLength={6}
-                />
-                <Button 
-                  onClick={verifySetup}
-                  disabled={!verificationCode || verificationCode.length !== 6}
-                  className="w-full mt-2"
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  Verify & Enable 2FA
-                </Button>
               </div>
-
-              {settings.allowBackupCodes && (
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-medium mb-2">Backup Recovery Codes</h4>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Save these codes in a safe place. Each can only be used once.
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 font-mono text-sm">
-                    {backupCodes.map((code, index) => (
-                      <div key={index} className="bg-gray-50 p-2 rounded border">
-                        {code}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Users 2FA Status */}
+      {/* 2FA Settings */}
       <Card>
         <CardHeader>
           <CardTitle className="text-bjj-navy flex items-center gap-2">
-            <UserCheck className="h-5 w-5" />
-            Users 2FA Status
+            <Settings className="h-5 w-5" />
+            Two-Factor Authentication Settings
           </CardTitle>
         </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="require-2fa-admin" className="text-base font-medium">
+                Require 2FA for Administrators
+              </Label>
+              <p className="text-sm text-bjj-gray">
+                Force all administrators to use two-factor authentication
+              </p>
+            </div>
+            <Switch id="require-2fa-admin" defaultChecked />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="require-2fa-coaches" className="text-base font-medium">
+                Require 2FA for Coaches
+              </Label>
+              <p className="text-sm text-bjj-gray">
+                Force all coaches to use two-factor authentication
+              </p>
+            </div>
+            <Switch id="require-2fa-coaches" />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="allow-sms-2fa" className="text-base font-medium">
+                Allow SMS-based 2FA
+              </Label>
+              <p className="text-sm text-bjj-gray">
+                Allow users to use SMS for two-factor authentication
+              </p>
+            </div>
+            <Switch id="allow-sms-2fa" defaultChecked />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="allow-app-2fa" className="text-base font-medium">
+                Allow App-based 2FA
+              </Label>
+              <p className="text-sm text-bjj-gray">
+                Allow users to use authenticator apps (Google Authenticator, Authy)
+              </p>
+            </div>
+            <Switch id="allow-app-2fa" defaultChecked />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="backup-codes" className="text-base font-medium">
+                Enable Backup Codes
+              </Label>
+              <p className="text-sm text-bjj-gray">
+                Allow users to generate backup codes for 2FA recovery
+              </p>
+            </div>
+            <Switch id="backup-codes" defaultChecked />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-bjj-navy">2FA Management Actions</CardTitle>
+        </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {users2FAStatus.map((user, index) => (
-              <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className={`h-3 w-3 rounded-full ${
-                    user.status === 'enabled' ? 'bg-green-500' : 
-                    user.status === 'pending' ? 'bg-yellow-500' : 'bg-gray-500'
-                  }`} />
-                  <div>
-                    <p className="font-medium text-bjj-navy">{user.name}</p>
-                    <p className="text-sm text-gray-600">{user.email} • {user.role}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="text-right">
-                    <Badge className={
-                      user.status === 'enabled' ? 'bg-green-100 text-green-800' :
-                      user.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }>
-                      {user.status === 'enabled' && <CheckCircle className="h-3 w-3 mr-1" />}
-                      {user.status === 'pending' && <AlertCircle className="h-3 w-3 mr-1" />}
-                      {user.status.toUpperCase()}
-                    </Badge>
-                    <p className="text-xs text-gray-500 mt-1">Last used: {user.lastUsed}</p>
-                  </div>
-                  {user.status === 'pending' && (
-                    <Button size="sm" variant="outline">
-                      Send Reminder
-                    </Button>
-                  )}
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button variant="outline" className="h-auto p-4">
+              <div className="text-center">
+                <Users className="h-6 w-6 mx-auto mb-2 text-bjj-navy" />
+                <div className="font-medium">Bulk Enable 2FA</div>
+                <div className="text-xs text-bjj-gray">Force 2FA for user groups</div>
               </div>
-            ))}
+            </Button>
+            <Button variant="outline" className="h-auto p-4">
+              <div className="text-center">
+                <Shield className="h-6 w-6 mx-auto mb-2 text-bjj-navy" />
+                <div className="font-medium">Reset 2FA</div>
+                <div className="text-xs text-bjj-gray">Reset 2FA for users</div>
+              </div>
+            </Button>
+            <Button variant="outline" className="h-auto p-4">
+              <div className="text-center">
+                <Smartphone className="h-6 w-6 mx-auto mb-2 text-bjj-navy" />
+                <div className="font-medium">2FA Report</div>
+                <div className="text-xs text-bjj-gray">Generate usage report</div>
+              </div>
+            </Button>
           </div>
         </CardContent>
       </Card>
