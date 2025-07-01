@@ -19,7 +19,9 @@ import {
   Edit, 
   Users,
   Settings,
-  Lock
+  Lock,
+  AlertTriangle,
+  RefreshCw
 } from "lucide-react";
 import { useUserRoles } from "@/hooks/useUserRoles";
 
@@ -35,7 +37,7 @@ const availablePermissions = [
 ];
 
 export const RoleManagement = () => {
-  const { roles, isLoading, createRole, updateRole } = useUserRoles();
+  const { roles, isLoading, createRole, updateRole, refetch } = useUserRoles();
   const [selectedRole, setSelectedRole] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -93,7 +95,37 @@ export const RoleManagement = () => {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center">Loading roles...</div>
+          <div className="flex items-center justify-center space-x-2">
+            <RefreshCw className="h-4 w-4 animate-spin" />
+            <span>Loading roles...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show error state if no roles loaded and not loading
+  if (!isLoading && roles.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center space-y-4">
+            <AlertTriangle className="h-8 w-8 text-yellow-500 mx-auto" />
+            <div>
+              <h3 className="text-lg font-semibold text-bjj-navy">No Roles Found</h3>
+              <p className="text-bjj-gray">
+                Unable to load user roles. This might be due to permissions or database issues.
+              </p>
+            </div>
+            <Button 
+              onClick={refetch}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );

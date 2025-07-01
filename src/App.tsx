@@ -1,8 +1,10 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { SettingsProvider } from "./contexts/SettingsContext";
 import LandingPage from "./components/LandingPage";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -42,211 +44,213 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
+        <SettingsProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
 
-            {/* Profile Wizard Routes - Semi-protected (user must be logged in) */}
-            <Route path="/profile-wizard" element={
-              <ProtectedRoute>
-                <ProfileWizard />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/profile-pending" element={
-              <ProtectedRoute>
-                <ProfilePending />
-              </ProtectedRoute>
-            } />
-
-            {/* Student Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Student', 'Coach']}>
-                  <Dashboard />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/student/profile" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Student', 'Coach']}>
-                  <StudentProfile />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/student/progress" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Student', 'Coach']}>
-                  <StudentProgress />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/student/lms" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Student', 'Coach']}>
-                  <StudentLMS />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/student/attendance" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Student', 'Coach']}>
-                  <StudentAttendance />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/student/notes" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Student', 'Coach']}>
-                  <StudentNotes />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/student/schedule" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Student', 'Coach']}>
-                  <StudentSchedule />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
-
-            {/* Coach Routes */}
-            <Route
-              path="/coach/dashboard"
-              element={
+              {/* Profile Wizard Routes - Semi-protected (user must be logged in) */}
+              <Route path="/profile-wizard" element={
                 <ProtectedRoute>
-                  <RoleGuard allowedRoles={['Coach']}>
-                    <CoachDashboard />
+                  <ProfileWizard />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/profile-pending" element={
+                <ProtectedRoute>
+                  <ProfilePending />
+                </ProtectedRoute>
+              } />
+
+              {/* Student Routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Student', 'Coach']}>
+                    <Dashboard />
                   </RoleGuard>
                 </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/coach/students"
-              element={
+              } />
+              
+              <Route path="/student/profile" element={
                 <ProtectedRoute>
-                  <RoleGuard allowedRoles={['Coach']}>
-                    <CoachStudents />
+                  <RoleGuard allowedRoles={['Student', 'Coach']}>
+                    <StudentProfile />
                   </RoleGuard>
                 </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/coach/attendance"
-              element={
+              } />
+
+              <Route path="/student/progress" element={
                 <ProtectedRoute>
-                  <RoleGuard allowedRoles={['Coach']}>
-                    <CoachAttendance />
+                  <RoleGuard allowedRoles={['Student', 'Coach']}>
+                    <StudentProgress />
                   </RoleGuard>
                 </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/coach/attendance-tracker"
-              element={
+              } />
+
+              <Route path="/student/lms" element={
                 <ProtectedRoute>
-                  <RoleGuard allowedRoles={['Coach']}>
-                    <CoachAttendanceTracker />
+                  <RoleGuard allowedRoles={['Student', 'Coach']}>
+                    <StudentLMS />
                   </RoleGuard>
                 </ProtectedRoute>
-              }
-            />
+              } />
 
-            {/* Admin Routes */}
-            <Route path="/admin" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Super Admin']}>
-                  <AdminDashboard />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
+              <Route path="/student/attendance" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Student', 'Coach']}>
+                    <StudentAttendance />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
 
-            <Route path="/admin/dashboard" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Super Admin']}>
-                  <AdminDashboard />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
+              <Route path="/student/notes" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Student', 'Coach']}>
+                    <StudentNotes />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
 
-            <Route path="/admin/coaches" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Super Admin']}>
-                  <AdminCoaches />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
+              <Route path="/student/schedule" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Student', 'Coach']}>
+                    <StudentSchedule />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
 
-            <Route path="/admin/students" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Super Admin']}>
-                  <AdminStudents />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
+              {/* Coach Routes */}
+              <Route
+                path="/coach/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <RoleGuard allowedRoles={['Coach']}>
+                      <CoachDashboard />
+                    </RoleGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/coach/students"
+                element={
+                  <ProtectedRoute>
+                    <RoleGuard allowedRoles={['Coach']}>
+                      <CoachStudents />
+                    </RoleGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/coach/attendance"
+                element={
+                  <ProtectedRoute>
+                    <RoleGuard allowedRoles={['Coach']}>
+                      <CoachAttendance />
+                    </RoleGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/coach/attendance-tracker"
+                element={
+                  <ProtectedRoute>
+                    <RoleGuard allowedRoles={['Coach']}>
+                      <CoachAttendanceTracker />
+                    </RoleGuard>
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route path="/admin/classes" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Super Admin']}>
-                  <AdminClasses />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
+              {/* Admin Routes */}
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Super Admin']}>
+                    <AdminDashboard />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
 
-            <Route path="/admin/branches" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Super Admin']}>
-                  <AdminBranches />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
+              <Route path="/admin/dashboard" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Super Admin']}>
+                    <AdminDashboard />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
 
-            <Route path="/admin/lms" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Super Admin']}>
-                  <AdminLMS />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
+              <Route path="/admin/coaches" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Super Admin']}>
+                    <AdminCoaches />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
 
-            <Route path="/admin/payments" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Super Admin']}>
-                  <AdminPayments />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
+              <Route path="/admin/students" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Super Admin']}>
+                    <AdminStudents />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
 
-            <Route path="/admin/analytics" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Super Admin']}>
-                  <AdminAnalytics />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
+              <Route path="/admin/classes" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Super Admin']}>
+                    <AdminClasses />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
 
-            <Route path="/admin/settings" element={
-              <ProtectedRoute>
-                <RoleGuard allowedRoles={['Super Admin']}>
-                  <AdminSettings />
-                </RoleGuard>
-              </ProtectedRoute>
-            } />
+              <Route path="/admin/branches" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Super Admin']}>
+                    <AdminBranches />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
+              <Route path="/admin/lms" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Super Admin']}>
+                    <AdminLMS />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/admin/payments" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Super Admin']}>
+                    <AdminPayments />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/admin/analytics" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Super Admin']}>
+                    <AdminAnalytics />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/admin/settings" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Super Admin']}>
+                    <AdminSettings />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
+
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </SettingsProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

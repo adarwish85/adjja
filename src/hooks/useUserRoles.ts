@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +24,14 @@ export const useUserRoles = () => {
       setIsLoading(true);
       console.log('Fetching roles...');
       
+      // Check current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Current session:', session?.user?.email);
+      
+      // Get current user role
+      const { data: currentUserRole, error: roleError } = await supabase.rpc('get_current_user_role');
+      console.log('Current user role:', currentUserRole, 'Error:', roleError);
+      
       const { data, error } = await supabase
         .from('user_roles')
         .select('*')
@@ -30,16 +39,22 @@ export const useUserRoles = () => {
 
       if (error) {
         console.error('Error fetching roles:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
       
       console.log('Roles fetched successfully:', data);
       setRoles(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching roles:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch roles",
+        description: `Failed to fetch roles: ${error.message}`,
         variant: "destructive",
       });
     } finally {
@@ -113,11 +128,11 @@ export const useUserRoles = () => {
         title: "Success",
         description: "Role updated successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating role:', error);
       toast({
         title: "Error",
-        description: "Failed to update role",
+        description: `Failed to update role: ${error.message}`,
         variant: "destructive",
       });
     }
@@ -137,11 +152,11 @@ export const useUserRoles = () => {
         title: "Success",
         description: "Role deleted successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting role:', error);
       toast({
         title: "Error",
-        description: "Failed to delete role",
+        description: `Failed to delete role: ${error.message}`,
         variant: "destructive",
       });
     }
