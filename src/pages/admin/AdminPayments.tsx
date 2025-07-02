@@ -13,7 +13,10 @@ const AdminPayments = () => {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-bjj-navy">Payment Management</h1>
-          <p className="text-bjj-gray">Manage PayPal payments, subscriptions, and revenue</p>
+          <div className="flex items-center gap-3">
+            <p className="text-bjj-gray">Manage PayPal payments, subscriptions, and revenue</p>
+            <ManualPaymentButton variant="default" />
+          </div>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
