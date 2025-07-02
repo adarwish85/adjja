@@ -2,8 +2,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, GraduationCap, Building, CreditCard } from "lucide-react";
 import { PendingApprovalsCard } from "./PendingApprovalsCard";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 
 export const DashboardOverview = () => {
+  const { data: stats, isLoading } = useDashboardStats();
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
       <PendingApprovalsCard />
@@ -18,8 +21,10 @@ export const DashboardOverview = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-bjj-navy">--</div>
-          <p className="text-xs text-bjj-gray">No data available</p>
+          <div className="text-2xl font-bold text-bjj-navy">
+            {isLoading ? "..." : stats?.totalStudents || 0}
+          </div>
+          <p className="text-xs text-bjj-gray">Active members</p>
         </CardContent>
       </Card>
 
@@ -33,8 +38,10 @@ export const DashboardOverview = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-bjj-navy">--</div>
-          <p className="text-xs text-bjj-gray">No data available</p>
+          <div className="text-2xl font-bold text-bjj-navy">
+            {isLoading ? "..." : stats?.totalCoaches || 0}
+          </div>
+          <p className="text-xs text-bjj-gray">Active instructors</p>
         </CardContent>
       </Card>
 
@@ -48,23 +55,27 @@ export const DashboardOverview = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-bjj-navy">--</div>
-          <p className="text-xs text-bjj-gray">No data available</p>
+          <div className="text-2xl font-bold text-bjj-navy">
+            {isLoading ? "..." : stats?.totalBranches || 0}
+          </div>
+          <p className="text-xs text-bjj-gray">Training locations</p>
         </CardContent>
       </Card>
 
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-bjj-gray">
-            Monthly LMS Revenue
+            Monthly Revenue
           </CardTitle>
           <div className="p-2 rounded-full bg-yellow-100">
             <CreditCard className="h-4 w-4 text-bjj-gold-dark" />
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-bjj-navy">--</div>
-          <p className="text-xs text-bjj-gray">No data available</p>
+          <div className="text-2xl font-bold text-bjj-navy">
+            {isLoading ? "..." : `$${stats?.monthlyRevenue?.toFixed(2) || '0.00'}`}
+          </div>
+          <p className="text-xs text-bjj-gray">This month</p>
         </CardContent>
       </Card>
     </div>

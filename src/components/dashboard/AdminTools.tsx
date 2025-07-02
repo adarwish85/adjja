@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, BarChart3, Users, Calendar } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const quickActions = [
   {
@@ -9,28 +10,38 @@ const quickActions = [
     description: "Register a new coach",
     icon: Users,
     color: "bg-blue-500 hover:bg-blue-600",
+    route: "/admin/coaches",
   },
   {
     title: "Add Class",
     description: "Schedule a new class",
     icon: Calendar,
     color: "bg-green-500 hover:bg-green-600",
+    route: "/admin/classes",
   },
   {
     title: "View Reports",
     description: "Generate analytics",
     icon: BarChart3,
     color: "bg-purple-500 hover:bg-purple-600",
+    route: "/admin/analytics",
   },
   {
     title: "Add Student",
     description: "Enroll new student",
     icon: Plus,
     color: "bg-orange-500 hover:bg-orange-600",
+    route: "/admin/students",
   },
 ];
 
 export const AdminTools = () => {
+  const navigate = useNavigate();
+
+  const handleActionClick = (route: string) => {
+    navigate(route);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -44,6 +55,7 @@ export const AdminTools = () => {
               key={action.title}
               variant="outline"
               className="h-auto p-4 flex flex-col items-center space-y-2 hover:shadow-md transition-shadow"
+              onClick={() => handleActionClick(action.route)}
             >
               <div className={`p-2 rounded-full ${action.color} text-white`}>
                 <action.icon className="h-5 w-5" />
