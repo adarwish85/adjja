@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, CreditCard, TrendingUp, Users, AlertTriangle, Calendar } from "lucide-react";
@@ -56,7 +55,7 @@ export const PaymentsOverview = () => {
               <DollarSign className="h-8 w-8 text-green-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-bjj-gray">Total Revenue</p>
-                <p className="text-2xl font-bold text-bjj-navy">${totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-bjj-navy">EGP {totalRevenue.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -68,7 +67,7 @@ export const PaymentsOverview = () => {
               <TrendingUp className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-bjj-gray">This Month</p>
-                <p className="text-2xl font-bold text-bjj-navy">${monthlyRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-bjj-navy">EGP {monthlyRevenue.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -166,7 +165,7 @@ export const PaymentsOverview = () => {
                     </p>
                   </div>
                   <div className="text-right space-y-1">
-                    <div className="font-semibold text-bjj-navy">${transaction.amount.toFixed(2)}</div>
+                    <div className="font-semibold text-bjj-navy">EGP {transaction.amount.toFixed(2)}</div>
                     <Badge className={
                       transaction.status === "completed" ? "bg-green-100 text-green-800" :
                       transaction.status === "pending" ? "bg-yellow-100 text-yellow-800" :
