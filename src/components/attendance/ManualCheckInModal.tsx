@@ -4,25 +4,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Search, Users, CheckCircle } from "lucide-react";
-import { useSmartAttendance } from "@/hooks/useSmartAttendance";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useSmartAttendance } from "@/hooks/useSmartAttendance";
 import { toast } from "sonner";
-
-interface ManualCheckInModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+import { Search, User, Calendar, CheckCircle } from "lucide-react";
+import { format } from "date-fns";
 
 interface Student {
   id: string;
   name: string;
   email: string;
   belt: string;
-  attendance_rate: number;
+  status: string;
 }
 
 interface Class {
@@ -32,59 +27,76 @@ interface Class {
   schedule: string;
 }
 
-export const ManualCheckInModal = ({ open, onOpenChange }: ManualCheckInModalProps) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+interface ManualCheckInModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onAttendanceMarked?: () => void;
+}
+
+export const ManualCheckInModal = ({ open, onOpenChange, onAttendanceMarked }: ManualCheckInModalProps) => {
   const [selectedClass, setSelectedClass] = useState<string>("");
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const { manualCheckIn, isCheckingIn } = useSmartAttendance();
 
-  // Fetch students
-  const { data: students = [], isLoading: studentsLoading } = useQuery({
-    queryKey: ['students-for-checkin', searchTerm],
-    queryFn: async () => {
-      let query = supabase
-        .from('students')
-        .select('id, name, email, belt, attendance_rate')
-        .eq('status', 'active');
-
-      if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
-      }
-
-      const { data, error } = await query.limit(20);
-      if (error) throw error;
-      return data as Student[];
-    }
-  });
-
-  // Fetch classes
-  const { data: classes = [] } = useQuery({
+  // Fetch all active classes
+  const { data: classes } = useQuery({
     queryKey: ['classes-for-checkin'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('classes')
-        .select('id, name, instructor, schedule')
-        .eq('status', 'Active');
-
+        .select('*')
+        .eq('status', 'Active')
+        .order('name');
+      
       if (error) throw error;
       return data as Class[];
-    }
+    },
+    enabled: open
   });
 
-  const handleStudentToggle = (studentId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedStudents(prev => [...prev, studentId]);
-    } else {
-      setSelectedStudents(prev => prev.filter(id => id !== studentId));
-    }
-  };
+  // Fetch all active students
+  const { data: students } = useQuery({
+    queryKey: ['students-for-checkin'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .eq('status', 'active')
+        .order('name');
+      
+      if (error) throw error;
+      return data as Student[];
+    },
+    enabled: open
+  });
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedStudents(students.map(s => s.id));
-    } else {
-      setSelectedStudents([]);
-    }
+  // Get today's attendance for selected class
+  const { data: todayAttendance } = useQuery({
+    queryKey: ['today-attendance-modal', selectedClass],
+    queryFn: async () => {
+      if (!selectedClass) return [];
+      
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('attendance_records')
+        .select('student_id, status')
+        .eq('class_id', selectedClass)
+        .eq('attendance_date', today);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedClass && open
+  });
+
+  const filteredStudents = students?.filter(student =>
+    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.email.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  const isStudentCheckedIn = (studentId: string) => {
+    return todayAttendance?.some(record => record.student_id === studentId && record.status === 'present');
   };
 
   const handleCheckIn = async () => {
@@ -94,122 +106,182 @@ export const ManualCheckInModal = ({ open, onOpenChange }: ManualCheckInModalPro
     }
 
     try {
-      await manualCheckIn({
-        studentIds: selectedStudents,
-        classId: selectedClass
-      });
-
-      // Reset form and close modal
+      manualCheckIn({ studentIds: selectedStudents, classId: selectedClass });
+      
+      // Reset form
       setSelectedStudents([]);
       setSelectedClass("");
       setSearchTerm("");
+      
+      // Close modal and trigger refresh
       onOpenChange(false);
+      onAttendanceMarked?.();
+      
     } catch (error) {
-      console.error('Manual check-in error:', error);
+      console.error('Error during manual check-in:', error);
     }
   };
 
-  const filteredStudents = students.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const selectedClass_ = classes?.find(c => c.id === selectedClass);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-bjj-red" />
-            Manual Check-In
+            <CheckCircle className="h-5 w-5" />
+            Manual Student Check-In
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Class Selection */}
           <div>
-            <Label htmlFor="class-select">Select Class</Label>
-            <select
-              id="class-select"
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-bjj-red"
-            >
-              <option value="">Choose a class...</option>
-              {classes.map(cls => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name} - {cls.instructor} ({cls.schedule})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Student Search */}
-          <div>
-            <Label htmlFor="student-search">Search Students</Label>
-            <div className="relative mt-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                id="student-search"
-                placeholder="Search by name or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          {/* Bulk Actions */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="select-all"
-                checked={selectedStudents.length === filteredStudents.length && filteredStudents.length > 0}
-                onCheckedChange={handleSelectAll}
-              />
-              <Label htmlFor="select-all">
-                Select All ({filteredStudents.length} students)
-              </Label>
-            </div>
-            <Badge variant="secondary">
-              {selectedStudents.length} selected
-            </Badge>
-          </div>
-
-          {/* Students List */}
-          <div className="border rounded-lg max-h-60 overflow-y-auto">
-            {studentsLoading ? (
-              <div className="p-4 text-center text-gray-500">Loading students...</div>
-            ) : filteredStudents.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">No students found</div>
-            ) : (
-              <div className="divide-y">
-                {filteredStudents.map(student => (
-                  <div key={student.id} className="p-3 flex items-center justify-between hover:bg-gray-50">
-                    <div className="flex items-center space-x-3">
-                      <Checkbox
-                        id={`student-${student.id}`}
-                        checked={selectedStudents.includes(student.id)}
-                        onCheckedChange={(checked) => handleStudentToggle(student.id, !!checked)}
-                      />
-                      <div>
-                        <p className="font-medium">{student.name}</p>
-                        <p className="text-sm text-gray-500">{student.email}</p>
-                      </div>
+            <Label className="text-base font-medium">Select Class</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+              {classes?.map((class_) => (
+                <div
+                  key={class_.id}
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    selectedClass === class_.id 
+                      ? 'border-bjj-red bg-bjj-red/5' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setSelectedClass(class_.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold">{class_.name}</h4>
+                      <p className="text-sm text-gray-600">{class_.instructor}</p>
+                      <p className="text-sm text-gray-500">{class_.schedule}</p>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline">{student.belt}</Badge>
-                      <span className="text-sm text-gray-500">
-                        {student.attendance_rate}% attendance
-                      </span>
-                    </div>
+                    {selectedClass === class_.id && (
+                      <CheckCircle className="h-5 w-5 text-bjj-red" />
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </div>
+
+          {/* Selected Class Info */}
+          {selectedClass_ && (
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-lg">{selectedClass_.name}</h3>
+                  <p className="text-gray-600">Instructor: {selectedClass_.instructor}</p>
+                  <p className="text-sm text-gray-500">
+                    Date: {format(new Date(), 'EEEE, MMMM do, yyyy')}
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-bjj-red border-bjj-red">
+                  {selectedStudents.length} selected
+                </Badge>
+              </div>
+            </div>
+          )}
+
+          {/* Student Selection */}
+          {selectedClass && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <Label className="text-base font-medium">Select Students</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const availableStudents = filteredStudents
+                        .filter(student => !isStudentCheckedIn(student.id))
+                        .map(student => student.id);
+                      setSelectedStudents(availableStudents);
+                    }}
+                  >
+                    Select All Available
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedStudents([])}
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+
+              {/* Search */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search students by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              {/* Students List */}
+              <div className="max-h-60 overflow-y-auto space-y-2 border rounded-lg p-2">
+                {filteredStudents.length === 0 ? (
+                  <p className="text-center text-gray-500 py-4">No students found</p>
+                ) : (
+                  filteredStudents.map((student) => {
+                    const isCheckedIn = isStudentCheckedIn(student.id);
+                    const isSelected = selectedStudents.includes(student.id);
+                    
+                    return (
+                      <div
+                        key={student.id}
+                        className={`flex items-center justify-between p-3 rounded-lg border ${
+                          isCheckedIn 
+                            ? 'bg-green-50 border-green-200' 
+                            : isSelected
+                              ? 'bg-bjj-red/5 border-bjj-red/20'
+                              : 'hover:bg-gray-50 border-gray-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={isCheckedIn}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedStudents([...selectedStudents, student.id]);
+                              } else {
+                                setSelectedStudents(selectedStudents.filter(id => id !== student.id));
+                              }
+                            }}
+                            className="rounded"
+                          />
+                          <User className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <p className="font-medium">{student.name}</p>
+                            <p className="text-sm text-gray-500">{student.email}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{student.belt}</Badge>
+                          {isCheckedIn && (
+                            <Badge className="bg-green-500 text-white">
+                              Already Checked In
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-end gap-3 pt-4 border-t">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
@@ -221,14 +293,7 @@ export const ManualCheckInModal = ({ open, onOpenChange }: ManualCheckInModalPro
               disabled={!selectedClass || selectedStudents.length === 0 || isCheckingIn}
               className="bg-bjj-red hover:bg-bjj-red/90"
             >
-              {isCheckingIn ? (
-                <>Checking In...</>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Check In {selectedStudents.length} Student{selectedStudents.length !== 1 ? 's' : ''}
-                </>
-              )}
+              {isCheckingIn ? 'Checking in...' : `Check In ${selectedStudents.length} Student(s)`}
             </Button>
           </div>
         </div>
