@@ -42,6 +42,7 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
     createAccount: !isEditing,
     auth_user_id: coach?.auth_user_id || null,
     is_upgraded_student: coach?.is_upgraded_student || false,
+    hasExistingAuth: false, // Track if user already has auth
   });
 
   const updateFormData = (updates: Partial<typeof formData>) => {
@@ -81,8 +82,11 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
       case 3:
         return true; // Class assignment is optional
       case 4:
-        const isStep4Valid = !formData.createAccount || (formData.username.trim() !== "" && formData.password.trim() !== "");
-        console.log("MultiStepCoachForm: Step 4 validation - Create account:", formData.createAccount, "Username:", formData.username, "Password:", formData.password ? "***" : "", "Valid:", isStep4Valid);
+        // If user has existing auth or doesn't want to create account, skip validation
+        // If creating account and no existing auth, validate username/password
+        const needsCredentials = formData.createAccount && !formData.hasExistingAuth;
+        const isStep4Valid = !needsCredentials || (formData.username.trim() !== "" && formData.password.trim() !== "");
+        console.log("MultiStepCoachForm: Step 4 validation - Create account:", formData.createAccount, "Has existing auth:", formData.hasExistingAuth, "Needs credentials:", needsCredentials, "Username:", formData.username, "Password:", formData.password ? "***" : "", "Valid:", isStep4Valid);
         if (!isStep4Valid) {
           toast.error("Please provide username and password for account creation");
         }
@@ -144,8 +148,8 @@ export const MultiStepCoachForm = ({ coach, onSubmit, isEditing = false }: Multi
       joined_date: formData.joined_date,
       auth_user_id: formData.auth_user_id,
       is_upgraded_student: formData.is_upgraded_student,
-      // Only include account fields if creating account
-      ...(formData.createAccount && {
+      // Only include account fields if creating account and no existing auth
+      ...(formData.createAccount && !formData.hasExistingAuth && {
         username: formData.username.trim(),
         password: formData.password.trim(),
         createAccount: formData.createAccount,

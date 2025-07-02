@@ -13,6 +13,7 @@ interface CoachAccountStepProps {
     createAccount: boolean;
     email?: string;
     auth_user_id?: string | null;
+    hasExistingAuth?: boolean;
   };
   updateFormData: (updates: any) => void;
   isEditing: boolean;
@@ -39,15 +40,17 @@ export const CoachAccountStep = ({ formData, updateFormData, isEditing }: CoachA
         setHasAuthUser(result.hasAuthAccount);
         setAuthDetectionMethod(result.method || null);
         
-        // If user already has auth account, disable the checkbox and set it as checked
-        if (result.hasAuthAccount) {
-          updateFormData({ createAccount: true });
-        }
+        // Update parent form with auth status
+        updateFormData({ 
+          hasExistingAuth: result.hasAuthAccount,
+          // If user already has auth account, set createAccount to true but don't require credentials
+          createAccount: result.hasAuthAccount || (!isEditing && !result.hasAuthAccount)
+        });
       }
     }
     
     checkAuth();
-  }, [formData.email, formData.auth_user_id, checkAuthUserStatus, updateFormData]);
+  }, [formData.email, formData.auth_user_id, checkAuthUserStatus, updateFormData, isEditing]);
 
   const isCheckboxDisabled = hasAuthUser;
   const shouldShowAsChecked = hasAuthUser || formData.createAccount;
@@ -127,7 +130,7 @@ export const CoachAccountStep = ({ formData, updateFormData, isEditing }: CoachA
               value={formData.username}
               onChange={(e) => updateFormData({ username: e.target.value })}
               placeholder="Enter username"
-              required={formData.createAccount}
+              required={formData.createAccount && !hasAuthUser}
             />
           </div>
           
@@ -139,7 +142,7 @@ export const CoachAccountStep = ({ formData, updateFormData, isEditing }: CoachA
               value={formData.password}
               onChange={(e) => updateFormData({ password: e.target.value })}
               placeholder="Enter password"
-              required={formData.createAccount}
+              required={formData.createAccount && !hasAuthUser}
             />
           </div>
         </div>
