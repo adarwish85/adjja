@@ -20,7 +20,7 @@ interface AttendanceRecord {
   marked_at: string;
   checked_in_by: string | null;
   source: string | null;
-  students: {
+  student_profile: {
     name: string;
     email: string;
   } | null;
@@ -49,7 +49,7 @@ export const AttendanceRecordsTable = ({ refreshTrigger }: AttendanceRecordsTabl
         .from('attendance_records')
         .select(`
           *,
-          students(name, email),
+          student_profile:profiles!attendance_records_student_id_fkey(name, email),
           classes(name, instructor),
           marked_by_profile:profiles!attendance_records_marked_by_fkey(name)
         `)
@@ -102,8 +102,8 @@ export const AttendanceRecordsTable = ({ refreshTrigger }: AttendanceRecordsTabl
   }, [refetch]);
 
   const filteredRecords = attendanceRecords?.filter(record => {
-    if (!record.students) return false;
-    return record.students.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    if (!record.student_profile) return false;
+    return record.student_profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
            (record.classes?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
   }) || [];
 
@@ -206,8 +206,8 @@ export const AttendanceRecordsTable = ({ refreshTrigger }: AttendanceRecordsTabl
                     <TableRow key={record.id} className="hover:bg-gray-50">
                       <TableCell className="font-medium">
                         <div>
-                          <p className="font-semibold">{record.students?.name || 'Unknown Student'}</p>
-                          <p className="text-sm text-gray-500">{record.students?.email || 'No email'}</p>
+                          <p className="font-semibold">{record.student_profile?.name || 'Unknown Student'}</p>
+                          <p className="text-sm text-gray-500">{record.student_profile?.email || 'No email'}</p>
                         </div>
                       </TableCell>
                       <TableCell>
