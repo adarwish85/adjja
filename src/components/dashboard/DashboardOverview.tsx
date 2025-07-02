@@ -1,10 +1,13 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, GraduationCap, Building, CreditCard } from "lucide-react";
+import { PendingApprovalsCard } from "./PendingApprovalsCard";
 
 export const DashboardOverview = () => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <PendingApprovalsCard />
+      
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-bjj-gray">

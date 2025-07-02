@@ -1,122 +1,93 @@
 
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-} from "@/components/ui/sidebar";
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { 
-  BarChart3, 
+  LayoutDashboard, 
   Users, 
+  UserCheck, 
   GraduationCap, 
   Calendar, 
-  Building, 
+  MapPin, 
   BookOpen, 
-  CreditCard,
+  CreditCard, 
+  BarChart3, 
   Settings,
-  Shield
+  Clock
 } from "lucide-react";
-import { useLocation } from "react-router-dom";
-import { useSettings } from "@/hooks/useSettings";
-import { useEffect, useState, useCallback } from "react";
 
-const menuItems = [
-  { title: "Dashboard", icon: BarChart3, url: "/admin/dashboard" },
-  { title: "Coaches", icon: Users, url: "/admin/coaches" },
-  { title: "Students", icon: GraduationCap, url: "/admin/students" },
-  { title: "Classes", icon: Calendar, url: "/admin/classes" },
-  { title: "Branches", icon: Building, url: "/admin/branches" },
-  { title: "LMS", icon: BookOpen, url: "/admin/lms" },
-  { title: "Payments", icon: CreditCard, url: "/admin/payments" },
-  { title: "Analytics", icon: BarChart3, url: "/admin/analytics" },
-  { title: "Settings", icon: Settings, url: "/admin/settings" },
-];
-
-export const SuperAdminSidebar = () => {
+const SuperAdminSidebar = () => {
   const location = useLocation();
-  const { loadGeneralSettings } = useSettings();
-  const [academyInfo, setAcademyInfo] = useState({
-    academyName: "ADJJA",
-    academyCode: "ADJJA",
-    academyLogo: ""
-  });
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const updateAcademyInfo = useCallback(() => {
-    const settings = loadGeneralSettings();
-    setAcademyInfo({
-      academyName: settings.academyName,
-      academyCode: settings.academyCode,
-      academyLogo: settings.academyLogo
-    });
-  }, [loadGeneralSettings]);
-
-  useEffect(() => {
-    updateAcademyInfo();
-  }, [updateAcademyInfo]);
-
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key?.includes('academy')) {
-        updateAcademyInfo();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [updateAcademyInfo]);
+  const navItems = [
+    { icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" },
+    { icon: Clock, label: "Pending Approvals", href: "/admin/approvals" },
+    { icon: UserCheck, label: "Coaches", href: "/admin/coaches" },
+    { icon: Users, label: "Students", href: "/admin/students" },
+    { icon: Calendar, label: "Classes", href: "/admin/classes" },
+    { icon: MapPin, label: "Branches", href: "/admin/branches" },
+    { icon: BookOpen, label: "LMS", href: "/admin/lms" },
+    { icon: CreditCard, label: "Payments", href: "/admin/payments" },
+    { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
+    { icon: Settings, label: "Settings", href: "/admin/settings" },
+  ];
 
   return (
-    <Sidebar className="border-r border-gray-200">
-      <SidebarHeader className="p-6 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          {academyInfo.academyLogo ? (
-            <img 
-              src={academyInfo.academyLogo} 
-              alt="Academy Logo" 
-              className="h-10 w-10 object-contain"
-            />
-          ) : (
-            <div className="h-10 w-10 bg-bjj-gold rounded-lg flex items-center justify-center">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
+    <div className={cn(
+      "bg-bjj-navy text-white transition-all duration-300 ease-in-out",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      <div className="p-4">
+        <div className="flex items-center justify-between">
+          {!isCollapsed && (
+            <h2 className="text-xl font-bold text-bjj-gold">ADJJA Admin</h2>
           )}
-          <div>
-            <h2 className="text-xl font-bold text-bjj-navy">{academyInfo.academyName}</h2>
-            <p className="text-sm text-bjj-gray">Super Admin</p>
-          </div>
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1 rounded hover:bg-bjj-navy-light"
+          >
+            <svg
+              className={cn("w-4 h-4 transition-transform", isCollapsed && "rotate-180")}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
         </div>
-      </SidebarHeader>
-      
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-bjj-gray font-medium px-3 py-2">
-            Management
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === item.url}
-                    className="w-full justify-start px-3 py-2 text-bjj-gray hover:bg-bjj-gold/10 hover:text-bjj-gold-dark data-[active=true]:bg-bjj-gold/20 data-[active=true]:text-bjj-gold-dark"
-                  >
-                    <a href={item.url} className="flex items-center space-x-3">
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+      </div>
+
+      <nav className="mt-8">
+        <ul className="space-y-2 px-2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.href;
+            
+            return (
+              <li key={item.href}>
+                <Link
+                  to={item.href}
+                  className={cn(
+                    "flex items-center px-4 py-3 rounded-lg transition-colors",
+                    isActive 
+                      ? "bg-bjj-gold text-bjj-navy font-semibold" 
+                      : "text-gray-300 hover:bg-bjj-navy-light hover:text-white"
+                  )}
+                >
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {!isCollapsed && (
+                    <span className="ml-3 truncate">{item.label}</span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </div>
   );
 };
+
+export default SuperAdminSidebar;

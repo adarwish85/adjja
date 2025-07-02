@@ -35,18 +35,24 @@ import {
   Trash2,
   Mail,
   Phone,
-  Shield
+  Shield,
+  UserCheck,
+  UserX,
+  Clock
 } from "lucide-react";
 import { useUsers } from "@/hooks/useUsers";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { usePendingApprovals } from "@/hooks/usePendingApprovals";
 import { AddUserForm } from "./AddUserForm";
 import { EditUserForm } from "./EditUserForm";
 
 export const UsersList = () => {
   const { users, isLoading, deleteUser } = useUsers();
   const { roles } = useUserRoles();
+  const { approveUser, rejectUser } = usePendingApprovals();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -55,7 +61,11 @@ export const UsersList = () => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === "all" || user.role === selectedRole;
-    return matchesSearch && matchesRole;
+    const matchesStatus = selectedStatus === "all" || 
+                         (selectedStatus === "pending" && user.status === "pending") ||
+                         (selectedStatus === "active" && user.status === "active") ||
+                         (selectedStatus === "inactive" && user.status === "inactive");
+    return matchesSearch && matchesRole && matchesStatus;
   });
 
   const getStatusColor = (status: string) => {
@@ -85,6 +95,17 @@ export const UsersList = () => {
   const handleDeleteUser = async (userId: string) => {
     if (confirm("Are you sure you want to delete this user?")) {
       await deleteUser(userId);
+    }
+  };
+
+  const handleApproveUser = async (userId: string) => {
+    await approveUser(userId);
+  };
+
+  const handleRejectUser = async (userId: string) => {
+    const reason = prompt("Please provide a reason for rejecting this user:");
+    if (reason) {
+      await rejectUser(userId, reason);
     }
   };
 
@@ -143,6 +164,16 @@ export const UsersList = () => {
               <option key={role.id} value={role.name}>{role.name}</option>
             ))}
           </select>
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="px-3 py-2 border rounded-md"
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="pending">Pending Approval</option>
+            <option value="inactive">Inactive</option>
+          </select>
         </div>
 
         <div className="rounded-md border">
@@ -195,9 +226,17 @@ export const UsersList = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(user.status)}>
-                      {user.status}
-                    </Badge>
+                    <div className="space-y-1">
+                      <Badge className={getStatusColor(user.status)}>
+                        {user.status}
+                      </Badge>
+                      {user.status === 'pending' && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-orange-500" />
+                          <span className="text-xs text-orange-600">Awaiting approval</span>
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-sm text-gray-500">
                     {user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}
@@ -217,6 +256,18 @@ export const UsersList = () => {
                           <Edit className="h-4 w-4 mr-2" />
                           Edit User
                         </DropdownMenuItem>
+                        {user.status === 'pending' && (
+                          <>
+                            <DropdownMenuItem onClick={() => handleApproveUser(user.id)}>
+                              <UserCheck className="h-4 w-4 mr-2" />
+                              Approve User
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleRejectUser(user.id)}>
+                              <UserX className="h-4 w-4 mr-2" />
+                              Reject User
+                            </DropdownMenuItem>
+                          </>
+                        )}
                         <DropdownMenuItem>
                           <Shield className="h-4 w-4 mr-2" />
                           Manage Permissions

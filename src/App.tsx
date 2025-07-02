@@ -32,6 +32,7 @@ import AdminLMS from "./pages/admin/AdminLMS";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminApprovals from "./pages/admin/AdminApprovals";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleGuard from "./components/RoleGuard";
 import { ProfileWizard } from "./components/wizard/ProfileWizard";
@@ -178,6 +179,14 @@ function App() {
                 <ProtectedRoute>
                   <RoleGuard allowedRoles={['Super Admin']}>
                     <AdminDashboard />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/admin/approvals" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Super Admin']}>
+                    <AdminApprovals />
                   </RoleGuard>
                 </ProtectedRoute>
               } />
