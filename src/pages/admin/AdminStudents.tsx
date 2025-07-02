@@ -10,12 +10,15 @@ import { StudentsSearchBar } from "@/components/admin/student/StudentsSearchBar"
 import { PaymentAlertsCard } from "@/components/admin/student/PaymentAlertsCard";
 import { StudentPaymentSection } from "@/components/admin/student/StudentPaymentSection";
 import { useStudents } from "@/hooks/useStudents";
+import { useClassEnrollments } from "@/hooks/useClassEnrollments";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
 const AdminStudents = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const { students } = useStudents();
+  const { enrollments } = useClassEnrollments();
 
   if (selectedStudent) {
     return (
@@ -41,6 +44,16 @@ const AdminStudents = () => {
     );
   }
 
+  const filteredStudents = students?.filter(student => 
+    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.email.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  const handleSubmit = () => {
+    // Handle form submission
+    console.log("Form submitted");
+  };
+
   return (
     <SuperAdminLayout>
       <div className="p-6 space-y-6">
@@ -49,7 +62,7 @@ const AdminStudents = () => {
           <p className="text-bjj-gray">Manage student accounts, enrollment, and progress</p>
         </div>
         
-        <StudentStatsCards />
+        <StudentStatsCards students={students || []} enrollments={enrollments || []} />
         <PaymentAlertsCard />
 
         <Tabs defaultValue="students" className="space-y-6">
@@ -65,10 +78,23 @@ const AdminStudents = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <StudentsSearchBar />
+                  <StudentsSearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
                   {students && (
                     <StudentsTable 
-                      onStudentSelect={setSelectedStudent}
+                      students={students}
+                      filteredStudents={filteredStudents}
+                      selectedStudentIds={[]}
+                      onCheckboxChange={() => {}}
+                      handleSelectAllChange={() => {}}
+                      isSuperAdmin={true}
+                      getStudentEnrolledClasses={() => []}
+                      onStatusChange={async () => {}}
+                      onEditStudent={() => {}}
+                      onDeleteStudent={() => {}}
+                      onBeltPromotion={() => {}}
+                      onCourseEnroll={() => {}}
+                      onClassEnroll={() => {}}
+                      onDowngradeToStudent={() => {}}
                     />
                   )}
                 </div>
@@ -82,7 +108,7 @@ const AdminStudents = () => {
                 <CardTitle>Add New Student</CardTitle>
               </CardHeader>
               <CardContent>
-                <AddStudentForm />
+                <AddStudentForm onSubmit={handleSubmit} />
               </CardContent>
             </Card>
           </TabsContent>

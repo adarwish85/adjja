@@ -6,6 +6,7 @@ import { SubscriptionPlanManager } from "@/components/admin/payments/Subscriptio
 import { PayPalPaymentDashboard } from "@/components/admin/payments/PayPalPaymentDashboard";
 import { PaymentAnalytics } from "@/components/admin/payments/PaymentAnalytics";
 import { PaymentSettings } from "@/components/admin/payments/PaymentSettings";
+import { ManualPaymentButton } from "@/components/admin/payments/ManualPaymentButton";
 
 const AdminPayments = () => {
   return (
