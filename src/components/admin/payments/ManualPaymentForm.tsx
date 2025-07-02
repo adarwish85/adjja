@@ -31,10 +31,13 @@ export const ManualPaymentForm = ({ onClose, preselectedStudentId }: ManualPayme
   const selectedPlan = activeSubscriptionPlans?.find(p => p.id === formData.planId);
 
   const handlePlanChange = (planId: string) => {
-    const plan = activeSubscriptionPlans?.find(p => p.id === planId);
+    // Convert "none" back to empty string for form processing
+    const actualPlanId = planId === "none" ? "" : planId;
+    const plan = activeSubscriptionPlans?.find(p => p.id === actualPlanId);
+    
     setFormData({
       ...formData,
-      planId,
+      planId: actualPlanId,
       amount: plan ? (plan.sale_price || plan.standard_price).toString() : formData.amount,
     });
   };
@@ -94,14 +97,14 @@ export const ManualPaymentForm = ({ onClose, preselectedStudentId }: ManualPayme
             <div className="space-y-2">
               <Label htmlFor="plan">Subscription Plan (Optional)</Label>
               <Select 
-                value={formData.planId} 
+                value={formData.planId || "none"} 
                 onValueChange={handlePlanChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select plan or leave empty" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No specific plan</SelectItem>
+                  <SelectItem value="none">No specific plan</SelectItem>
                   {activeSubscriptionPlans?.map((plan) => (
                     <SelectItem key={plan.id} value={plan.id}>
                       {plan.title} - ${(plan.sale_price || plan.standard_price).toFixed(2)}
