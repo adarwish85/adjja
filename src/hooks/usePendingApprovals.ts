@@ -25,7 +25,8 @@ export const usePendingApprovals = () => {
       setIsLoading(true);
       console.log('Fetching pending users...');
       
-      const { data, error } = await supabase
+      // First get profiles with pending approval status
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select(`
           id,
@@ -36,21 +37,40 @@ export const usePendingApprovals = () => {
           created_at,
           approval_status,
           rejection_reason,
-          user_roles:role_id (
-            name
-          )
+          role_id
         `)
         .eq('approval_status', 'pending')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching pending users:', error);
-        throw error;
+      if (profilesError) {
+        console.error('Error fetching pending profiles:', profilesError);
+        throw profilesError;
+      }
+
+      console.log('Pending profiles fetched:', profilesData);
+
+      // Get role names separately to avoid recursion issues
+      const roleIds = profilesData?.map(profile => profile.role_id).filter(id => id !== null) || [];
+      let rolesMap: Record<string, string> = {};
+      
+      if (roleIds.length > 0) {
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('id, name')
+          .in('id', roleIds);
+
+        if (rolesError) {
+          console.error('Error fetching roles:', rolesError);
+          // Don't fail completely, just log the error and continue without role names
+        } else {
+          rolesMap = rolesData?.reduce((acc, role) => {
+            acc[role.id] = role.name;
+            return acc;
+          }, {} as Record<string, string>) || {};
+        }
       }
       
-      console.log('Pending users fetched:', data);
-      
-      const formattedUsers = data?.map(user => ({
+      const formattedUsers = profilesData?.map(user => ({
         id: user.id,
         name: user.name,
         email: user.email,
@@ -59,7 +79,7 @@ export const usePendingApprovals = () => {
         created_at: user.created_at,
         approval_status: user.approval_status,
         rejection_reason: user.rejection_reason,
-        role_name: user.user_roles?.name || 'Student'
+        role_name: user.role_id ? rolesMap[user.role_id] || 'Student' : 'Student'
       })) || [];
 
       setPendingUsers(formattedUsers);
