@@ -1,6 +1,6 @@
 
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { SuperAdminSidebar } from "@/components/navigation/SuperAdminSidebar";
+import SuperAdminSidebar from "@/components/navigation/SuperAdminSidebar";
 import { TopBar } from "@/components/navigation/TopBar";
 
 interface SuperAdminLayoutProps {
