@@ -11,6 +11,7 @@ interface StudentAccountStepProps {
     username: string;
     password: string;
     createAccount: boolean;
+    hasExistingAuth: boolean;
     email?: string;
   };
   updateFormData: (updates: any) => void;
@@ -31,17 +32,18 @@ export const StudentAccountStep = ({
         const result = await checkAuthUserByEmail(formData.email);
         setHasAuthUser(result.hasAuthAccount);
         
-        // If user already has auth account, disable the checkbox and set it as checked
-        if (result.hasAuthAccount) {
-          updateFormData({ createAccount: true });
-        }
+        // Update form data with auth status
+        updateFormData({ 
+          hasExistingAuth: result.hasAuthAccount,
+          createAccount: !isEditing || !result.hasAuthAccount
+        });
       }
     }
     
     if (formData.email) {
       check();
     }
-  }, [formData.email, checkAuthUserByEmail, updateFormData]);
+  }, [formData.email, checkAuthUserByEmail, updateFormData, isEditing]);
 
   const isCheckboxDisabled = hasAuthUser;
   const shouldShowAsChecked = hasAuthUser || formData.createAccount;
@@ -94,7 +96,7 @@ export const StudentAccountStep = ({
               value={formData.username}
               onChange={(e) => updateFormData({ username: e.target.value })}
               placeholder="Enter username"
-              required={formData.createAccount}
+              required={formData.createAccount && !hasAuthUser}
             />
           </div>
           <div className="space-y-2">
@@ -105,7 +107,7 @@ export const StudentAccountStep = ({
               value={formData.password}
               onChange={(e) => updateFormData({ password: e.target.value })}
               placeholder="Enter password"
-              required={formData.createAccount}
+              required={formData.createAccount && !hasAuthUser}
             />
           </div>
         </div>

@@ -27,6 +27,7 @@ interface StudentClassInfoStepProps {
 
 const belts = ["White Belt", "Blue Belt", "Purple Belt", "Brown Belt", "Black Belt"];
 const statusOptions = ["active", "inactive", "on-hold"];
+const membershipTypes = ["monthly", "yearly", "unlimited"];
 
 export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: StudentClassInfoStepProps) => {
   const { activeSubscriptionPlans, isLoading: plansLoading } = useSubscriptionPlans();
@@ -90,6 +91,48 @@ export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: St
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
+          <Label htmlFor="membership_type">Membership Type *</Label>
+          <Select
+            value={formData.membership_type}
+            onValueChange={(value) => updateFormData({ membership_type: value })}
+            required
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select membership type" />
+            </SelectTrigger>
+            <SelectContent>
+              {membershipTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="status">Status *</Label>
+          <Select
+            value={formData.status}
+            onValueChange={(value) => updateFormData({ status: value })}
+            required
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
           <Label htmlFor="subscription_plan">Subscription Plan *</Label>
           <Select
             value={formData.subscription_plan_id}
@@ -120,26 +163,6 @@ export const StudentClassInfoStep = ({ formData, updateFormData, isEditing }: St
             required
           />
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="status">Status *</Label>
-        <Select
-          value={formData.status}
-          onValueChange={(value) => updateFormData({ status: value })}
-          required
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select status" />
-          </SelectTrigger>
-          <SelectContent>
-            {statusOptions.map((status) => (
-              <SelectItem key={status} value={status}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       {isEditing && (

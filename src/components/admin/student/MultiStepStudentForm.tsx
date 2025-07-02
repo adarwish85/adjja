@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,6 +51,7 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
     username: "",
     password: "",
     createAccount: !isEditing,
+    hasExistingAuth: false, // Track if user already has auth
   });
 
   // Update selectedClassIds when enrollments change for editing student
@@ -85,15 +87,18 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
         console.log("Step 1 validation - Name:", formData.name, "Email:", formData.email, "Valid:", isStep1Valid);
         return isStep1Valid;
       case 2:
-        const isStep2Valid = formData.belt.trim() !== "" && formData.subscription_plan_id.trim() !== "";
-        console.log("Step 2 validation - Belt:", formData.belt, "Plan:", formData.subscription_plan_id, "Valid:", isStep2Valid);
+        const isStep2Valid = formData.belt.trim() !== "" && formData.subscription_plan_id.trim() !== "" && formData.membership_type.trim() !== "";
+        console.log("Step 2 validation - Belt:", formData.belt, "Plan:", formData.subscription_plan_id, "Membership:", formData.membership_type, "Valid:", isStep2Valid);
         return isStep2Valid;
       case 3:
         // Class enrollment is optional, so always valid
         return true;
       case 4:
-        const isStep4Valid = !formData.createAccount || (formData.username.trim() !== "" && formData.password.trim() !== "");
-        console.log("Step 4 validation - Create account:", formData.createAccount, "Username:", formData.username, "Password:", formData.password ? "***" : "", "Valid:", isStep4Valid);
+        // If user has existing auth or doesn't want to create account, skip validation
+        // If creating account and no existing auth, validate username/password
+        const needsCredentials = formData.createAccount && !formData.hasExistingAuth;
+        const isStep4Valid = !needsCredentials || (formData.username.trim() !== "" && formData.password.trim() !== "");
+        console.log("Step 4 validation - Create account:", formData.createAccount, "Has existing auth:", formData.hasExistingAuth, "Username:", formData.username, "Password:", formData.password ? "***" : "", "Valid:", isStep4Valid);
         return isStep4Valid;
       default:
         return false;
@@ -157,8 +162,8 @@ export const MultiStepStudentForm = ({ student, onSubmit, isEditing = false }: M
       attendance_rate: formData.attendance_rate,
       joined_date: formData.joined_date,
       last_attended: formData.last_attended || null,
-      // Only include account fields if creating account
-      ...(formData.createAccount && {
+      // Only include account fields if creating account and no existing auth
+      ...(formData.createAccount && !formData.hasExistingAuth && {
         username: formData.username,
         password: formData.password,
         createAccount: formData.createAccount,
