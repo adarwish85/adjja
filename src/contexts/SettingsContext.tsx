@@ -65,7 +65,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const contextValue: SettingsContextType = {
     // General Settings
-    academyName: getSetting('general', 'academy_name', 'Australian Jiu-Jitsu Academy'),
+    academyName: getSetting('general', 'academy_name', 'Ahmed Darwish Jiu-Jitsu Academy'),
     academyCode: getSetting('general', 'academy_code', 'ADJJA'),
     timezone: getSetting('general', 'timezone', 'africa/cairo'),
     currency: getSetting('general', 'currency', 'egp'),

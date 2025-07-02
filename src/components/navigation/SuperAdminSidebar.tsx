@@ -1,91 +1,84 @@
 
-import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import { 
-  LayoutDashboard, 
   Users, 
-  UserCheck, 
-  GraduationCap, 
   Calendar, 
-  MapPin, 
-  BookOpen, 
-  CreditCard, 
   BarChart3, 
-  Settings,
-  Clock
+  Settings, 
+  GraduationCap, 
+  UserCheck, 
+  CreditCard,
+  Building2,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
+import { useState } from "react";
 
 const SuperAdminSidebar = () => {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" },
-    { icon: Clock, label: "Pending Approvals", href: "/admin/approvals" },
-    { icon: UserCheck, label: "Coaches", href: "/admin/coaches" },
-    { icon: Users, label: "Students", href: "/admin/students" },
-    { icon: Calendar, label: "Classes", href: "/admin/classes" },
-    { icon: MapPin, label: "Branches", href: "/admin/branches" },
-    { icon: BookOpen, label: "LMS", href: "/admin/lms" },
-    { icon: CreditCard, label: "Payments", href: "/admin/payments" },
-    { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
-    { icon: Settings, label: "Settings", href: "/admin/settings" },
+  const sidebarItems = [
+    { name: "Dashboard", path: "/admin", icon: BarChart3 },
+    { name: "Students", path: "/admin/students", icon: Users },
+    { name: "Coaches", path: "/admin/coaches", icon: UserCheck },
+    { name: "Classes", path: "/admin/classes", icon: Calendar },
+    { name: "Branches", path: "/admin/branches", icon: Building2 },
+    { name: "LMS", path: "/admin/lms", icon: GraduationCap },
+    { name: "Payments", path: "/admin/payments", icon: CreditCard },
+    { name: "Analytics", path: "/admin/analytics", icon: BarChart3 },
+    { name: "Attendance", path: "/admin/attendance", icon: UserCheck },
+    { name: "Approvals", path: "/admin/approvals", icon: UserCheck },
+    { name: "Settings", path: "/admin/settings", icon: Settings },
   ];
 
   return (
-    <div className={cn(
-      "bg-bjj-navy text-white transition-all duration-300 ease-in-out",
-      isCollapsed ? "w-16" : "w-64"
-    )}>
-      <div className="p-4">
-        <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <h2 className="text-xl font-bold text-bjj-gold">ADJJA Admin</h2>
-          )}
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 rounded hover:bg-bjj-navy-light"
-          >
-            <svg
-              className={cn("w-4 h-4 transition-transform", isCollapsed && "rotate-180")}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-        </div>
+    <div className={`bg-bjj-navy text-white transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} h-full flex flex-col`}>
+      {/* Header */}
+      <div className="p-4 border-b border-bjj-gold/20 flex items-center justify-between">
+        {!isCollapsed && (
+          <h2 className="text-xl font-bold text-bjj-gold">ADJJA Admin</h2>
+        )}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="p-1 rounded hover:bg-bjj-gold/20 text-bjj-gold"
+        >
+          {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        </button>
       </div>
 
-      <nav className="mt-8">
-        <ul className="space-y-2 px-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.href;
-            
-            return (
-              <li key={item.href}>
-                <Link
-                  to={item.href}
-                  className={cn(
-                    "flex items-center px-4 py-3 rounded-lg transition-colors",
-                    isActive 
-                      ? "bg-bjj-gold text-bjj-navy font-semibold" 
-                      : "text-gray-300 hover:bg-bjj-navy-light hover:text-white"
-                  )}
-                >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  {!isCollapsed && (
-                    <span className="ml-3 truncate">{item.label}</span>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+      {/* Navigation Items */}
+      <nav className="flex-1 p-4 space-y-2">
+        {sidebarItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.path;
+          
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+                isActive 
+                  ? 'bg-bjj-gold text-bjj-navy' 
+                  : 'text-white hover:bg-bjj-gold/20 hover:text-bjj-gold'
+              }`}
+              title={isCollapsed ? item.name : undefined}
+            >
+              <Icon size={20} />
+              {!isCollapsed && <span className="font-medium">{item.name}</span>}
+            </Link>
+          );
+        })}
       </nav>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-bjj-gold/20">
+        {!isCollapsed && (
+          <p className="text-sm text-bjj-gold/70 text-center">
+            Ahmed Darwish Jiu-Jitsu Academy
+          </p>
+        )}
+      </div>
     </div>
   );
 };

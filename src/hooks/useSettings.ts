@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -215,12 +216,12 @@ export const useSettings = () => {
 
   // Default settings with specialties included
   const defaultGeneralSettings: GeneralSettings = {
-    academyName: "Australian Jiu-Jitsu Academy",
+    academyName: "Ahmed Darwish Jiu-Jitsu Academy",
     academyCode: "ADJJA",
     academyLogo: "",
     contactEmail: "admin@adjja.com",
-    contactPhone: "+61 400 123 456",
-    address: "123 BJJ Street, Sydney, NSW 2000, Australia",
+    contactPhone: "+20 100 123 4567",
+    address: "123 BJJ Street, Cairo, Egypt",
     timezone: "africa/cairo",
     currency: "egp",
     language: "en",
@@ -309,7 +310,7 @@ export const useSettings = () => {
     quietHoursEnd: "08:00",
     enableHTMLEmails: true,
     smsProvider: "twilio",
-    smsFromNumber: "+61400123456",
+    smsFromNumber: "+201001234567",
     enableSMSNotifications: false,
     enablePushNotifications: true,
     notificationTypes: {
