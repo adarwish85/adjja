@@ -31,6 +31,7 @@ import AdminBranches from "./pages/admin/AdminBranches";
 import AdminLMS from "./pages/admin/AdminLMS";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminAttendance from "./pages/admin/AdminAttendance";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminApprovals from "./pages/admin/AdminApprovals";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -243,6 +244,14 @@ function App() {
                 <ProtectedRoute>
                   <RoleGuard allowedRoles={['Super Admin']}>
                     <AdminAnalytics />
+                  </RoleGuard>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/admin/attendance" element={
+                <ProtectedRoute>
+                  <RoleGuard allowedRoles={['Super Admin']}>
+                    <AdminAttendance />
                   </RoleGuard>
                 </ProtectedRoute>
               } />
