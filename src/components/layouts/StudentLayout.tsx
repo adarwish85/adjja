@@ -1,6 +1,6 @@
 
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { StudentSidebar } from "@/components/navigation/StudentSidebar";
+import StudentSidebar from "@/components/navigation/StudentSidebar";
 import { StudentBottomNav } from "@/components/navigation/StudentBottomNav";
 import { TopBar } from "@/components/navigation/TopBar";
 import { useEffect, useState } from "react";
