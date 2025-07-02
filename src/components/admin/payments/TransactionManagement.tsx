@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,7 +130,7 @@ export const TransactionManagement = () => {
                       </div>
                     </TableCell>
                     <TableCell className="font-semibold">
-                      ${(transaction.amount / 100).toFixed(2)}
+                      EGP {(transaction.amount / 100).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

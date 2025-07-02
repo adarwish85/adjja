@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,8 +38,8 @@ export const SubscriptionManagement = () => {
       const activeCount = subscriptions?.filter(sub => sub.subscribed).length || 0;
       const monthlyRevenue = subscriptions?.reduce((sum, sub) => {
         if (!sub.subscribed) return sum;
-        const tierAmount = sub.subscription_tier === 'Basic' ? 19.99 : 
-                          sub.subscription_tier === 'Premium' ? 49.99 : 99.99;
+        const tierAmount = sub.subscription_tier === 'Basic' ? 199.99 : 
+                          sub.subscription_tier === 'Premium' ? 499.99 : 999.99;
         return sum + tierAmount;
       }, 0) || 0;
 
@@ -56,7 +55,7 @@ export const SubscriptionManagement = () => {
 
   const subscriptionStatsDisplay = [
     { title: "Active Subscriptions", value: subscriptionStats?.activeSubscriptions?.toString() || "0", icon: Users, color: "text-green-600", bgColor: "bg-green-100" },
-    { title: "Monthly Revenue", value: `$${subscriptionStats?.monthlyRevenue?.toFixed(2) || '0.00'}`, icon: DollarSign, color: "text-blue-600", bgColor: "bg-blue-100" },
+    { title: "Monthly Revenue", value: `EGP ${subscriptionStats?.monthlyRevenue?.toFixed(2) || '0.00'}`, icon: DollarSign, color: "text-blue-600", bgColor: "bg-blue-100" },
     { title: "Churn Rate", value: subscriptionStats?.churnRate || "0%", icon: TrendingUp, color: "text-yellow-600", bgColor: "bg-yellow-100" },
     { title: "Renewals This Month", value: subscriptionStats?.renewalsThisMonth?.toString() || "0", icon: Calendar, color: "text-purple-600", bgColor: "bg-purple-100" },
   ];

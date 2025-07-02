@@ -100,7 +100,7 @@ export const StudentPaymentHistory = ({ studentId, studentName }: StudentPayment
                         </div>
                       </TableCell>
                       <TableCell className="font-semibold">
-                        ${transaction.amount.toFixed(2)}
+                        EGP {transaction.amount.toFixed(2)}
                       </TableCell>
                       <TableCell>
                         {transaction.subscription_plans?.title || 'Manual Payment'}

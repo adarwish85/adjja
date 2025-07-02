@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -78,8 +77,8 @@ export const AddSubscriptionPlanForm = ({ onClose }: AddSubscriptionPlanFormProp
       case 'usd': return '$';
       case 'eur': return '€';
       case 'gbp': return '£';
-      case 'egp': return 'LE';
-      default: return '$';
+      case 'egp': return 'EGP';
+      default: return 'EGP';
     }
   };
 
@@ -89,7 +88,7 @@ export const AddSubscriptionPlanForm = ({ onClose }: AddSubscriptionPlanFormProp
       case 'eur': return 'EUR';
       case 'gbp': return 'GBP';
       case 'egp': return 'EGP';
-      default: return 'USD';
+      default: return 'EGP';
     }
   };
 
@@ -170,9 +169,8 @@ export const AddSubscriptionPlanForm = ({ onClose }: AddSubscriptionPlanFormProp
                 onChange={(e) => setFormData({ ...formData, standard_price: e.target.value })}
                 placeholder="89.99"
                 required
-                min="0.01"
+                min="0"
               />
-              <p className="text-xs text-gray-500">Currency: {getCurrencyName()}</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="sale_price">Sale Price ({getCurrencySymbol()}) - Optional</Label>

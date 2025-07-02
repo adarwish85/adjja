@@ -35,7 +35,7 @@ export const PaymentActions = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="amount">Amount ($)</Label>
+            <Label htmlFor="amount">Amount (EGP)</Label>
             <Input
               id="amount"
               type="number"
@@ -85,9 +85,9 @@ export const PaymentActions = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="basic">Basic - $19.99/month</SelectItem>
-                <SelectItem value="premium">Premium - $49.99/month</SelectItem>
-                <SelectItem value="enterprise">Enterprise - $99.99/month</SelectItem>
+                <SelectItem value="basic">Basic - EGP 199.99/month</SelectItem>
+                <SelectItem value="premium">Premium - EGP 499.99/month</SelectItem>
+                <SelectItem value="enterprise">Enterprise - EGP 999.99/month</SelectItem>
               </SelectContent>
             </Select>
           </div>

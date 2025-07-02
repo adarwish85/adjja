@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -84,7 +83,7 @@ export const PayPalPaymentDashboard = () => {
               <DollarSign className="h-8 w-8 text-green-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-bjj-gray">Total Revenue</p>
-                <p className="text-2xl font-bold text-bjj-navy">${totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-bjj-navy">EGP {totalRevenue.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>

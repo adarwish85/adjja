@@ -61,7 +61,7 @@ export const PaymentTransactionRow = ({ transaction }: PaymentTransactionRowProp
               </div>
               <div>
                 <span className="text-bjj-gray">Amount:</span>
-                <p className="font-medium">${transaction.amount.toFixed(2)}</p>
+                <p className="font-medium">EGP {transaction.amount.toFixed(2)}</p>
               </div>
               <div>
                 <span className="text-bjj-gray">Plan:</span>

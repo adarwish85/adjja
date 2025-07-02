@@ -131,7 +131,7 @@ export const EditSubscriptionPlanForm = ({ planId, onClose }: EditSubscriptionPl
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="standard_price">Standard Price ($)</Label>
+              <Label htmlFor="standard_price">Standard Price (EGP)</Label>
               <Input
                 id="standard_price"
                 type="number"
@@ -144,7 +144,7 @@ export const EditSubscriptionPlanForm = ({ planId, onClose }: EditSubscriptionPl
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sale_price">Sale Price ($) - Optional</Label>
+              <Label htmlFor="sale_price">Sale Price (EGP) - Optional</Label>
               <Input
                 id="sale_price"
                 type="number"

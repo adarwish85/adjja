@@ -107,7 +107,7 @@ export const ManualPaymentForm = ({ onClose, preselectedStudentId }: ManualPayme
                   <SelectItem value="none">No specific plan</SelectItem>
                   {activeSubscriptionPlans?.map((plan) => (
                     <SelectItem key={plan.id} value={plan.id}>
-                      {plan.title} - ${(plan.sale_price || plan.standard_price).toFixed(2)}
+                      {plan.title} - EGP {(plan.sale_price || plan.standard_price).toFixed(2)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -129,7 +129,7 @@ export const ManualPaymentForm = ({ onClose, preselectedStudentId }: ManualPayme
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount ($)</Label>
+            <Label htmlFor="amount">Amount (EGP)</Label>
             <Input
               id="amount"
               type="number"

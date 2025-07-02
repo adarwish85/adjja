@@ -36,7 +36,7 @@ export const PaymentAnalytics = () => {
   const metrics = [
     {
       title: "Total Revenue",
-      value: `$${paymentData?.totalRevenue?.toFixed(2) || '0.00'}`,
+      value: `EGP ${paymentData?.totalRevenue?.toFixed(2) || '0.00'}`,
       change: "+15.3%",
       period: "vs last month",
       icon: DollarSign,
@@ -45,7 +45,7 @@ export const PaymentAnalytics = () => {
     },
     {
       title: "Average Order Value",
-      value: `$${paymentData?.averageOrderValue?.toFixed(2) || '0.00'}`,
+      value: `EGP ${paymentData?.averageOrderValue?.toFixed(2) || '0.00'}`,
       change: "+8.2%",
       period: "vs last month",
       icon: TrendingUp,
@@ -63,7 +63,7 @@ export const PaymentAnalytics = () => {
     },
     {
       title: "Monthly Recurring Revenue",
-      value: `$${paymentData?.monthlyRevenue?.toFixed(2) || '0.00'}`,
+      value: `EGP ${paymentData?.monthlyRevenue?.toFixed(2) || '0.00'}`,
       change: "+12.8%",
       period: "vs last month",
       icon: Calendar,
@@ -128,13 +128,15 @@ export const PaymentAnalytics = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip />
+                <Tooltip 
+                  formatter={(value, name) => [`EGP ${value}`, name === 'revenue' ? 'Revenue (EGP)' : name]}
+                />
                 <Line 
                   type="monotone" 
                   dataKey="revenue" 
                   stroke="#D4AF37" 
                   strokeWidth={2}
-                  name="Revenue ($)"
+                  name="Revenue (EGP)"
                 />
               </LineChart>
             </ResponsiveContainer>
