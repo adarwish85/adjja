@@ -23,14 +23,14 @@ interface AttendanceRecord {
   students: {
     name: string;
     email: string;
-  };
+  } | null;
   classes: {
     name: string;
     instructor: string;
-  };
+  } | null;
   marked_by_profile?: {
     name: string;
-  };
+  } | null;
 }
 
 interface AttendanceRecordsTableProps {
@@ -49,8 +49,8 @@ export const AttendanceRecordsTable = ({ refreshTrigger }: AttendanceRecordsTabl
         .from('attendance_records')
         .select(`
           *,
-          students!inner(name, email),
-          classes!inner(name, instructor),
+          students(name, email),
+          classes(name, instructor),
           marked_by_profile:profiles!attendance_records_marked_by_fkey(name)
         `)
         .order('marked_at', { ascending: false });
@@ -71,8 +71,11 @@ export const AttendanceRecordsTable = ({ refreshTrigger }: AttendanceRecordsTabl
       }
 
       const { data, error } = await query.limit(100);
-      if (error) throw error;
-      return data as AttendanceRecord[];
+      if (error) {
+        console.error('Error fetching attendance records:', error);
+        throw error;
+      }
+      return data || [];
     }
   });
 
@@ -98,10 +101,11 @@ export const AttendanceRecordsTable = ({ refreshTrigger }: AttendanceRecordsTabl
     };
   }, [refetch]);
 
-  const filteredRecords = attendanceRecords?.filter(record =>
-    record.students.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.classes.name.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const filteredRecords = attendanceRecords?.filter(record => {
+    if (!record.students) return false;
+    return record.students.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           (record.classes?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+  }) || [];
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -202,14 +206,14 @@ export const AttendanceRecordsTable = ({ refreshTrigger }: AttendanceRecordsTabl
                     <TableRow key={record.id} className="hover:bg-gray-50">
                       <TableCell className="font-medium">
                         <div>
-                          <p className="font-semibold">{record.students.name}</p>
-                          <p className="text-sm text-gray-500">{record.students.email}</p>
+                          <p className="font-semibold">{record.students?.name || 'Unknown Student'}</p>
+                          <p className="text-sm text-gray-500">{record.students?.email || 'No email'}</p>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{record.classes.name}</p>
-                          <p className="text-sm text-gray-500">{record.classes.instructor}</p>
+                          <p className="font-medium">{record.classes?.name || 'Unknown Class'}</p>
+                          <p className="text-sm text-gray-500">{record.classes?.instructor || 'No instructor'}</p>
                         </div>
                       </TableCell>
                       <TableCell>
