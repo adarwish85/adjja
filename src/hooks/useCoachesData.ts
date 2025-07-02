@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Coach } from "@/types/coach";
 import { coachService } from "@/services/coachService";
-import { useCoachesRealTimeSync } from "./useCoachesRealTimeSync";
+import { useCoachesRealTimeSync } from "./useCoachRealTimeSync";
 
 export const useCoachesData = () => {
   const [coaches, setCoaches] = useState<Coach[]>([]);

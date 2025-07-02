@@ -2172,6 +2172,10 @@ export type Database = {
         Args: { p_student_id: string; p_class_id: string }
         Returns: boolean
       }
+      update_coach_student_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       update_setting: {
         Args:
           | {
