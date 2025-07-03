@@ -1,172 +1,173 @@
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { X, DollarSign } from "lucide-react";
-import { useStudents } from "@/hooks/useStudents";
-import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
-import { usePayPalPayments } from "@/hooks/usePayPalPayments";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { DollarSign } from "lucide-react";
 
 interface ManualPaymentFormProps {
-  onClose: () => void;
-  preselectedStudentId?: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onPaymentRecorded?: () => void;
 }
 
-export const ManualPaymentForm = ({ onClose, preselectedStudentId }: ManualPaymentFormProps) => {
-  const [formData, setFormData] = useState({
-    studentId: preselectedStudentId || "",
-    planId: "",
-    amount: "",
-    notes: "",
+export const ManualPaymentForm = ({ open, onOpenChange, onPaymentRecorded }: ManualPaymentFormProps) => {
+  const [selectedStudent, setSelectedStudent] = useState<string>("");
+  const [amount, setAmount] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch all active students
+  const { data: students } = useQuery({
+    queryKey: ['students-for-payment'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('students')
+        .select('id, name, email')
+        .eq('status', 'active')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: open
   });
-
-  const { students } = useStudents();
-  const { activeSubscriptionPlans } = useSubscriptionPlans();
-  const { recordManualPayment, isLoading } = usePayPalPayments();
-
-  const selectedPlan = activeSubscriptionPlans?.find(p => p.id === formData.planId);
-
-  const handlePlanChange = (planId: string) => {
-    // Convert "none" back to empty string for form processing
-    const actualPlanId = planId === "none" ? "" : planId;
-    const plan = activeSubscriptionPlans?.find(p => p.id === actualPlanId);
-    
-    setFormData({
-      ...formData,
-      planId: actualPlanId,
-      amount: plan ? (plan.sale_price || plan.standard_price).toString() : formData.amount,
-    });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!selectedStudent || !amount || !paymentMethod) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
-      await recordManualPayment(
-        formData.studentId,
-        parseFloat(formData.amount),
-        formData.planId || undefined
-      );
-      onClose();
+      // Record the payment transaction
+      const { error } = await supabase
+        .from('payment_transactions')
+        .insert({
+          student_id: selectedStudent,
+          amount: parseFloat(amount),
+          status: 'completed',
+          transaction_date: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      toast.success("Payment recorded successfully!");
+      
+      // Reset form
+      setSelectedStudent("");
+      setAmount("");
+      setPaymentMethod("");
+      setNotes("");
+      
+      // Close modal and trigger refresh
+      onOpenChange(false);
+      onPaymentRecorded?.();
+      
     } catch (error) {
-      console.error("Error recording manual payment:", error);
+      console.error('Error recording payment:', error);
+      toast.error("Failed to record payment. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-bjj-navy flex items-center gap-2">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
             Record Manual Payment
-          </CardTitle>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
+          </DialogTitle>
+        </DialogHeader>
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="student">Student</Label>
-              <Select 
-                value={formData.studentId} 
-                onValueChange={(value) => setFormData({ ...formData, studentId: value })}
-                required
-                disabled={!!preselectedStudentId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select student" />
-                </SelectTrigger>
-                <SelectContent>
-                  {students?.map((student) => (
-                    <SelectItem key={student.id} value={student.id}>
-                      {student.name} - {student.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="plan">Subscription Plan (Optional)</Label>
-              <Select 
-                value={formData.planId || "none"} 
-                onValueChange={handlePlanChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select plan or leave empty" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No specific plan</SelectItem>
-                  {activeSubscriptionPlans?.map((plan) => (
-                    <SelectItem key={plan.id} value={plan.id}>
-                      {plan.title} - EGP {(plan.sale_price || plan.standard_price).toFixed(2)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <Label htmlFor="student">Student *</Label>
+            <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select student" />
+              </SelectTrigger>
+              <SelectContent>
+                {students?.map((student) => (
+                  <SelectItem key={student.id} value={student.id}>
+                    {student.name} ({student.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {selectedPlan && (
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <h4 className="font-medium text-bjj-navy">{selectedPlan.title}</h4>
-              <p className="text-sm text-bjj-gray">{selectedPlan.description}</p>
-              <p className="text-sm">
-                <span className="text-bjj-gray">Classes:</span> {selectedPlan.number_of_classes === 999 ? "Unlimited" : selectedPlan.number_of_classes}
-              </p>
-              <p className="text-sm">
-                <span className="text-bjj-gray">Period:</span> {selectedPlan.subscription_period}
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount (EGP)</Label>
+          <div>
+            <Label htmlFor="amount">Amount *</Label>
             <Input
               id="amount"
               type="number"
               step="0.01"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              placeholder="Enter payment amount"
+              placeholder="0.00"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
               required
-              min="0.01"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (Optional)</Label>
+          <div>
+            <Label htmlFor="payment-method">Payment Method *</Label>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select payment method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="card">Card</SelectItem>
+                <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                <SelectItem value="check">Check</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="notes">Notes</Label>
             <Textarea
               id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Add any notes about this payment..."
+              placeholder="Additional notes..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
               rows={3}
             />
           </div>
 
-          <div className="flex items-center space-x-2 pt-4">
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
             <Button
               type="submit"
-              className="bg-bjj-gold hover:bg-bjj-gold-dark text-bjj-navy"
-              disabled={isLoading}
+              disabled={isSubmitting}
+              className="bg-bjj-red hover:bg-bjj-red/90"
             >
-              {isLoading ? "Recording..." : "Record Payment"}
-            </Button>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {isSubmitting ? 'Recording...' : 'Record Payment'}
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 };
