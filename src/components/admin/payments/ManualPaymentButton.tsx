@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DollarSign } from "lucide-react";
 import { ManualPaymentForm } from "./ManualPaymentForm";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface ManualPaymentButtonProps {
   studentId?: string;
@@ -20,6 +19,11 @@ export const ManualPaymentButton = ({
 }: ManualPaymentButtonProps) => {
   const [showForm, setShowForm] = useState(false);
 
+  const handlePaymentRecorded = () => {
+    // Handle successful payment recording
+    console.log("Payment recorded successfully");
+  };
+
   return (
     <>
       <Button
@@ -32,14 +36,11 @@ export const ManualPaymentButton = ({
         Record Payment
       </Button>
 
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-2xl">
-          <ManualPaymentForm
-            onClose={() => setShowForm(false)}
-            preselectedStudentId={studentId}
-          />
-        </DialogContent>
-      </Dialog>
+      <ManualPaymentForm
+        open={showForm}
+        onOpenChange={setShowForm}
+        onPaymentRecorded={handlePaymentRecorded}
+      />
     </>
   );
 };
