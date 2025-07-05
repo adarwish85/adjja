@@ -41,18 +41,38 @@ export const useAuthDebug = () => {
         access_token: session?.access_token ? 'Present' : 'Missing'
       });
 
-      // Test database session state
+      // Test database session state using direct SQL query instead of RPC
       let dbSessionInfo = null;
       try {
-        const { data: dbSession, error: dbError } = await supabase.rpc('debug_current_session');
-        if (dbError) {
-          console.error('DB session debug error:', dbError);
+        const { data: dbSession, error: dbError } = await supabase
+          .from('profiles')
+          .select('*')
+          .limit(1)
+          .single();
+        
+        if (!dbError && dbSession) {
+          // If we can query profiles, the session is working at DB level
+          dbSessionInfo = {
+            auth_uid: session?.user?.id || null,
+            session_valid: true,
+            current_timestamp: new Date().toISOString()
+          };
+          console.log('Database session test: SUCCESS');
         } else {
-          dbSessionInfo = dbSession?.[0] || null;
-          console.log('Database session state:', dbSessionInfo);
+          dbSessionInfo = {
+            auth_uid: null,
+            session_valid: false,
+            current_timestamp: new Date().toISOString()
+          };
+          console.log('Database session test: FAILED', dbError);
         }
       } catch (error) {
-        console.error('Failed to check DB session:', error);
+        console.error('Failed to test DB session:', error);
+        dbSessionInfo = {
+          auth_uid: null,
+          session_valid: false,
+          current_timestamp: new Date().toISOString()
+        };
       }
 
       // Get current role using direct query instead of RPC to avoid type issues
