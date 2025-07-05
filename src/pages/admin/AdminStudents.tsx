@@ -10,7 +10,6 @@ import { StudentsSearchBar } from "@/components/admin/student/StudentsSearchBar"
 import { PaymentAlertsCard } from "@/components/admin/student/PaymentAlertsCard";
 import { StudentPaymentSection } from "@/components/admin/student/StudentPaymentSection";
 import { SessionDebugPanel } from "@/components/admin/SessionDebugPanel";
-import { MissingStudentSync } from "@/components/admin/student/MissingStudentSync";
 import { useStudents } from "@/hooks/useStudents";
 import { useClassEnrollments } from "@/hooks/useClassEnrollments";
 import { Button } from "@/components/ui/button";
@@ -88,9 +87,6 @@ const AdminStudents = () => {
         )}
 
         {showDebugPanel && <SessionDebugPanel />}
-        
-        {/* Add Missing Student Sync Panel */}
-        <MissingStudentSync />
         
         <StudentStatsCards students={students || []} enrollments={enrollments || []} />
         <PaymentAlertsCard />

@@ -1,18 +1,97 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, RefreshCw, User, Shield, CheckCircle, Database } from "lucide-react";
+import { AlertTriangle, RefreshCw, User, Shield, CheckCircle, Database, Users } from "lucide-react";
 import { useAuthDebug } from "@/hooks/useAuthDebug";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface ProfileData {
+  id: string;
+  name: string;
+  email: string;
+  approval_status: string;
+  role_name?: string;
+  has_student_record: boolean;
+}
 
 export const SessionDebugPanel = () => {
   const { debugInfo, runAuthDebug, refreshSession } = useAuthDebug();
   const { signOut } = useAuth();
+  const [profilesData, setProfilesData] = useState<ProfileData[]>([]);
+  const [studentsCount, setStudentsCount] = useState(0);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   const handleForceSignOut = async () => {
     await signOut();
     window.location.reload();
+  };
+
+  const loadAllData = async () => {
+    try {
+      setIsLoadingData(true);
+      console.log('🔍 Loading comprehensive data analysis...');
+      
+      // Get all profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          name,
+          email,
+          approval_status,
+          user_roles (
+            name
+          )
+        `);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
+
+      // Get all student records
+      const { data: students, error: studentsError } = await supabase
+        .from('students')
+        .select('auth_user_id, name, email');
+
+      if (studentsError) {
+        console.error('Error fetching students:', studentsError);
+        throw studentsError;
+      }
+
+      console.log('📊 Profiles found:', profiles?.length || 0);
+      console.log('📊 Student records found:', students?.length || 0);
+      console.log('👥 All profiles:', profiles);
+      console.log('🎓 All students:', students);
+
+      const existingStudentIds = new Set(students?.map(s => s.auth_user_id) || []);
+      
+      // Map profiles with student record status
+      const profilesWithStatus = profiles?.map(profile => ({
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        approval_status: profile.approval_status,
+        role_name: profile.user_roles?.name,
+        has_student_record: existingStudentIds.has(profile.id)
+      })) || [];
+
+      setProfilesData(profilesWithStatus);
+      setStudentsCount(students?.length || 0);
+      
+      console.log('📋 Analysis complete:', profilesWithStatus);
+      toast.success(`Analysis complete: ${profiles?.length || 0} profiles, ${students?.length || 0} student records`);
+      
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error("Failed to load comprehensive data");
+    } finally {
+      setIsLoadingData(false);
+    }
   };
 
   return (
@@ -23,7 +102,7 @@ export const SessionDebugPanel = () => {
           Session Debug Panel
         </CardTitle>
         <p className="text-sm text-orange-700">
-          Debugging authentication session issues
+          Debugging authentication session issues and data visibility
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -106,6 +185,16 @@ export const SessionDebugPanel = () => {
           </Button>
 
           <Button
+            variant="outline"
+            size="sm"
+            onClick={loadAllData}
+            disabled={isLoadingData}
+          >
+            <Users className={`h-4 w-4 mr-2 ${isLoadingData ? 'animate-spin' : ''}`} />
+            Analyze All Data
+          </Button>
+
+          <Button
             variant="destructive"
             size="sm"
             onClick={handleForceSignOut}
@@ -113,6 +202,36 @@ export const SessionDebugPanel = () => {
             Force Sign Out & Reload
           </Button>
         </div>
+
+        {profilesData.length > 0 && (
+          <div className="p-3 bg-white border rounded">
+            <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Complete Data Analysis ({profilesData.length} profiles, {studentsCount} student records)
+            </h4>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {profilesData.map((profile) => (
+                <div key={profile.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
+                  <div>
+                    <div className="font-medium">{profile.name}</div>
+                    <div className="text-gray-600">{profile.email}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={profile.approval_status === 'approved' ? 'default' : 'secondary'} className="text-xs">
+                      {profile.approval_status}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {profile.role_name || 'No Role'}
+                    </Badge>
+                    <Badge variant={profile.has_student_record ? 'default' : 'destructive'} className="text-xs">
+                      {profile.has_student_record ? 'Has Record' : 'Missing Record'}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!debugInfo.sessionValid && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-md">
