@@ -19,9 +19,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 const AdminStudents = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [showDebugPanel, setShowDebugPanel] = useState(true); // Force show debug panel
   const { students, loading } = useStudents();
   const { enrollments } = useClassEnrollments();
+
+  // Add comprehensive logging
+  console.log('🔍 AdminStudents Debug Information:');
+  console.log('📊 Students data:', students);
+  console.log('📊 Students count:', students?.length || 0);
+  console.log('📊 Loading state:', loading);
+  console.log('📊 Enrollments:', enrollments);
+  console.log('📊 Raw students array:', JSON.stringify(students, null, 2));
 
   if (selectedStudent) {
     return (
@@ -52,13 +60,13 @@ const AdminStudents = () => {
     student.email.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
+  console.log('🔍 Filtered students:', filteredStudents);
+  console.log('🔍 Search term:', searchTerm);
+
   const handleSubmit = () => {
     // Handle form submission
     console.log("Form submitted");
   };
-
-  // Show debug panel if no students found or if loading issues
-  const shouldShowDebugHint = !loading && students?.length === 0;
 
   return (
     <SuperAdminLayout>
@@ -68,23 +76,23 @@ const AdminStudents = () => {
           <p className="text-bjj-gray">Manage student accounts, enrollment, and progress</p>
         </div>
 
-        {shouldShowDebugHint && (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>
-                No students found. This might be due to a session authentication issue.
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDebugPanel(!showDebugPanel)}
-              >
-                {showDebugPanel ? 'Hide' : 'Show'} Debug Panel
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* Always show debug panel for investigation */}
+        <Alert className="border-orange-200 bg-orange-50">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>
+              🔍 Investigation Mode: Debug panel is shown to help find missing students.
+              Current count: {students?.length || 0} students found.
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDebugPanel(!showDebugPanel)}
+            >
+              {showDebugPanel ? 'Hide' : 'Show'} Debug Panel
+            </Button>
+          </AlertDescription>
+        </Alert>
 
         {showDebugPanel && <SessionDebugPanel />}
         
@@ -100,7 +108,14 @@ const AdminStudents = () => {
           <TabsContent value="students" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Students ({filteredStudents.length})</CardTitle>
+                <CardTitle>
+                  Students ({filteredStudents.length}) 
+                  {students && filteredStudents.length !== students.length && (
+                    <span className="text-sm font-normal text-gray-500">
+                      - Filtered from {students.length} total
+                    </span>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -127,6 +142,11 @@ const AdminStudents = () => {
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bjj-gold mx-auto"></div>
                       <p className="mt-2 text-bjj-gray">Loading students...</p>
+                    </div>
+                  )}
+                  {!loading && (!students || students.length === 0) && (
+                    <div className="text-center py-8">
+                      <p className="text-bjj-gray">No students found in the database.</p>
                     </div>
                   )}
                 </div>

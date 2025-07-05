@@ -78,15 +78,51 @@ export const useStudents = () => {
 
   const fetchStudents = async () => {
     try {
+      console.log('🚀 useStudents: Starting fetchStudents...');
       setLoading(true);
+      
+      // Test the current session first
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      console.log('🔐 useStudents: Current session:', {
+        user: sessionData?.session?.user?.email,
+        userId: sessionData?.session?.user?.id,
+        error: sessionError
+      });
+
+      // Test direct query
+      console.log('📊 useStudents: Executing students query...');
       const { data, error } = await supabase
         .from("students")
         .select("*")
         .order("name");
 
-      if (error) throw error;
+      console.log('📊 useStudents: Raw query result:', {
+        data: data,
+        dataLength: data?.length,
+        error: error,
+        errorDetails: error ? JSON.stringify(error, null, 2) : null
+      });
 
-      console.log("useStudents: Fetched students data:", data);
+      if (error) {
+        console.error('❌ useStudents: Database error:', error);
+        throw error;
+      }
+
+      console.log("✅ useStudents: Fetched students data:", data);
+      console.log("📈 useStudents: Number of students:", data?.length || 0);
+
+      // Log each student individually
+      if (data && data.length > 0) {
+        data.forEach((student, index) => {
+          console.log(`👤 Student ${index + 1}:`, {
+            id: student.id,
+            name: student.name,
+            email: student.email,
+            status: student.status,
+            created_at: student.created_at
+          });
+        });
+      }
 
       // Type the data properly by ensuring fields are correctly typed
       const typedStudents: Student[] = (data || []).map(student => ({
@@ -103,12 +139,17 @@ export const useStudents = () => {
         attendance_rate: student.attendance_rate || 0
       }));
 
+      console.log("🔄 useStudents: Typed students about to be set:", typedStudents);
       setStudents(typedStudents);
+      console.log("✅ useStudents: Students state updated successfully");
+      
     } catch (error) {
-      console.error("useStudents: Error fetching students:", error);
+      console.error("❌ useStudents: Error in fetchStudents:", error);
+      console.error("❌ useStudents: Error stack:", error.stack);
       toast.error("Failed to fetch students");
     } finally {
       setLoading(false);
+      console.log("🏁 useStudents: fetchStudents completed, loading set to false");
     }
   };
 
@@ -328,8 +369,17 @@ export const useStudents = () => {
   };
 
   useEffect(() => {
+    console.log('🔄 useStudents: useEffect triggered, calling fetchStudents');
     fetchStudents();
   }, []);
+
+  // Log whenever students state changes
+  useEffect(() => {
+    console.log('📊 useStudents: Students state changed:', {
+      count: students?.length || 0,
+      students: students
+    });
+  }, [students]);
 
   return {
     students,

@@ -64,6 +64,29 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
   onClassEnroll,
   onDowngradeToStudent,
 }) => {
+  // Add comprehensive logging for StudentsTable
+  console.log('🏪 StudentsTable: Component rendered with props:', {
+    studentsCount: students?.length || 0,
+    filteredStudentsCount: filteredStudents?.length || 0,
+    students: students,
+    filteredStudents: filteredStudents
+  });
+
+  // Log each student being rendered
+  if (filteredStudents && filteredStudents.length > 0) {
+    console.log('👥 StudentsTable: Students to be rendered:');
+    filteredStudents.forEach((student, index) => {
+      console.log(`👤 Row ${index + 1}:`, {
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        status: student.status
+      });
+    });
+  } else {
+    console.log('⚠️ StudentsTable: No filtered students to render');
+  }
+
   // Use the new coach detection hook
   const { isStudentCoach } = useStudentCoachDetection(students);
 
@@ -116,7 +139,9 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredStudents.map((student) => {
+          {filteredStudents.map((student, index) => {
+            console.log(`🔄 StudentsTable: Rendering student row ${index + 1}:`, student.name);
+            
             const enrolledClasses = getStudentEnrolledClasses(student.id);
             const isCoach = isStudentCoach(student.id);
             
@@ -281,6 +306,13 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
               </TableRow>
             );
           })}
+          {filteredStudents.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                No students found to display
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </TooltipProvider>
