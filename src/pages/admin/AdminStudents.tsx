@@ -9,15 +9,18 @@ import { StudentStatsCards } from "@/components/admin/student/StudentStatsCards"
 import { StudentsSearchBar } from "@/components/admin/student/StudentsSearchBar";
 import { PaymentAlertsCard } from "@/components/admin/student/PaymentAlertsCard";
 import { StudentPaymentSection } from "@/components/admin/student/StudentPaymentSection";
+import { SessionDebugPanel } from "@/components/admin/SessionDebugPanel";
 import { useStudents } from "@/hooks/useStudents";
 import { useClassEnrollments } from "@/hooks/useClassEnrollments";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const AdminStudents = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const { students } = useStudents();
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const { students, loading } = useStudents();
   const { enrollments } = useClassEnrollments();
 
   if (selectedStudent) {
@@ -54,6 +57,9 @@ const AdminStudents = () => {
     console.log("Form submitted");
   };
 
+  // Show debug panel if no students found or if loading issues
+  const shouldShowDebugHint = !loading && students?.length === 0;
+
   return (
     <SuperAdminLayout>
       <div className="p-6 space-y-6">
@@ -61,6 +67,26 @@ const AdminStudents = () => {
           <h1 className="text-3xl font-bold text-bjj-navy">Student Management</h1>
           <p className="text-bjj-gray">Manage student accounts, enrollment, and progress</p>
         </div>
+
+        {shouldShowDebugHint && (
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>
+                No students found. This might be due to a session authentication issue.
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDebugPanel(!showDebugPanel)}
+              >
+                {showDebugPanel ? 'Hide' : 'Show'} Debug Panel
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {showDebugPanel && <SessionDebugPanel />}
         
         <StudentStatsCards students={students || []} enrollments={enrollments || []} />
         <PaymentAlertsCard />
@@ -74,7 +100,7 @@ const AdminStudents = () => {
           <TabsContent value="students" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Students</CardTitle>
+                <CardTitle>Students ({filteredStudents.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -96,6 +122,12 @@ const AdminStudents = () => {
                       onClassEnroll={() => {}}
                       onDowngradeToStudent={() => {}}
                     />
+                  )}
+                  {loading && (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bjj-gold mx-auto"></div>
+                      <p className="mt-2 text-bjj-gray">Loading students...</p>
+                    </div>
                   )}
                 </div>
               </CardContent>

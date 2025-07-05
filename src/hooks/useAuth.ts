@@ -50,10 +50,17 @@ export const useAuth = () => {
     return emailCheck || roleCheck;
   };
 
-  // Simple profile fetch function
+  // Enhanced profile fetch function with better error handling
   const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
       console.log('📡 Fetching profile for user:', userId);
+      
+      // First check if we have a valid session
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession) {
+        console.warn('⚠️ No valid session found during profile fetch');
+        return null;
+      }
       
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -76,6 +83,11 @@ export const useAuth = () => {
 
       if (error) {
         console.error('❌ Profile fetch error:', error);
+        // Don't throw error if it's just missing profile
+        if (error.code === 'PGRST116') {
+          console.log('📋 No profile found - this might be expected for new users');
+          return null;
+        }
         return null;
       }
 
@@ -108,12 +120,15 @@ export const useAuth = () => {
     try {
       setAuthState(prev => ({ ...prev, loading: true, error: null }));
       
+      console.log('🔐 Attempting sign in for:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('❌ Sign in failed:', error);
         setAuthState(prev => ({ 
           ...prev, 
           loading: false, 
@@ -122,9 +137,11 @@ export const useAuth = () => {
         return { success: false, error: error.message };
       }
 
+      console.log('✅ Sign in successful');
       return { success: true, error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      console.error('💥 Sign in exception:', error);
       setAuthState(prev => ({ 
         ...prev, 
         loading: false, 
@@ -170,6 +187,7 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
+      console.log('🚪 Signing out...');
       await supabase.auth.signOut();
       setAuthState({
         user: null,
@@ -180,17 +198,20 @@ export const useAuth = () => {
         isAuthenticated: false,
         authInitialized: true,
       });
+      console.log('✅ Sign out successful');
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('❌ Sign out error:', error);
     }
   };
 
   useEffect(() => {
     let mounted = true;
     
+    console.log('🚀 Setting up auth state listener...');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (!mounted) return;
         
         console.log('🔄 Auth state changed:', event, session?.user?.email);
@@ -230,7 +251,8 @@ export const useAuth = () => {
             }
           } else {
             // Fetch profile for regular users
-            fetchProfile(session.user.id).then(profile => {
+            try {
+              const profile = await fetchProfile(session.user.id);
               if (mounted) {
                 setAuthState(prev => ({
                   ...prev,
@@ -238,10 +260,21 @@ export const useAuth = () => {
                   loading: false,
                 }));
               }
-            });
+            } catch (error) {
+              console.error('❌ Profile fetch error during auth change:', error);
+              if (mounted) {
+                setAuthState(prev => ({
+                  ...prev,
+                  userProfile: null,
+                  loading: false,
+                  error: 'Failed to load user profile',
+                }));
+              }
+            }
           }
         } else {
           // User is not authenticated
+          console.log('👤 User not authenticated');
           setAuthState({
             user: null,
             session: null,
@@ -258,7 +291,7 @@ export const useAuth = () => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error('Session fetch error:', error);
+        console.error('❌ Session fetch error:', error);
         if (mounted) {
           setAuthState(prev => ({ 
             ...prev, 
@@ -272,6 +305,7 @@ export const useAuth = () => {
     });
 
     return () => {
+      console.log('🧹 Cleaning up auth listener');
       mounted = false;
       subscription.unsubscribe();
     };
