@@ -36,13 +36,25 @@ export const useAuthDebug = () => {
         access_token: session?.access_token ? 'Present' : 'Missing'
       });
 
-      // Call debug function
-      const { data: debugData, error: debugError } = await supabase.rpc('debug_auth_session');
-      
-      if (debugError) {
-        console.error('Debug function error:', debugError);
-      } else {
-        console.log('Debug results:', debugData);
+      // Get current role using direct query instead of RPC to avoid type issues
+      let currentRole = null;
+      if (session?.user?.id) {
+        const { data: roleData, error: roleError } = await supabase
+          .from('profiles')
+          .select(`
+            user_roles (
+              name
+            )
+          `)
+          .eq('id', session.user.id)
+          .single();
+
+        if (roleError) {
+          console.error('Role fetch error:', roleError);
+        } else {
+          currentRole = roleData?.user_roles?.name || null;
+          console.log('Current role:', currentRole);
+        }
       }
 
       // Get user profile info
@@ -59,9 +71,9 @@ export const useAuthDebug = () => {
       }
 
       setDebugInfo({
-        currentUserId: debugData?.[0]?.current_user_id || session?.user?.id || null,
-        currentRole: debugData?.[0]?.current_role || profileData?.user_roles?.name || null,
-        sessionValid: debugData?.[0]?.session_valid || !!session?.user,
+        currentUserId: session?.user?.id || null,
+        currentRole: currentRole || profileData?.user_roles?.name || null,
+        sessionValid: !!session?.user,
         isLoading: false,
       });
 
