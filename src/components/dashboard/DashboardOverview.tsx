@@ -14,7 +14,7 @@ export const DashboardOverview = () => {
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-bjj-gray">
-            Total Active Students
+            Active Students
           </CardTitle>
           <div className="p-2 rounded-full bg-blue-100">
             <GraduationCap className="h-4 w-4 text-blue-600" />
@@ -24,7 +24,7 @@ export const DashboardOverview = () => {
           <div className="text-2xl font-bold text-bjj-navy">
             {isLoading ? "..." : stats?.totalStudents || 0}
           </div>
-          <p className="text-xs text-bjj-gray">Active members</p>
+          <p className="text-xs text-bjj-gray">Approved members only</p>
         </CardContent>
       </Card>
 

@@ -1,11 +1,13 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, UserCheck, DollarSign } from "lucide-react";
+import { Plus, Users, UserCheck, DollarSign, Database } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { ManualCheckInModal } from "@/components/attendance/ManualCheckInModal";
 import { ManualPaymentForm } from "@/components/admin/payments/ManualPaymentForm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DataSyncUtility } from "@/components/admin/DataSyncUtility";
 
 const quickActions = [
   {
@@ -40,12 +42,21 @@ const quickActions = [
     route: "/admin/students",
     type: "navigation" as const,
   },
+  {
+    title: "Data Sync",
+    description: "Sync approval workflow",
+    icon: Database,
+    color: "bg-gray-500 hover:bg-gray-600",
+    type: "modal" as const,
+    modalType: "sync" as const,
+  },
 ];
 
 export const AdminTools = () => {
   const navigate = useNavigate();
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showSyncModal, setShowSyncModal] = useState(false);
 
   const handleActionClick = (action: typeof quickActions[0]) => {
     if (action.type === "navigation" && action.route) {
@@ -55,6 +66,8 @@ export const AdminTools = () => {
         setShowCheckInModal(true);
       } else if (action.modalType === "payment") {
         setShowPaymentModal(true);
+      } else if (action.modalType === "sync") {
+        setShowSyncModal(true);
       }
     }
   };
@@ -77,7 +90,7 @@ export const AdminTools = () => {
           <p className="text-sm text-bjj-gray">Common administrative tasks</p>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {quickActions.map((action) => (
               <Button
                 key={action.title}
@@ -109,6 +122,15 @@ export const AdminTools = () => {
         onOpenChange={setShowPaymentModal}
         onPaymentRecorded={handlePaymentRecorded}
       />
+
+      <Dialog open={showSyncModal} onOpenChange={setShowSyncModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Data Synchronization</DialogTitle>
+          </DialogHeader>
+          <DataSyncUtility />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

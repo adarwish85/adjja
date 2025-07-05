@@ -9,13 +9,14 @@ interface DashboardStats {
   monthlyRevenue: number;
   attendanceToday: number;
   activeClasses: number;
+  pendingApprovals: number;
 }
 
 export const useDashboardStats = () => {
   return useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async (): Promise<DashboardStats> => {
-      // Get total active students
+      // Get total active students (only approved users)
       const { data: students, error: studentsError } = await supabase
         .from('students')
         .select('id')
@@ -71,6 +72,14 @@ export const useDashboardStats = () => {
 
       if (classesError) throw classesError;
 
+      // Get pending approvals count
+      const { data: pendingUsers, error: pendingError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('approval_status', 'pending');
+
+      if (pendingError) throw pendingError;
+
       const monthlyRevenue = transactions?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
 
       return {
@@ -80,6 +89,7 @@ export const useDashboardStats = () => {
         monthlyRevenue,
         attendanceToday: attendance?.length || 0,
         activeClasses: activeClasses?.length || 0,
+        pendingApprovals: pendingUsers?.length || 0,
       };
     },
     refetchInterval: 60000, // Refresh every minute

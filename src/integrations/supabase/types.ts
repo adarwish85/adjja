@@ -2077,6 +2077,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_student_after_approval: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       downgrade_coach_to_student: {
         Args: { p_user_id: string }
         Returns: boolean
@@ -2158,6 +2162,14 @@ export type Database = {
           p_session_date?: string
         }
         Returns: string
+      }
+      sync_existing_user_approvals: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          user_name: string
+          action_taken: string
+        }[]
       }
       sync_student_auth_links: {
         Args: Record<PropertyKey, never>

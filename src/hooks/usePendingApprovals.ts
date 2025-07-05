@@ -25,7 +25,7 @@ export const usePendingApprovals = () => {
       setIsLoading(true);
       console.log('Fetching pending users...');
       
-      // First get profiles with pending approval status
+      // Get profiles with pending approval status
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select(`
@@ -119,7 +119,7 @@ export const usePendingApprovals = () => {
       
       toast({
         title: "Success",
-        description: "User approved successfully",
+        description: "User approved successfully and student record created",
       });
     } catch (error: any) {
       console.error('Error approving user:', error);
@@ -170,6 +170,26 @@ export const usePendingApprovals = () => {
 
   useEffect(() => {
     fetchPendingUsers();
+    
+    // Set up real-time subscription for approval status changes
+    const subscription = supabase
+      .channel('pending-approvals')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'profiles',
+          filter: 'approval_status=eq.pending'
+        }, 
+        () => {
+          fetchPendingUsers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return {
