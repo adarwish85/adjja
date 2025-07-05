@@ -8,6 +8,11 @@ interface AuthDebugInfo {
   currentRole: string | null;
   sessionValid: boolean;
   isLoading: boolean;
+  dbSessionInfo?: {
+    auth_uid: string | null;
+    session_valid: boolean;
+    current_timestamp: string;
+  };
 }
 
 export const useAuthDebug = () => {
@@ -20,7 +25,7 @@ export const useAuthDebug = () => {
 
   const runAuthDebug = async () => {
     try {
-      console.log('🔍 Running auth debug check...');
+      console.log('🔍 Running comprehensive auth debug check...');
       
       // Get current session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -35,6 +40,20 @@ export const useAuthDebug = () => {
         expires_at: session?.expires_at,
         access_token: session?.access_token ? 'Present' : 'Missing'
       });
+
+      // Test database session state
+      let dbSessionInfo = null;
+      try {
+        const { data: dbSession, error: dbError } = await supabase.rpc('debug_current_session');
+        if (dbError) {
+          console.error('DB session debug error:', dbError);
+        } else {
+          dbSessionInfo = dbSession?.[0] || null;
+          console.log('Database session state:', dbSessionInfo);
+        }
+      } catch (error) {
+        console.error('Failed to check DB session:', error);
+      }
 
       // Get current role using direct query instead of RPC to avoid type issues
       let currentRole = null;
@@ -75,6 +94,7 @@ export const useAuthDebug = () => {
         currentRole: currentRole || profileData?.user_roles?.name || null,
         sessionValid: !!session?.user,
         isLoading: false,
+        dbSessionInfo,
       });
 
     } catch (error) {
