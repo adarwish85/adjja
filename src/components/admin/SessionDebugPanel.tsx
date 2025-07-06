@@ -33,7 +33,7 @@ export const SessionDebugPanel = () => {
   const loadAllData = async () => {
     try {
       setIsLoadingData(true);
-      console.log('🔍 Loading comprehensive data analysis...');
+      console.log('🔍 SessionDebugPanel: Loading comprehensive data analysis...');
       
       // Get all profiles
       const { data: profiles, error: profilesError } = await supabase
@@ -49,24 +49,39 @@ export const SessionDebugPanel = () => {
         `);
 
       if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
+        console.error('SessionDebugPanel: Error fetching profiles:', profilesError);
         throw profilesError;
       }
 
       // Get all student records
       const { data: students, error: studentsError } = await supabase
         .from('students')
-        .select('auth_user_id, name, email');
+        .select('*');
 
       if (studentsError) {
-        console.error('Error fetching students:', studentsError);
+        console.error('SessionDebugPanel: Error fetching students:', studentsError);
         throw studentsError;
       }
 
-      console.log('📊 Profiles found:', profiles?.length || 0);
-      console.log('📊 Student records found:', students?.length || 0);
-      console.log('👥 All profiles:', profiles);
-      console.log('🎓 All students:', students);
+      console.log('📊 SessionDebugPanel: Profiles found:', profiles?.length || 0);
+      console.log('📊 SessionDebugPanel: Student records found:', students?.length || 0);
+      console.log('👥 SessionDebugPanel: All profiles:', profiles);
+      console.log('🎓 SessionDebugPanel: All students:', students);
+
+      // Enhanced logging for each student
+      if (students && students.length > 0) {
+        console.log('🎓 SessionDebugPanel: Individual student records:');
+        students.forEach((student, index) => {
+          console.log(`🎓 Debug Student ${index + 1}:`, {
+            id: student.id,
+            name: student.name,
+            email: student.email,
+            status: student.status,
+            auth_user_id: student.auth_user_id,
+            fullRecord: student
+          });
+        });
+      }
 
       const existingStudentIds = new Set(students?.map(s => s.auth_user_id) || []);
       
@@ -83,11 +98,11 @@ export const SessionDebugPanel = () => {
       setProfilesData(profilesWithStatus);
       setStudentsCount(students?.length || 0);
       
-      console.log('📋 Analysis complete:', profilesWithStatus);
+      console.log('📋 SessionDebugPanel: Analysis complete:', profilesWithStatus);
       toast.success(`Analysis complete: ${profiles?.length || 0} profiles, ${students?.length || 0} student records`);
       
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('SessionDebugPanel: Error loading data:', error);
       toast.error("Failed to load comprehensive data");
     } finally {
       setIsLoadingData(false);
@@ -95,14 +110,14 @@ export const SessionDebugPanel = () => {
   };
 
   return (
-    <Card className="border-orange-200 bg-orange-50">
+    <Card className="border-red-200 bg-red-50">
       <CardHeader>
-        <CardTitle className="text-orange-800 flex items-center gap-2">
+        <CardTitle className="text-red-800 flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />
-          Session Debug Panel
+          Enhanced Debug Panel - Investigation Mode
         </CardTitle>
-        <p className="text-sm text-orange-700">
-          Debugging authentication session issues and data visibility
+        <p className="text-sm text-red-700">
+          🔍 Investigating student rendering issue - Database vs UI discrepancy
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -189,9 +204,10 @@ export const SessionDebugPanel = () => {
             size="sm"
             onClick={loadAllData}
             disabled={isLoadingData}
+            className="bg-red-100 hover:bg-red-200"
           >
             <Users className={`h-4 w-4 mr-2 ${isLoadingData ? 'animate-spin' : ''}`} />
-            Analyze All Data
+            🔍 Analyze All Data
           </Button>
 
           <Button
@@ -207,7 +223,7 @@ export const SessionDebugPanel = () => {
           <div className="p-3 bg-white border rounded">
             <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Complete Data Analysis ({profilesData.length} profiles, {studentsCount} student records)
+              🔍 Complete Data Analysis ({profilesData.length} profiles, {studentsCount} student records)
             </h4>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {profilesData.map((profile) => (

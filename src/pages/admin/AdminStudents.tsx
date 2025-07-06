@@ -23,13 +23,24 @@ const AdminStudents = () => {
   const { students, loading } = useStudents();
   const { enrollments } = useClassEnrollments();
 
-  // Add comprehensive logging
-  console.log('🔍 AdminStudents Debug Information:');
-  console.log('📊 Students data:', students);
-  console.log('📊 Students count:', students?.length || 0);
-  console.log('📊 Loading state:', loading);
-  console.log('📊 Enrollments:', enrollments);
-  console.log('📊 Raw students array:', JSON.stringify(students, null, 2));
+  // Enhanced logging for AdminStudents component
+  console.log('🏛️ AdminStudents COMPONENT RENDER:');
+  console.log('📊 AdminStudents: Students received from hook:', students);
+  console.log('📊 AdminStudents: Students count from hook:', students?.length || 0);
+  console.log('📊 AdminStudents: Loading state:', loading);
+  console.log('📊 AdminStudents: Enrollments:', enrollments);
+  
+  if (students && students.length > 0) {
+    console.log('🏛️ AdminStudents: Processing students from hook:');
+    students.forEach((student, index) => {
+      console.log(`🎓 AdminStudents Student ${index + 1}:`, {
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        status: student.status
+      });
+    });
+  }
 
   if (selectedStudent) {
     return (
@@ -60,8 +71,11 @@ const AdminStudents = () => {
     student.email.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  console.log('🔍 Filtered students:', filteredStudents);
+  console.log('🔍 AdminStudents: Filtered students calculation:');
+  console.log('🔍 Original students array:', students);
   console.log('🔍 Search term:', searchTerm);
+  console.log('🔍 Filtered result:', filteredStudents);
+  console.log('🔍 Filtered count:', filteredStudents.length);
 
   const handleSubmit = () => {
     // Handle form submission
@@ -77,12 +91,11 @@ const AdminStudents = () => {
         </div>
 
         {/* Always show debug panel for investigation */}
-        <Alert className="border-orange-200 bg-orange-50">
+        <Alert className="border-red-200 bg-red-50">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
             <span>
-              🔍 Investigation Mode: Debug panel is shown to help find missing students.
-              Current count: {students?.length || 0} students found.
+              🔍 INVESTIGATION MODE: Hook students: {students?.length || 0} | Filtered: {filteredStudents.length} | Loading: {loading ? 'Yes' : 'No'}
             </span>
             <Button
               variant="outline"
@@ -120,6 +133,17 @@ const AdminStudents = () => {
               <CardContent>
                 <div className="space-y-4">
                   <StudentsSearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+                  
+                  {/* Enhanced logging before passing to StudentsTable */}
+                  {(() => {
+                    console.log('🎭 AdminStudents: About to render StudentsTable with:');
+                    console.log('🎭 students prop:', students);
+                    console.log('🎭 filteredStudents prop:', filteredStudents);
+                    console.log('🎭 students count:', students?.length || 0);
+                    console.log('🎭 filteredStudents count:', filteredStudents.length);
+                    return null;
+                  })()}
+                  
                   {students && (
                     <StudentsTable 
                       students={students}
@@ -138,12 +162,14 @@ const AdminStudents = () => {
                       onDowngradeToStudent={() => {}}
                     />
                   )}
+                  
                   {loading && (
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bjj-gold mx-auto"></div>
                       <p className="mt-2 text-bjj-gray">Loading students...</p>
                     </div>
                   )}
+                  
                   {!loading && (!students || students.length === 0) && (
                     <div className="text-center py-8">
                       <p className="text-bjj-gray">No students found in the database.</p>

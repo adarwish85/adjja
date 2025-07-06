@@ -64,19 +64,30 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
   onClassEnroll,
   onDowngradeToStudent,
 }) => {
-  // Add comprehensive logging for StudentsTable
-  console.log('🏪 StudentsTable: Component rendered with props:', {
-    studentsCount: students?.length || 0,
-    filteredStudentsCount: filteredStudents?.length || 0,
-    students: students,
-    filteredStudents: filteredStudents
-  });
+  // Enhanced logging for StudentsTable component
+  console.log('🏪 StudentsTable: Component rendered with props:');
+  console.log('🏪 students prop:', students);
+  console.log('🏪 filteredStudents prop:', filteredStudents);
+  console.log('🏪 students count:', students?.length || 0);
+  console.log('🏪 filteredStudents count:', filteredStudents?.length || 0);
 
-  // Log each student being rendered
+  // Deep inspection of each student array
+  if (students && students.length > 0) {
+    console.log('🏪 StudentsTable: ALL STUDENTS prop analysis:');
+    students.forEach((student, index) => {
+      console.log(`📋 StudentsTable ALL Student ${index + 1}:`, {
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        status: student.status
+      });
+    });
+  }
+
   if (filteredStudents && filteredStudents.length > 0) {
-    console.log('👥 StudentsTable: Students to be rendered:');
+    console.log('🏪 StudentsTable: FILTERED STUDENTS prop analysis:');
     filteredStudents.forEach((student, index) => {
-      console.log(`👤 Row ${index + 1}:`, {
+      console.log(`🔍 StudentsTable FILTERED Student ${index + 1}:`, {
         id: student.id,
         name: student.name,
         email: student.email,
@@ -140,7 +151,7 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
         </TableHeader>
         <TableBody>
           {filteredStudents.map((student, index) => {
-            console.log(`🔄 StudentsTable: Rendering student row ${index + 1}:`, student.name);
+            console.log(`🔄 StudentsTable: RENDERING student row ${index + 1}:`, student.name, 'ID:', student.id);
             
             const enrolledClasses = getStudentEnrolledClasses(student.id);
             const isCoach = isStudentCoach(student.id);
@@ -309,7 +320,9 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
           {filteredStudents.length === 0 && (
             <TableRow>
               <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                No students found to display
+                🔍 INVESTIGATION: No students found to display
+                <br />
+                <small>Original students: {students?.length || 0} | Filtered: {filteredStudents.length}</small>
               </TableCell>
             </TableRow>
           )}

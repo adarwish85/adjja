@@ -111,37 +111,57 @@ export const useStudents = () => {
       console.log("✅ useStudents: Fetched students data:", data);
       console.log("📈 useStudents: Number of students:", data?.length || 0);
 
-      // Log each student individually
+      // Log each student individually BEFORE typing
       if (data && data.length > 0) {
+        console.log('🔍 RAW STUDENTS BEFORE TYPING:');
         data.forEach((student, index) => {
-          console.log(`👤 Student ${index + 1}:`, {
+          console.log(`👤 RAW Student ${index + 1}:`, {
             id: student.id,
             name: student.name,
             email: student.email,
             status: student.status,
-            created_at: student.created_at
+            created_at: student.created_at,
+            fullRecord: student
           });
         });
       }
 
       // Type the data properly by ensuring fields are correctly typed
-      const typedStudents: Student[] = (data || []).map(student => ({
-        ...student,
-        status: student.status as "active" | "inactive" | "on-hold",
-        membership_type: student.membership_type as "monthly" | "yearly" | "unlimited",
-        payment_status: student.payment_status as "unpaid" | "paid" | "due_soon" | "overdue" | null,
-        phone: student.phone || null,
-        last_attended: student.last_attended || null,
-        subscription_plan_id: student.subscription_plan_id || null,
-        plan_start_date: student.plan_start_date || null,
-        next_due_date: student.next_due_date || null,
-        stripes: student.stripes || 0,
-        attendance_rate: student.attendance_rate || 0
-      }));
+      const typedStudents: Student[] = (data || []).map((student, index) => {
+        console.log(`🔄 TYPING Student ${index + 1} (${student.name}):`, student);
+        const typedStudent = {
+          ...student,
+          status: student.status as "active" | "inactive" | "on-hold",
+          membership_type: student.membership_type as "monthly" | "yearly" | "unlimited",
+          payment_status: student.payment_status as "unpaid" | "paid" | "due_soon" | "overdue" | null,
+          phone: student.phone || null,
+          last_attended: student.last_attended || null,
+          subscription_plan_id: student.subscription_plan_id || null,
+          plan_start_date: student.plan_start_date || null,
+          next_due_date: student.next_due_date || null,
+          stripes: student.stripes || 0,
+          attendance_rate: student.attendance_rate || 0
+        };
+        console.log(`✅ TYPED Student ${index + 1}:`, typedStudent);
+        return typedStudent;
+      });
 
-      console.log("🔄 useStudents: Typed students about to be set:", typedStudents);
+      console.log("🔄 useStudents: ALL TYPED students about to be set:", typedStudents);
+      console.log("🔢 useStudents: Typed students count:", typedStudents.length);
+      
+      // Log each typed student individually
+      typedStudents.forEach((student, index) => {
+        console.log(`🎯 FINAL Student ${index + 1} to be set:`, {
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          status: student.status
+        });
+      });
+
+      console.log('🎭 BEFORE setStudents call - About to set:', typedStudents.length, 'students');
       setStudents(typedStudents);
-      console.log("✅ useStudents: Students state updated successfully");
+      console.log('🎭 AFTER setStudents call - State should now contain:', typedStudents.length, 'students');
       
     } catch (error) {
       console.error("❌ useStudents: Error in fetchStudents:", error);
@@ -373,12 +393,25 @@ export const useStudents = () => {
     fetchStudents();
   }, []);
 
-  // Log whenever students state changes
+  // Enhanced logging for students state changes
   useEffect(() => {
     console.log('📊 useStudents: Students state changed:', {
       count: students?.length || 0,
-      students: students
+      students: students,
+      individualStudents: students?.map((s, i) => ({ index: i, id: s.id, name: s.name }))
     });
+    
+    if (students && students.length > 0) {
+      console.log('🎯 CURRENT STUDENTS IN STATE:');
+      students.forEach((student, index) => {
+        console.log(`🏆 State Student ${index + 1}:`, {
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          status: student.status
+        });
+      });
+    }
   }, [students]);
 
   return {
