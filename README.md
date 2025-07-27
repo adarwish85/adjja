@@ -1,8 +1,5 @@
 # Welcome to your ADJJA project
 
-## Project info
-
-**URL**: https://lovable.dev/projects/e9a52e50-7e57-4b9e-a0b2-e3e15199160d
 
 ## How can I edit this code?
 
