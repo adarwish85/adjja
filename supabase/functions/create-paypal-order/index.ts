@@ -1,10 +1,50 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+// Input validation functions
+const validateAmount = (amount: any): number => {
+  const parsed = parseFloat(amount);
+  if (isNaN(parsed) || parsed <= 0 || parsed > 10000) {
+    throw new Error('Invalid amount: must be between 0.01 and 10000');
+  }
+  return parsed;
+};
+
+const validateCurrency = (currency: any): string => {
+  const validCurrencies = ['USD', 'EUR', 'GBP', 'CAD', 'AUD'];
+  if (!currency || !validCurrencies.includes(currency.toUpperCase())) {
+    throw new Error('Invalid currency: must be one of ' + validCurrencies.join(', '));
+  }
+  return currency.toUpperCase();
+};
+
+const validateUUID = (id: any, fieldName: string): string => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!id || !uuidRegex.test(id)) {
+    throw new Error(`Invalid ${fieldName}: must be a valid UUID`);
+  }
+  return id;
+};
+
+const logSecurityEvent = async (supabase: any, action: string, details: any, severity = 'medium') => {
+  try {
+    await supabase.from('security_audit_logs').insert({
+      action,
+      resource: 'payment_processing',
+      severity,
+      details,
+      user_agent: 'PayPal Edge Function',
+    });
+  } catch (error) {
+    console.warn('Failed to log security event:', error);
+  }
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -13,28 +53,51 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, currency = 'USD', studentId, planId, paypalConfig } = await req.json();
+    const { amount, currency = 'USD', studentId, planId } = await req.json();
 
-    // PayPal API credentials from request payload (dynamic configuration)
-    const { clientId, clientSecret, sandboxMode } = paypalConfig;
+    // Initialize Supabase client for logging
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Validate inputs
+    const validatedAmount = validateAmount(amount);
+    const validatedCurrency = validateCurrency(currency);
+    const validatedStudentId = validateUUID(studentId, 'studentId');
+    const validatedPlanId = planId ? validateUUID(planId, 'planId') : null;
+
+    // Log payment initiation
+    await logSecurityEvent(supabase, 'payment_order_created', {
+      studentId: validatedStudentId,
+      planId: validatedPlanId,
+      amount: validatedAmount,
+      currency: validatedCurrency
+    });
+
+    // PayPal API credentials from secure environment variables
+    const PAYPAL_CLIENT_ID = Deno.env.get('PAYPAL_CLIENT_ID');
+    const PAYPAL_CLIENT_SECRET = Deno.env.get('PAYPAL_CLIENT_SECRET');
+    const PAYPAL_ENVIRONMENT = Deno.env.get('PAYPAL_ENVIRONMENT');
     
-    if (!clientId || !clientSecret) {
-      throw new Error('PayPal credentials not configured in admin settings');
+    if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
+      await logSecurityEvent(supabase, 'payment_configuration_error', { error: 'Missing PayPal credentials' }, 'high');
+      throw new Error('PayPal credentials not configured in environment');
     }
 
-    const PAYPAL_API_BASE = sandboxMode 
-      ? 'https://api-m.sandbox.paypal.com' 
-      : 'https://api-m.paypal.com';
+    const PAYPAL_API_BASE = PAYPAL_ENVIRONMENT === 'live'
+      ? 'https://api-m.paypal.com' 
+      : 'https://api-m.sandbox.paypal.com';
 
     console.log('PayPal API Base:', PAYPAL_API_BASE);
-    console.log('Sandbox Mode:', sandboxMode);
+    console.log('Environment:', PAYPAL_ENVIRONMENT);
 
     // Get PayPal access token
     const authResponse = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+        'Authorization': `Basic ${btoa(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`)}`,
       },
       body: 'grant_type=client_credentials',
     });

@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useSecurityAuditLogger } from './useSecurityAuditLogger';
+import { useRateLimiter } from './useRateLimiter';
 
 interface UserProfile {
   id: string;
@@ -27,6 +29,13 @@ interface AuthState {
 }
 
 export const useAuth = () => {
+  const { logLoginAttempt, logPasswordChange, logSuspiciousActivity } = useSecurityAuditLogger();
+  const rateLimiter = useRateLimiter({
+    maxAttempts: 5,
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    blockDurationMs: 30 * 60 * 1000 // 30 minutes
+  });
+
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     session: null,
@@ -117,6 +126,19 @@ export const useAuth = () => {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Check rate limiting
+      if (rateLimiter.isBlocked()) {
+        const remainingTime = rateLimiter.getRemainingTime();
+        const errorMessage = `Too many login attempts. Please try again in ${remainingTime} seconds.`;
+        setAuthState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: errorMessage 
+        }));
+        logSuspiciousActivity('Rate limited login attempt', { email });
+        return { success: false, error: errorMessage };
+      }
+
       setAuthState(prev => ({ ...prev, loading: true, error: null }));
       
       console.log('🔐 Attempting sign in for:', email);
@@ -128,6 +150,9 @@ export const useAuth = () => {
 
       if (error) {
         console.error('❌ Sign in failed:', error);
+        rateLimiter.recordAttempt();
+        logLoginAttempt(false, email);
+        
         setAuthState(prev => ({ 
           ...prev, 
           loading: false, 
@@ -137,10 +162,15 @@ export const useAuth = () => {
       }
 
       console.log('✅ Sign in successful');
+      rateLimiter.reset(); // Reset on successful login
+      logLoginAttempt(true, email);
       return { success: true, error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
       console.error('💥 Sign in exception:', error);
+      rateLimiter.recordAttempt();
+      logLoginAttempt(false, email);
+      
       setAuthState(prev => ({ 
         ...prev, 
         loading: false, 
