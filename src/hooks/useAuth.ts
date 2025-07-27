@@ -39,15 +39,14 @@ export const useAuth = () => {
 
   // Helper function to check if user is Super Admin
   const isSuperAdmin = (user: User | null, profile: UserProfile | null = null) => {
-    const emailCheck = user?.email === 'ahmeddarwesh@gmail.com';
+    // Only use role-based check, remove hardcoded email security vulnerability
     const roleCheck = profile?.role_name?.toLowerCase() === 'super admin';
     
     console.log('🔍 Super Admin Check:');
-    console.log('- Email match:', emailCheck, user?.email);
     console.log('- Role match:', roleCheck, profile?.role_name);
-    console.log('- Final result:', emailCheck || roleCheck);
+    console.log('- Final result:', roleCheck);
     
-    return emailCheck || roleCheck;
+    return roleCheck;
   };
 
   // Enhanced profile fetch function with better error handling
